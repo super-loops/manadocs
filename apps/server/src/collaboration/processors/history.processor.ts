@@ -1,0 +1,122 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { QueueJob, QueueName } from '../../integrations/queue/constants';
+import {
+  IPageBacklinkJob,
+  IPageHistoryJob,
+  IPageUpdateNotificationJob,
+} from '../../integrations/queue/constants/queue.interface';
+import {
+  extractMentions,
+  extractPageMentions,
+} from '../../common/helpers/prosemirror/utils';
+import { PageHistoryRepo } from '@manadocs/db/repos/page/page-history.repo';
+import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { isDeepStrictEqual } from 'node:util';
+import { CollabHistoryService } from '../services/collab-history.service';
+import { WatcherService } from '../../core/watcher/watcher.service';
+import {
+  InMemoryQueue,
+  InMemoryJob,
+  InjectQueue,
+} from '../../integrations/queue/in-memory-queue';
+
+@Injectable()
+export class HistoryProcessor implements OnModuleInit {
+  private readonly logger = new Logger(HistoryProcessor.name);
+
+  constructor(
+    private readonly pageHistoryRepo: PageHistoryRepo,
+    private readonly pageRepo: PageRepo,
+    private readonly collabHistory: CollabHistoryService,
+    private readonly watcherService: WatcherService,
+    @InjectQueue(QueueName.HISTORY_QUEUE) private readonly queue: InMemoryQueue,
+    @InjectQueue(QueueName.NOTIFICATION_QUEUE) private notificationQueue: InMemoryQueue,
+    @InjectQueue(QueueName.GENERAL_QUEUE) private generalQueue: InMemoryQueue,
+  ) {}
+
+  onModuleInit() {
+    this.queue.registerProcessor((job) => this.process(job));
+  }
+
+  async process(job: InMemoryJob<IPageHistoryJob>): Promise<void> {
+    if (job.name !== QueueJob.PAGE_HISTORY) return;
+
+    this.logger.debug(`Processing ${job.name} for page: ${job.data.pageId}`);
+
+    try {
+      const { pageId } = job.data;
+
+      const page = await this.pageRepo.findById(pageId, {
+        includeContent: true,
+      });
+
+      if (!page) {
+        this.logger.warn(`Page ${pageId} not found, skipping history`);
+        await this.collabHistory.clearContributors(pageId);
+        return;
+      }
+
+      const lastHistory = await this.pageHistoryRepo.findPageLastHistory(
+        pageId,
+        { includeContent: true },
+      );
+
+      if (
+        !lastHistory ||
+        !isDeepStrictEqual(lastHistory.content, page.content)
+      ) {
+        const contributorIds = await this.collabHistory.popContributors(pageId);
+
+        try {
+          await this.watcherService.addPageWatchers(
+            contributorIds,
+            pageId,
+            page.spaceId,
+            page.workspaceId,
+          );
+
+          await this.pageHistoryRepo.saveHistory(page, { contributorIds });
+          this.logger.debug(`History created for page: ${pageId}`);
+        } catch (err) {
+          await this.collabHistory.addContributors(pageId, contributorIds);
+          throw err;
+        }
+
+        const mentions = extractMentions(page.content);
+        const pageMentions = extractPageMentions(mentions);
+
+        await this.generalQueue
+          .add(QueueJob.PAGE_BACKLINKS, {
+            pageId,
+            workspaceId: page.workspaceId,
+            mentions: pageMentions,
+          } as IPageBacklinkJob)
+          .catch((err) => {
+            this.logger.error(
+              `Failed to queue backlinks for ${pageId}: ${err.message}`,
+            );
+          });
+
+        if (contributorIds.length > 0 && lastHistory?.content) {
+          await this.notificationQueue
+            .add(QueueJob.PAGE_UPDATED, {
+              pageId,
+              spaceId: page.spaceId,
+              workspaceId: page.workspaceId,
+              actorIds: contributorIds,
+            } as IPageUpdateNotificationJob)
+            .catch((err) => {
+              this.logger.error(
+                `Failed to queue page update notification for ${pageId}: ${err.message}`,
+              );
+            });
+        }
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed ${job.name} for page: ${job.data.pageId}: ${err}`,
+      );
+      throw err;
+    }
+  }
+}

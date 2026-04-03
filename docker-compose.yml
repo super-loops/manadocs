@@ -1,0 +1,29 @@
+services:
+  manadocs:
+    build: .
+    image: manadocs:local
+    depends_on:
+      - db
+    environment:
+      APP_URL: 'http://localhost:3000'
+      APP_SECRET: '4b9c59086bed28c1f2335c9a45ce443b0813fe0b0224e9efd3d6cc44e0e7e12b'
+      DATABASE_URL: 'postgresql://manadocs:STRONG_DB_PASSWORD@db:5432/manadocs'
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - manadocs:/app/data/storage
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: manadocs
+      POSTGRES_USER: manadocs
+      POSTGRES_PASSWORD: STRONG_DB_PASSWORD
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql
+
+volumes:
+  manadocs:
+  db_data:
