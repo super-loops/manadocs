@@ -14,6 +14,7 @@ import { McpTokenGuard } from './mcp-token.guard';
 import { McpService } from './mcp.service';
 import { McpSessionService } from './mcp-session.service';
 import { JsonRpcRequest, McpCallContext } from './mcp.types';
+import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
 
 @Controller('mcp')
 @UseGuards(McpTokenGuard)
@@ -24,6 +25,7 @@ export class McpController {
   ) {}
 
   @Post()
+  @SkipTransform()
   async rpc(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
@@ -56,6 +58,7 @@ export class McpController {
 
   @Get()
   @HttpCode(204)
+  @SkipTransform()
   stream() {
     // SSE stub — streaming transport not yet implemented
     return null;
@@ -63,6 +66,7 @@ export class McpController {
 
   @Delete()
   @HttpCode(204)
+  @SkipTransform()
   terminate(@Req() req: FastifyRequest) {
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
     if (sessionId) {
