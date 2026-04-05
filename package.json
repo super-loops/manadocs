@@ -1,6 +1,6 @@
 {
   "name": "manadocs",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "private": true,
   "scripts": {
     "build": "nx run-many -t build",
