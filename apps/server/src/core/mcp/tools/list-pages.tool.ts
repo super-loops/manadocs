@@ -1,10 +1,14 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 import { McpCallContext, McpTool } from '../mcp.types';
 
 @Injectable()
 export class ListPagesTool {
-  constructor(private readonly pageRepo: PageRepo) {}
+  constructor(
+    private readonly pageRepo: PageRepo,
+    private readonly spaceRepo: SpaceRepo,
+  ) {}
 
   asTool(): McpTool {
     return {
@@ -30,7 +34,14 @@ export class ListPagesTool {
   }
 
   private async handle(args: Record<string, any>, ctx: McpCallContext) {
-    const spaceId = String(args.spaceId);
+    const space = await this.spaceRepo.findById(
+      String(args.spaceId),
+      ctx.workspaceId,
+    );
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+    const spaceId = space.id;
     if (
       ctx.spaceScope === 'selected' &&
       !ctx.allowedSpaceIds.includes(spaceId)

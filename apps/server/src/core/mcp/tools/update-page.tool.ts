@@ -12,6 +12,7 @@ import {
   docContainsAutoNodes,
   expandAutoNodes,
 } from '../utils/expand-auto-nodes';
+import { normalizePageId } from '../utils/identifiers';
 
 @Injectable()
 export class UpdatePageTool {
@@ -55,7 +56,7 @@ export class UpdatePageTool {
   }
 
   private async handle(args: Record<string, any>, ctx: McpCallContext) {
-    const pageId = String(args.pageId);
+    const pageId = normalizePageId(args.pageId);
     const page = await this.pageRepo.findById(pageId);
     if (!page || page.deletedAt) {
       throw new NotFoundException('Page not found');

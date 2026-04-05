@@ -7,7 +7,9 @@ import { InjectKysely } from 'nestjs-kysely';
 import { sql } from 'kysely';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 import { McpCallContext, McpTool } from '../mcp.types';
+import { normalizePageId } from '../utils/identifiers';
 
 type TreeNode = {
   id: string;
@@ -26,6 +28,7 @@ export class GetPageTreeTool {
   constructor(
     @InjectKysely() private readonly db: KyselyDB,
     private readonly pageRepo: PageRepo,
+    private readonly spaceRepo: SpaceRepo,
   ) {}
 
   asTool(): McpTool {
@@ -70,7 +73,7 @@ export class GetPageTreeTool {
     let rootId: string | null = null;
 
     if (args.pageId) {
-      const page = await this.pageRepo.findById(String(args.pageId));
+      const page = await this.pageRepo.findById(normalizePageId(args.pageId));
       if (!page || page.deletedAt) {
         throw new NotFoundException('Page not found');
       }
@@ -83,7 +86,15 @@ export class GetPageTreeTool {
       if (!args.spaceId) {
         throw new NotFoundException('spaceId or pageId is required');
       }
-      spaceId = String(args.spaceId);
+      // Accept UUID or space slug
+      const space = await this.spaceRepo.findById(
+        String(args.spaceId),
+        ctx.workspaceId,
+      );
+      if (!space) {
+        throw new NotFoundException('Space not found');
+      }
+      spaceId = space.id;
     }
 
     if (

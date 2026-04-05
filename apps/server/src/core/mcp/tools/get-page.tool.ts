@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
 import { McpCallContext, McpTool } from '../mcp.types';
+import { normalizePageId } from '../utils/identifiers';
 
 @Injectable()
 export class GetPageTool {
@@ -24,7 +25,7 @@ export class GetPageTool {
   }
 
   private async handle(args: Record<string, any>, ctx: McpCallContext) {
-    const pageId = String(args.pageId);
+    const pageId = normalizePageId(args.pageId);
     const page = await this.pageRepo.findById(pageId, {
       includeTextContent: true,
       includeContent: true,

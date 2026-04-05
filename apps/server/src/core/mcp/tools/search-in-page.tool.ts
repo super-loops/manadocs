@@ -6,6 +6,7 @@ import {
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
 import { McpCallContext, McpTool } from '../mcp.types';
 import { jsonToText } from '../../../collaboration/collaboration.util';
+import { normalizePageId } from '../utils/identifiers';
 
 @Injectable()
 export class SearchInPageTool {
@@ -43,7 +44,7 @@ export class SearchInPageTool {
   }
 
   private async handle(args: Record<string, any>, ctx: McpCallContext) {
-    const pageId = String(args.pageId);
+    const pageId = normalizePageId(args.pageId);
     const query = String(args.query ?? '');
     if (!query) return { matches: [], totalBlocks: 0 };
 

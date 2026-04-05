@@ -14,6 +14,7 @@ import {
   docContainsAutoNodes,
   expandAutoNodes,
 } from '../utils/expand-auto-nodes';
+import { normalizePageId } from '../utils/identifiers';
 
 type PatchOp = {
   op: 'replace' | 'insertAfter' | 'insertBefore' | 'delete';
@@ -75,7 +76,7 @@ export class PatchPageBlocksTool {
   }
 
   private async handle(args: Record<string, any>, ctx: McpCallContext) {
-    const pageId = String(args.pageId);
+    const pageId = normalizePageId(args.pageId);
     const page = await this.pageRepo.findById(pageId);
     if (!page || page.deletedAt) {
       throw new NotFoundException('Page not found');
