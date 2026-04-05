@@ -6,14 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTokenService } from '../api-token/services/api-token.service';
-import { WorkspaceRepo } from '@manadocs/db/repos/workspace/workspace.repo';
 
 @Injectable()
 export class McpTokenGuard implements CanActivate {
-  constructor(
-    private readonly apiTokenService: ApiTokenService,
-    private readonly workspaceRepo: WorkspaceRepo,
-  ) {}
+  constructor(private readonly apiTokenService: ApiTokenService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -34,14 +30,6 @@ export class McpTokenGuard implements CanActivate {
     const tokenType = (validation.apiToken as any).tokenType ?? 'api';
     if (tokenType !== 'mcp' && tokenType !== 'both') {
       throw new ForbiddenException('Token does not grant MCP access');
-    }
-
-    const workspace = await this.workspaceRepo.findById(validation.workspaceId);
-    if (!workspace) {
-      throw new UnauthorizedException('Workspace not found');
-    }
-    if (!(workspace as any).mcpEnabled) {
-      throw new ForbiddenException('MCP is disabled for this workspace');
     }
 
     request.mcp = {
