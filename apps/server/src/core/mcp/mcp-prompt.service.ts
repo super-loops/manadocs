@@ -27,6 +27,12 @@ export class McpPromptService {
       '- `{"type":"autoInline","text":"inline **md**"}` → 인라인 text+marks만 생성 (callout/listItem 안에서 사용)',
       '',
       '특수 노드(색상, 컬럼, embed 등)를 정확히 지정해야 할 때만 명시적 Tiptap 노드를 작성하고, 일반 텍스트는 `auto`를 사용하세요. update_page/create_page의 format=json에서 서버가 저장 직전에 자동 파싱합니다.',
+      '',
+      '## URL에서 식별자 추출',
+      '사용자가 `/s/<space-slug>/p/<title-slug>-<page-slug-id>` 형식의 링크를 첨부할 수 있습니다:',
+      '- `/s/` 뒤의 첫 세그먼트 = 스페이스 slug (list_spaces 결과의 slug와 매칭)',
+      '- `/p/` 뒤 세그먼트의 마지막 하이픈 뒤 토큰 = 페이지 slug ID (get_page/update_page의 pageId로 그대로 사용 가능)',
+      '예: `/s/docs/p/getting-started-a1b2c3d4` → space slug `docs`, page slug ID `a1b2c3d4`. pageId 파라미터에 `a1b2c3d4`를 전달하면 됩니다.',
     ];
 
     if (instructions) {
