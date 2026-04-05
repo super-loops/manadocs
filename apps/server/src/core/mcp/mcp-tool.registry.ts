@@ -8,6 +8,8 @@ import { SearchPagesTool } from './tools/search-pages.tool';
 import { CreatePageTool } from './tools/create-page.tool';
 import { UpdatePageTool } from './tools/update-page.tool';
 import { GetPageTreeTool } from './tools/get-page-tree.tool';
+import { SearchInPageTool } from './tools/search-in-page.tool';
+import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
 
 @Injectable()
 export class McpToolRegistry {
@@ -22,6 +24,8 @@ export class McpToolRegistry {
     createPage: CreatePageTool,
     updatePage: UpdatePageTool,
     getPageTree: GetPageTreeTool,
+    searchInPage: SearchInPageTool,
+    patchPageBlocks: PatchPageBlocksTool,
   ) {
     const tools: McpTool[] = [
       workspaceInfo.asTool(),
@@ -32,6 +36,8 @@ export class McpToolRegistry {
       createPage.asTool(),
       updatePage.asTool(),
       getPageTree.asTool(),
+      searchInPage.asTool(),
+      patchPageBlocks.asTool(),
     ];
     this.toolsByName = new Map(tools.map((t) => [t.name, t]));
   }

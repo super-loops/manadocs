@@ -33,6 +33,13 @@ export class McpPromptService {
       '- `/s/` 뒤의 첫 세그먼트 = 스페이스 slug (list_spaces 결과의 slug와 매칭)',
       '- `/p/` 뒤 세그먼트의 마지막 하이픈 뒤 토큰 = 페이지 slug ID (get_page/update_page의 pageId로 그대로 사용 가능)',
       '예: `/s/docs/p/getting-started-a1b2c3d4` → space slug `docs`, page slug ID `a1b2c3d4`. pageId 파라미터에 `a1b2c3d4`를 전달하면 됩니다.',
+      '',
+      '## 편집 도구 선택 가이드',
+      '- **특정 블록만 수정**: search_in_page로 위치 찾기 → patch_page_blocks로 블록 단위 replace/insertAfter/insertBefore/delete (토큰 절약, 추천)',
+      '- **페이지 끝에 내용 추가**: update_page에 operation=append, format=markdown (간단)',
+      '- **페이지 전체 교체**: update_page에 operation=replace (신중히, 원본 포맷 손실 위험)',
+      '- **페이지 구조 파악/목차 생성**: get_page_tree로 트리 조회 (content 없이 메타데이터만)',
+      'blockId는 heading/paragraph 블록에만 붙습니다. 그 외 블록(list, table 등)은 blockIndex로 참조하세요.',
     ];
 
     if (instructions) {

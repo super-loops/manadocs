@@ -75,6 +75,75 @@ export class CollaborationHandler {
           },
         );
       },
+      patchPageBlocks: async (
+        documentName: string,
+        payload: {
+          operations: Array<{
+            op: 'replace' | 'insertAfter' | 'insertBefore' | 'delete';
+            blockId?: string | null;
+            blockIndex?: number | null;
+            nodes?: any[];
+          }>;
+          user: User;
+        },
+      ) => {
+        const { operations, user } = payload;
+        this.logger.debug('Patching page blocks via yjs', documentName);
+        await this.withYdocConnection(
+          hocuspocus,
+          documentName,
+          { user },
+          (doc) => {
+            const fragment = doc.getXmlFragment('default');
+
+            const resolveIndex = (
+              blockId: string | null | undefined,
+              blockIndex: number | null | undefined,
+            ): number => {
+              if (blockId) {
+                const items = fragment.toArray();
+                for (let i = 0; i < items.length; i++) {
+                  const el = items[i] as Y.XmlElement;
+                  if (
+                    typeof (el as any).getAttribute === 'function' &&
+                    el.getAttribute('id') === blockId
+                  ) {
+                    return i;
+                  }
+                }
+                return -1;
+              }
+              if (
+                typeof blockIndex === 'number' &&
+                blockIndex >= 0 &&
+                blockIndex < fragment.length
+              ) {
+                return blockIndex;
+              }
+              return -1;
+            };
+
+            for (const op of operations) {
+              const idx = resolveIndex(op.blockId, op.blockIndex);
+              if (idx === -1) continue;
+
+              if (op.op === 'delete') {
+                fragment.delete(idx, 1);
+              } else if (op.op === 'replace') {
+                const yEls = (op.nodes ?? []).map(prosemirrorNodeToYElement);
+                fragment.delete(idx, 1);
+                if (yEls.length > 0) fragment.insert(idx, yEls);
+              } else if (op.op === 'insertAfter') {
+                const yEls = (op.nodes ?? []).map(prosemirrorNodeToYElement);
+                if (yEls.length > 0) fragment.insert(idx + 1, yEls);
+              } else if (op.op === 'insertBefore') {
+                const yEls = (op.nodes ?? []).map(prosemirrorNodeToYElement);
+                if (yEls.length > 0) fragment.insert(idx, yEls);
+              }
+            }
+          },
+        );
+      },
       updatePageContent: async (
         documentName: string,
         payload: {

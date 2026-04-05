@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ApiTokenModule } from '../api-token/api-token.module';
 import { PageModule } from '../page/page.module';
 import { SearchModule } from '../search/search.module';
+import { CollaborationModule } from '../../collaboration/collaboration.module';
 import { McpController } from './mcp.controller';
 import { McpService } from './mcp.service';
 import { McpSessionService } from './mcp-session.service';
@@ -16,9 +17,11 @@ import { SearchPagesTool } from './tools/search-pages.tool';
 import { CreatePageTool } from './tools/create-page.tool';
 import { UpdatePageTool } from './tools/update-page.tool';
 import { GetPageTreeTool } from './tools/get-page-tree.tool';
+import { SearchInPageTool } from './tools/search-in-page.tool';
+import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
 
 @Module({
-  imports: [ApiTokenModule, PageModule, SearchModule],
+  imports: [ApiTokenModule, PageModule, SearchModule, CollaborationModule],
   controllers: [McpController],
   providers: [
     McpService,
@@ -34,6 +37,8 @@ import { GetPageTreeTool } from './tools/get-page-tree.tool';
     CreatePageTool,
     UpdatePageTool,
     GetPageTreeTool,
+    SearchInPageTool,
+    PatchPageBlocksTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })
