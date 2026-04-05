@@ -40,6 +40,8 @@ export class McpPromptService {
       '- **페이지 전체 교체**: update_page에 operation=replace (신중히, 원본 포맷 손실 위험)',
       '- **페이지 구조 파악/목차 생성**: get_page_tree로 트리 조회 (content 없이 메타데이터만)',
       'blockId는 heading/paragraph 블록에만 붙습니다. 그 외 블록(list, table 등)은 blockIndex로 참조하세요.',
+      '',
+      'JSON 컨텐츠 작성 중 노드 타입/attrs가 헷갈리면 `describe_content_schema`를 호출하세요. nodeType 파라미터로 개별 노드(callout, taskItem, link 등) 상세 예시를 얻을 수 있습니다.',
     ];
 
     if (instructions) {

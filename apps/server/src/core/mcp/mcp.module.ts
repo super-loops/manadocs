@@ -19,6 +19,7 @@ import { UpdatePageTool } from './tools/update-page.tool';
 import { GetPageTreeTool } from './tools/get-page-tree.tool';
 import { SearchInPageTool } from './tools/search-in-page.tool';
 import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
+import { DescribeContentSchemaTool } from './tools/describe-content-schema.tool';
 
 @Module({
   imports: [ApiTokenModule, PageModule, SearchModule, CollaborationModule],
@@ -39,6 +40,7 @@ import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
     GetPageTreeTool,
     SearchInPageTool,
     PatchPageBlocksTool,
+    DescribeContentSchemaTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })
