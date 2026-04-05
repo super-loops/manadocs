@@ -14,6 +14,7 @@ import { ListPagesTool } from './tools/list-pages.tool';
 import { GetPageTool } from './tools/get-page.tool';
 import { SearchPagesTool } from './tools/search-pages.tool';
 import { CreatePageTool } from './tools/create-page.tool';
+import { UpdatePageTool } from './tools/update-page.tool';
 
 @Module({
   imports: [ApiTokenModule, PageModule, SearchModule],
@@ -30,6 +31,7 @@ import { CreatePageTool } from './tools/create-page.tool';
     GetPageTool,
     SearchPagesTool,
     CreatePageTool,
+    UpdatePageTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })

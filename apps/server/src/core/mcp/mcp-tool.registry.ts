@@ -6,6 +6,7 @@ import { ListPagesTool } from './tools/list-pages.tool';
 import { GetPageTool } from './tools/get-page.tool';
 import { SearchPagesTool } from './tools/search-pages.tool';
 import { CreatePageTool } from './tools/create-page.tool';
+import { UpdatePageTool } from './tools/update-page.tool';
 
 @Injectable()
 export class McpToolRegistry {
@@ -18,6 +19,7 @@ export class McpToolRegistry {
     getPage: GetPageTool,
     searchPages: SearchPagesTool,
     createPage: CreatePageTool,
+    updatePage: UpdatePageTool,
   ) {
     const tools: McpTool[] = [
       workspaceInfo.asTool(),
@@ -26,6 +28,7 @@ export class McpToolRegistry {
       getPage.asTool(),
       searchPages.asTool(),
       createPage.asTool(),
+      updatePage.asTool(),
     ];
     this.toolsByName = new Map(tools.map((t) => [t.name, t]));
   }

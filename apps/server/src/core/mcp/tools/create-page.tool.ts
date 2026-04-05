@@ -1,6 +1,10 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PageService } from '../../page/services/page.service';
 import { McpCallContext, McpTool } from '../mcp.types';
+import {
+  docContainsAutoNodes,
+  expandAutoNodes,
+} from '../utils/expand-auto-nodes';
 
 @Injectable()
 export class CreatePageTool {
@@ -10,15 +14,14 @@ export class CreatePageTool {
     return {
       name: 'create_page',
       description:
-        'Create a new page in a space. Content accepts markdown, html, or prosemirror JSON.',
+        'Create a new page in a space. Content accepts markdown, html, or prosemirror JSON. JSON content may embed {type:"auto",text:"markdown..."} or {type:"autoInline",text:"inline **md**"} nodes which are expanded server-side.',
       inputSchema: {
         type: 'object',
         properties: {
           spaceId: { type: 'string', description: 'Space UUID' },
           title: { type: 'string' },
           content: {
-            type: 'string',
-            description: 'Page body content',
+            description: 'Page body content (string for markdown/html, object for json)',
           },
           format: {
             type: 'string',
@@ -47,6 +50,12 @@ export class CreatePageTool {
       throw new ForbiddenException('Space not in token scope');
     }
 
+    const format = (args.format as 'markdown' | 'html' | 'json') ?? 'markdown';
+    let content = args.content;
+    if (format === 'json' && content && docContainsAutoNodes(content)) {
+      content = await expandAutoNodes(content);
+    }
+
     const page = await this.pageService.create(ctx.userId, ctx.workspaceId, {
       spaceId,
       title: args.title ? String(args.title) : undefined,
@@ -54,8 +63,8 @@ export class CreatePageTool {
       parentPageId: args.parentPageId
         ? String(args.parentPageId)
         : undefined,
-      content: args.content,
-      format: (args.format as 'markdown' | 'html' | 'json') ?? 'markdown',
+      content,
+      format,
     });
 
     return {
