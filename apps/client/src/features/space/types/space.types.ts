@@ -22,6 +22,7 @@ export interface ISpace {
   id: string;
   name: string;
   description: string;
+  authoringRules?: string;
   logo?: string;
   slug: string;
   hostname: string;

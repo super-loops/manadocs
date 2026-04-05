@@ -56,6 +56,11 @@ export class GetPageTreeTool {
             minimum: 1,
             maximum: 20,
           },
+          includeSpaceDetail: {
+            type: 'boolean',
+            description:
+              'Include space description and authoringRules in the response (default true). Set false after the first call to save tokens.',
+          },
         },
         additionalProperties: false,
       },
@@ -71,6 +76,7 @@ export class GetPageTreeTool {
 
     let spaceId: string;
     let rootId: string | null = null;
+    let spaceRecord: any = null;
 
     if (args.pageId) {
       const page = await this.pageRepo.findById(normalizePageId(args.pageId));
@@ -95,6 +101,7 @@ export class GetPageTreeTool {
         throw new NotFoundException('Space not found');
       }
       spaceId = space.id;
+      spaceRecord = space;
     }
 
     if (
@@ -183,12 +190,27 @@ export class GetPageTreeTool {
       nodes = build(null, 1);
     }
 
-    return {
+    const includeDetail = args.includeSpaceDetail !== false;
+    const result: Record<string, any> = {
       spaceId,
       rootPageId: rootId,
       totalPages: rows.length,
       maxDepth,
       nodes,
     };
+
+    if (includeDetail) {
+      // Fetch space record if not already loaded (pageId path)
+      if (!spaceRecord) {
+        spaceRecord = await this.spaceRepo.findById(spaceId, ctx.workspaceId);
+      }
+      if (spaceRecord) {
+        result.spaceName = spaceRecord.name;
+        result.spaceDescription = spaceRecord.description;
+        result.authoringRules = spaceRecord.authoringRules;
+      }
+    }
+
+    return result;
   }
 }

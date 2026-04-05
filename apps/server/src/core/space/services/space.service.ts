@@ -217,6 +217,7 @@ export class SpaceService {
           name: updateSpaceDto.name,
           description: updateSpaceDto.description,
           slug: updateSpaceDto.slug,
+          authoringRules: updateSpaceDto.authoringRules,
         },
         updateSpaceDto.spaceId,
         workspaceId,
@@ -225,7 +226,7 @@ export class SpaceService {
     });
 
     const columnChanges = diffAuditTrackedFields(
-      ['name', 'slug', 'description'],
+      ['name', 'slug', 'description', 'authoringRules'],
       updateSpaceDto,
       spaceBefore,
       updatedSpace,

@@ -18,6 +18,7 @@ const formSchema = z.object({
       /^[a-zA-Z0-9]+$/,
       "Space slug must be alphanumeric. No special characters",
     ),
+  authoringRules: z.string().max(5000).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -35,14 +36,11 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
       name: space?.name,
       description: space?.description || "",
       slug: space.slug,
+      authoringRules: space?.authoringRules || "",
     },
   });
 
-  const handleSubmit = async (values: {
-    name?: string;
-    description?: string;
-    slug?: string;
-  }) => {
+  const handleSubmit = async (values: FormValues) => {
     const spaceData: Partial<ISpace> = {
       spaceId: space.id,
     };
@@ -51,6 +49,10 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
     }
     if (form.isDirty("description")) {
       spaceData.description = values.description;
+    }
+
+    if (form.isDirty("authoringRules")) {
+      spaceData.authoringRules = values.authoringRules;
     }
 
     if (form.isDirty("slug")) {
@@ -93,6 +95,24 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
               minRows={1}
               maxRows={3}
               {...form.getInputProps("description")}
+            />
+
+            <Textarea
+              id="authoringRules"
+              label={t("Authoring rules")}
+              description={t(
+                "Guidelines for content creation in this space. Visible to writers and referenced by AI.",
+              )}
+              placeholder={t(
+                "e.g. Use formal tone, always include a summary section at the top...",
+              )}
+              variant="filled"
+              readOnly={readOnly}
+              autosize
+              minRows={2}
+              maxRows={8}
+              maxLength={5000}
+              {...form.getInputProps("authoringRules")}
             />
           </Stack>
 

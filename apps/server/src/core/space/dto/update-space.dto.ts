@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateSpaceDto } from './create-space.dto';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateSpaceDto extends PartialType(CreateSpaceDto) {
   @IsString()
@@ -15,4 +15,9 @@ export class UpdateSpaceDto extends PartialType(CreateSpaceDto) {
   @IsOptional()
   @IsBoolean()
   allowViewerComments: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  authoringRules?: string;
 }

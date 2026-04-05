@@ -21,6 +21,11 @@ export class ListSpacesTool {
             minimum: 1,
             maximum: 100,
           },
+          includeSpaceDetail: {
+            type: 'boolean',
+            description:
+              'Include description and authoringRules (default true). Set false after the first call to save tokens.',
+          },
         },
         additionalProperties: false,
       },
@@ -38,13 +43,20 @@ export class ListSpacesTool {
       } as any,
     );
 
-    let items = result.items.map((s) => ({
-      id: s.id,
-      name: s.name,
-      slug: s.slug,
-      description: s.description,
-      visibility: s.visibility,
-    }));
+    const includeDetail = args.includeSpaceDetail !== false;
+    let items = result.items.map((s: any) => {
+      const base: Record<string, any> = {
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        visibility: s.visibility,
+      };
+      if (includeDetail) {
+        base.description = s.description;
+        base.authoringRules = s.authoringRules;
+      }
+      return base;
+    });
 
     if (ctx.spaceScope === 'selected') {
       const allowed = new Set(ctx.allowedSpaceIds);

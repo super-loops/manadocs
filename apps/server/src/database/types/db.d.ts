@@ -303,6 +303,7 @@ export interface SpaceMembers {
 }
 
 export interface Spaces {
+  authoringRules: string | null;
   createdAt: Generated<Timestamp>;
   creatorId: string | null;
   defaultRole: Generated<string>;

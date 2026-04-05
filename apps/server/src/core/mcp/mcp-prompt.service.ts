@@ -41,6 +41,7 @@ export class McpPromptService {
       '- Duplicate a page tree: `duplicate_page` (same or different space, optional title/icon override). Edit content afterward via `patch_page_blocks`.',
       '- Inspect structure: `get_page_tree` (metadata only, no content)',
       '- `blockId` exists only on heading/paragraph blocks. Reference other blocks (list, table, ...) by `blockIndex`.',
+      '- Spaces may have `authoringRules` (returned by `list_spaces` and `get_page_tree`). Follow them when writing content in that space. Set `includeSpaceDetail: false` on subsequent calls to save tokens.',
     ];
 
     if (instructions) {
