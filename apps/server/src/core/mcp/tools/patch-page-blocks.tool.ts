@@ -17,7 +17,13 @@ import {
 import { normalizePageId } from '../utils/identifiers';
 
 type PatchOp = {
-  op: 'replace' | 'insertAfter' | 'insertBefore' | 'delete';
+  op:
+    | 'replace'
+    | 'insertAfter'
+    | 'insertBefore'
+    | 'delete'
+    | 'appendToEnd'
+    | 'prependToStart';
   blockId?: string;
   blockIndex?: number;
   content?: any;
@@ -36,7 +42,7 @@ export class PatchPageBlocksTool {
     return {
       name: 'patch_page_blocks',
       description:
-        'Apply block-level edits to a page using IDs from search_in_page. Each op targets a block by blockId (preferred) or blockIndex; supports replace, insertAfter, insertBefore, delete. content accepts markdown, html, or json (with auto/autoInline nodes). All ops are applied in order within one Yjs transaction.',
+        'Apply block-level edits to a page. Targeted ops (replace, insertAfter, insertBefore, delete) require blockId (from search_in_page, preferred) or blockIndex. Untargeted ops (appendToEnd, prependToStart) add content at the page boundary and do not need a target. content accepts markdown, html, or json (with auto/autoInline nodes). All ops are applied in order within one Yjs transaction.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -49,7 +55,14 @@ export class PatchPageBlocksTool {
               properties: {
                 op: {
                   type: 'string',
-                  enum: ['replace', 'insertAfter', 'insertBefore', 'delete'],
+                  enum: [
+                    'replace',
+                    'insertAfter',
+                    'insertBefore',
+                    'delete',
+                    'appendToEnd',
+                    'prependToStart',
+                  ],
                 },
                 blockId: { type: 'string' },
                 blockIndex: { type: 'integer', minimum: 0 },
@@ -114,9 +127,11 @@ export class PatchPageBlocksTool {
       if (!op.op) {
         throw new BadRequestException('op is required');
       }
-      if (!op.blockId && op.blockIndex === undefined) {
+      const isUntargeted =
+        op.op === 'appendToEnd' || op.op === 'prependToStart';
+      if (!isUntargeted && !op.blockId && op.blockIndex === undefined) {
         throw new BadRequestException(
-          'Each op must specify blockId or blockIndex',
+          `${op.op} must specify blockId or blockIndex`,
         );
       }
       const base = {
@@ -129,9 +144,7 @@ export class PatchPageBlocksTool {
         continue;
       }
       if (op.content === undefined || op.content === null) {
-        throw new BadRequestException(
-          `${op.op} requires content`,
-        );
+        throw new BadRequestException(`${op.op} requires content`);
       }
       const nodes = await this.parseNodes(
         op.content,

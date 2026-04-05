@@ -11,6 +11,7 @@ import { GetPageTreeTool } from './tools/get-page-tree.tool';
 import { SearchInPageTool } from './tools/search-in-page.tool';
 import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
 import { DescribeContentSchemaTool } from './tools/describe-content-schema.tool';
+import { DuplicatePageTool } from './tools/duplicate-page.tool';
 
 @Injectable()
 export class McpToolRegistry {
@@ -28,6 +29,7 @@ export class McpToolRegistry {
     searchInPage: SearchInPageTool,
     patchPageBlocks: PatchPageBlocksTool,
     describeContentSchema: DescribeContentSchemaTool,
+    duplicatePage: DuplicatePageTool,
   ) {
     const tools: McpTool[] = [
       workspaceInfo.asTool(),
@@ -41,6 +43,7 @@ export class McpToolRegistry {
       searchInPage.asTool(),
       patchPageBlocks.asTool(),
       describeContentSchema.asTool(),
+      duplicatePage.asTool(),
     ];
     this.toolsByName = new Map(tools.map((t) => [t.name, t]));
   }

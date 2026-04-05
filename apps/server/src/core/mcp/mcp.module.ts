@@ -20,6 +20,7 @@ import { GetPageTreeTool } from './tools/get-page-tree.tool';
 import { SearchInPageTool } from './tools/search-in-page.tool';
 import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
 import { DescribeContentSchemaTool } from './tools/describe-content-schema.tool';
+import { DuplicatePageTool } from './tools/duplicate-page.tool';
 
 @Module({
   imports: [ApiTokenModule, PageModule, SearchModule, CollaborationModule],
@@ -41,6 +42,7 @@ import { DescribeContentSchemaTool } from './tools/describe-content-schema.tool'
     SearchInPageTool,
     PatchPageBlocksTool,
     DescribeContentSchemaTool,
+    DuplicatePageTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })

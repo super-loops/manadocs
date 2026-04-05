@@ -46,13 +46,17 @@ export class McpPromptService {
       '- `pageId` / `parentPageId` 파라미터 → UUID, 10자 slugId, 또는 URL 일부(`title-AyYJbu54nZ`, `-AyYJbu54nZ`, `/s/docs/p/title-AyYJbu54nZ`)까지 자동 추출',
       '',
       '## 편집 도구 선택 가이드',
-      '- **특정 블록만 수정**: search_in_page로 위치 찾기 → patch_page_blocks로 블록 단위 replace/insertAfter/insertBefore/delete (토큰 절약, 추천)',
-      '- **페이지 끝에 내용 추가**: update_page에 operation=append, format=markdown (간단)',
-      '- **페이지 전체 교체**: update_page에 operation=replace (신중히, 원본 포맷 손실 위험)',
+      '컨텐츠 수정은 **오직 patch_page_blocks**를 통해서만 합니다. update_page와 duplicate_page는 메타데이터(title, icon)만 수정합니다.',
+      '',
+      '- **특정 블록만 수정**: search_in_page로 위치 찾기 → patch_page_blocks로 `replace`/`insertAfter`/`insertBefore`/`delete` (토큰 절약, 권장)',
+      '- **페이지 끝/시작에 내용 추가**: patch_page_blocks의 `appendToEnd` / `prependToStart` ops (blockId/blockIndex 불필요)',
+      '- **페이지 메타데이터 변경**: update_page (title, icon만)',
+      '- **페이지 복제**: duplicate_page (동일 space 또는 다른 space로 복사, title/icon 오버라이드 가능). 복제 후 컨텐츠를 수정하려면 patch_page_blocks를 별도로 호출하세요.',
       '- **페이지 구조 파악/목차 생성**: get_page_tree로 트리 조회 (content 없이 메타데이터만)',
+      '',
       'blockId는 heading/paragraph 블록에만 붙습니다. 그 외 블록(list, table 등)은 blockIndex로 참조하세요.',
       '',
-      'JSON 컨텐츠 작성 중 노드 타입/attrs가 헷갈리면 `describe_content_schema`를 호출하세요. nodeType 파라미터로 개별 노드(callout, taskItem, link 등) 상세 예시를 얻을 수 있습니다.',
+      '**중요**: `create_page`나 `patch_page_blocks`로 JSON content를 작성하기 전에, 사용할 노드 타입이 확실하지 않다면 반드시 `describe_content_schema`를 먼저 호출해 노드 구조(attrs, children, 예시)를 숙지하세요. nodeType 파라미터로 개별 노드(callout, taskItem, link 등) 상세 예시를 얻을 수 있습니다. 잘못된 노드 구조는 저장 실패나 렌더링 오류로 이어집니다.',
     ];
 
     if (instructions) {

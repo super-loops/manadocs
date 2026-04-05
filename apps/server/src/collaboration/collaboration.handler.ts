@@ -79,7 +79,13 @@ export class CollaborationHandler {
         documentName: string,
         payload: {
           operations: Array<{
-            op: 'replace' | 'insertAfter' | 'insertBefore' | 'delete';
+            op:
+              | 'replace'
+              | 'insertAfter'
+              | 'insertBefore'
+              | 'delete'
+              | 'appendToEnd'
+              | 'prependToStart';
             blockId?: string | null;
             blockIndex?: number | null;
             nodes?: any[];
@@ -124,6 +130,18 @@ export class CollaborationHandler {
             };
 
             for (const op of operations) {
+              // appendToEnd / prependToStart do not require a target block
+              if (op.op === 'appendToEnd') {
+                const yEls = (op.nodes ?? []).map(prosemirrorNodeToYElement);
+                if (yEls.length > 0) fragment.insert(fragment.length, yEls);
+                continue;
+              }
+              if (op.op === 'prependToStart') {
+                const yEls = (op.nodes ?? []).map(prosemirrorNodeToYElement);
+                if (yEls.length > 0) fragment.insert(0, yEls);
+                continue;
+              }
+
               const idx = resolveIndex(op.blockId, op.blockIndex);
               if (idx === -1) continue;
 
