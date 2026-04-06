@@ -92,6 +92,23 @@ export async function getAllSidebarPages(
   };
 }
 
+export interface IResolvedPage {
+  id: string;
+  slugId: string;
+  title: string | null;
+  icon: string | null;
+  spaceId: string;
+  spaceSlug?: string;
+  deleted: boolean;
+}
+
+export async function resolvePageIds(
+  pageIds: string[],
+): Promise<IResolvedPage[]> {
+  const req = await api.post("/pages/resolve-ids", { pageIds });
+  return req.data?.pages ?? [];
+}
+
 export async function getPageBreadcrumbs(
   pageId: string,
 ): Promise<Partial<IPage[]>> {

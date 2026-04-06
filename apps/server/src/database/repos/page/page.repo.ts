@@ -100,6 +100,15 @@ export class PageRepo {
     return query.executeTakeFirst();
   }
 
+  async findByIds(pageIds: string[]): Promise<Page[]> {
+    if (pageIds.length === 0) return [];
+    return this.db
+      .selectFrom('pages')
+      .select([...this.baseFields])
+      .where('id', 'in', pageIds)
+      .execute();
+  }
+
   async updatePage(
     updatablePage: UpdatablePage,
     pageId: string,

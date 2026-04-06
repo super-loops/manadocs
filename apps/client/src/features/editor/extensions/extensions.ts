@@ -41,6 +41,7 @@ import {
   Mention,
   TableDndExtension,
   Subpages,
+  Linkpages,
   Heading,
   Highlight,
   UniqueID,
@@ -74,6 +75,7 @@ import CodeBlockView from "@/features/editor/components/code-block/code-block-vi
 import EmbedView from "@/features/editor/components/embed/embed-view.tsx";
 import PdfView from "@/features/editor/components/pdf/pdf-view.tsx";
 import SubpagesView from "@/features/editor/components/subpages/subpages-view.tsx";
+import LinkpagesView from "@/features/editor/components/linkpages/linkpages-view.tsx";
 import { common, createLowlight } from "lowlight";
 import plaintext from "highlight.js/lib/languages/plaintext";
 import powershell from "highlight.js/lib/languages/powershell";
@@ -296,6 +298,9 @@ export const mainExtensions = [
   }),
   Subpages.configure({
     view: SubpagesView,
+  }),
+  Linkpages.configure({
+    view: LinkpagesView,
   }),
   Status.configure({
     view: StatusView,

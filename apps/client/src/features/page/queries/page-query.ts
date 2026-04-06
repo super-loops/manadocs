@@ -20,6 +20,7 @@ import {
   getAllSidebarPages,
   getDeletedPages,
   restorePage,
+  resolvePageIds,
 } from "@/features/page/services/page-service";
 import {
   IMovePage,
@@ -594,5 +595,14 @@ export function invalidateOnDeletePage(pageId: string) {
   //update recent changes
   queryClient.invalidateQueries({
     queryKey: ["recent-changes"],
+  });
+}
+
+export function useResolvePageIdsQuery(pageIds: string[]) {
+  return useQuery({
+    queryKey: ["resolve-page-ids", pageIds],
+    queryFn: () => resolvePageIds(pageIds),
+    enabled: pageIds.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 }

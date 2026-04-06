@@ -1,25 +1,25 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
-export interface SubpagesOptions {
+export interface LinkpagesOptions {
   HTMLAttributes: Record<string, any>;
   view: any;
 }
 
-export interface SubpagesAttributes {
-  excludePageIds?: string[];
+export interface LinkpagesAttributes {
+  pageIds?: string[];
 }
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
-    subpages: {
-      insertSubpages: (attributes?: SubpagesAttributes) => ReturnType;
+    linkpages: {
+      insertLinkpages: (attributes?: LinkpagesAttributes) => ReturnType;
     };
   }
 }
 
-export const Subpages = Node.create<SubpagesOptions>({
-  name: "subpages",
+export const Linkpages = Node.create<LinkpagesOptions>({
+  name: "linkpages",
 
   addOptions() {
     return {
@@ -35,22 +35,20 @@ export const Subpages = Node.create<SubpagesOptions>({
 
   addAttributes() {
     return {
-      excludePageIds: {
+      pageIds: {
         default: [],
         parseHTML: (element: HTMLElement) => {
-          const val = element.getAttribute("data-exclude-page-ids");
+          const val = element.getAttribute("data-page-ids");
           try {
             return val ? JSON.parse(val) : [];
           } catch {
             return [];
           }
         },
-        renderHTML: (attributes: SubpagesAttributes) => {
-          if (!attributes.excludePageIds?.length) return {};
+        renderHTML: (attributes: LinkpagesAttributes) => {
+          if (!attributes.pageIds?.length) return {};
           return {
-            "data-exclude-page-ids": JSON.stringify(
-              attributes.excludePageIds
-            ),
+            "data-page-ids": JSON.stringify(attributes.pageIds),
           };
         },
       },
@@ -78,7 +76,7 @@ export const Subpages = Node.create<SubpagesOptions>({
 
   addCommands() {
     return {
-      insertSubpages:
+      insertLinkpages:
         (attributes) =>
         ({ commands }) => {
           return commands.insertContent({
@@ -90,9 +88,7 @@ export const Subpages = Node.create<SubpagesOptions>({
   },
 
   addNodeView() {
-    // Force the react node view to render immediately using flush sync (https://github.com/ueberdosis/tiptap/blob/b4db352f839e1d82f9add6ee7fb45561336286d8/packages/react/src/ReactRenderer.tsx#L183-L191)
     this.editor.isInitialized = true;
-
     return ReactNodeViewRenderer(this.options.view);
   },
 });

@@ -623,4 +623,56 @@ export class PageController {
 
     return this.pageService.getPageBreadCrumbs(page.id);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('/resolve-ids')
+  async resolvePageIds(
+    @Body() body: { pageIds: string[] },
+    @AuthUser() user: User,
+  ) {
+    const pageIds = body.pageIds;
+    if (!Array.isArray(pageIds) || pageIds.length === 0) {
+      return { pages: [] };
+    }
+    // Cap at 200 for safety
+    const ids = pageIds.slice(0, 200);
+    const pages = await this.pageRepo.findByIds(ids);
+    // Filter to pages user can read (check space access per unique space)
+    const spaceCache = new Map<string, boolean>();
+    const result: Array<{
+      id: string;
+      slugId: string;
+      title: string | null;
+      icon: string | null;
+      spaceId: string;
+      spaceSlug?: string;
+      deleted: boolean;
+    }> = [];
+    for (const page of pages) {
+      let canRead = spaceCache.get(page.spaceId);
+      if (canRead === undefined) {
+        try {
+          const ability = await this.spaceAbility.createForUser(
+            user,
+            page.spaceId,
+          );
+          canRead = ability.can(SpaceCaslAction.Read, SpaceCaslSubject.Page);
+        } catch {
+          canRead = false;
+        }
+        spaceCache.set(page.spaceId, canRead);
+      }
+      if (!canRead) continue;
+      result.push({
+        id: page.id,
+        slugId: page.slugId,
+        title: page.title,
+        icon: page.icon,
+        spaceId: page.spaceId,
+        spaceSlug: (page as any).space?.slug,
+        deleted: !!page.deletedAt,
+      });
+    }
+    return { pages: result };
+  }
 }

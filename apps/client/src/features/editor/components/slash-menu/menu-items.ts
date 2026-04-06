@@ -458,6 +458,15 @@ const CommandGroups: SlashMenuGroupedItemsType = {
       },
     },
     {
+      title: "Linked pages",
+      description: "Display selected pages from any space",
+      searchTerms: ["linkpages", "links", "pages", "reference"],
+      icon: IconSitemap,
+      command: ({ editor, range }: CommandProps) => {
+        editor.chain().focus().deleteRange(range).insertLinkpages().run();
+      },
+    },
+    {
       title: "2 Columns",
       description: "Split content into two columns.",
       searchTerms: ["columns", "layout", "split", "side"],
