@@ -2,8 +2,6 @@
 
 A simple, collaborative wiki for startups and small teams.
 
-Manadocs improves upon [Docmost](https://github.com/docmost/docmost) with a focus on AI integration and developer-friendly APIs.
-
 ## What Manadocs stands for
 
 - **Simple** — No enterprise bloat, just what small teams need
