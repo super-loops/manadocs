@@ -10,17 +10,17 @@ A simple, collaborative wiki for startups and small teams.
 
 ## Features
 
-- Real-time collaboration with Yjs
-- Diagrams (Mermaid)
+- Real-time collaboration
 - Spaces and permissions
 - Groups and comments
-- Page history and search
+- Diagrams (Mermaid)
 - File attachments and embeds
-- Translations (10+ languages)
 - MCP protocol support for AI tools
+- Translations
 
 ## Quick Start
 
+### Docker compose
 ```bash
 # Start
 docker compose up -d
@@ -28,18 +28,27 @@ docker compose up -d
 # Stop
 docker compose down
 ```
-
 Open `http://localhost:3000` and create your workspace.
+
+## Environment Setup
+
+See [docs/environment.md](./docs/environment.md) for all configuration options.
+
+## API & MCP
+
+See [docs/api_usage.md](./docs/api_usage.md) for setup and usage.
+
+## Origin
+
+Manadocs is built on [Docmost](https://github.com/docmost/docmost) (AGPL-3.0), forked in April 2026.
+
+Enterprise features have been removed. Some features have been downgraded or removed, and some have been rewritten to fit this application's goals. Compatibility with the upstream project is not guaranteed.
 
 ## Stack
 
 - TypeScript / NestJS (backend)
 - React / Mantine (frontend)
 - PostgreSQL
-
-## Environment Setup
-
-See [docs/environment.md](./docs/environment.md) for all configuration options.
 
 ## Building from Source
 
@@ -59,16 +68,6 @@ pnpm dev
 pnpm build
 pnpm start
 ```
-
-## API & MCP
-
-See [docs/api_usage.md](./docs/api_usage.md) for setup and usage.
-
-## Origin
-
-Manadocs is built on [Docmost](https://github.com/docmost/docmost) (AGPL-3.0), forked in April 2026.
-
-Enterprise features have been removed. Some features have been downgraded or removed, and some have been rewritten to fit this application's goals. Compatibility with the upstream project is not guaranteed.
 
 ## License
 
