@@ -47,17 +47,6 @@ export const embedProviders: IEmbedProvider[] = [
     },
   },
   {
-    id: "miro",
-    name: "Miro",
-    regex: /^https:\/\/(www\.)?miro\.com\/app\/board\/([\w-]+=)/,
-    getEmbedUrl: (match, url) => {
-      if (url.includes("/live-embed/")) {
-        return url;
-      }
-      return `https://miro.com/app/live-embed/${match[2]}?embedMode=view_only_without_ui&autoplay=true&embedSource=manadocs`;
-    },
-  },
-  {
     id: "youtube",
     name: "YouTube",
     regex:
@@ -76,14 +65,6 @@ export const embedProviders: IEmbedProvider[] = [
       /^(https:)?\/\/(?:www\.|player\.)?vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/([^/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)/,
     getEmbedUrl: (match) => {
       return `https://player.vimeo.com/video/${match[4]}`;
-    },
-  },
-  {
-    id: "framer",
-    name: "Framer",
-    regex: /^https:\/\/(www\.)?framer\.com\/embed\/([\w-]+)/,
-    getEmbedUrl: (match, url: string) => {
-      return url;
     },
   },
   {

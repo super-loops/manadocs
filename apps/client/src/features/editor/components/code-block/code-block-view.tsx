@@ -25,7 +25,6 @@ export default function CodeBlockView(props: NodeViewProps) {
     const updateSelection = () => {
       const { state } = editor;
       const { from, to } = state.selection;
-      // Check if the selection intersects with the node's range
       const isNodeSelected =
         (from >= getPos() && from < getPos() + node.nodeSize) ||
         (to > getPos() && to <= getPos() + node.nodeSize);
@@ -46,11 +45,12 @@ export default function CodeBlockView(props: NodeViewProps) {
   }
 
   return (
-    <NodeViewWrapper className="codeBlock">
+    <NodeViewWrapper className={`codeBlock ${classes.wrapper}`}>
       <Group
+        gap={4}
         justify="flex-end"
         contentEditable={false}
-        className={classes.menuGroup}
+        className={classes.toolbar}
       >
         <Select
           placeholder="auto"
@@ -60,7 +60,10 @@ export default function CodeBlockView(props: NodeViewProps) {
           onChange={changeLanguage}
           searchable
           style={{ maxWidth: "130px" }}
-          classNames={{ input: classes.selectInput }}
+          classNames={{
+            input: classes.selectInput,
+            wrapper: classes.selectWrapper,
+          }}
           disabled={!editor.isEditable}
         />
 

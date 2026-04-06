@@ -1,6 +1,6 @@
 .ProseMirror {
   .codeBlock {
-    padding: 4px;
+    padding: 8px;
     border-radius: var(--mantine-radius-default);
     background-color: light-dark(var(--mantine-color-gray-0),  var(--mantine-color-dark-8));
     }

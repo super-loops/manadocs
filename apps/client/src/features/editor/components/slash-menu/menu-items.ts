@@ -41,11 +41,9 @@ import { IconColumns5 } from "@/components/icons/icon-columns-5";
 import {
   AirtableIcon,
   FigmaIcon,
-  FramerIcon,
   GoogleDriveIcon,
   GoogleSheetsIcon,
   LoomIcon,
-  MiroIcon,
   TypeformIcon,
   VimeoIcon,
   YoutubeIcon,
@@ -582,20 +580,6 @@ const CommandGroups: SlashMenuGroupedItemsType = {
       },
     },
     {
-      title: "Miro",
-      description: "Embed Miro board",
-      searchTerms: ["miro"],
-      icon: MiroIcon,
-      command: ({ editor, range }: CommandProps) => {
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .setEmbed({ provider: "miro" })
-          .run();
-      },
-    },
-    {
       title: "YouTube",
       description: "Embed YouTube video",
       searchTerms: ["youtube", "yt", "media", "video"],
@@ -620,20 +604,6 @@ const CommandGroups: SlashMenuGroupedItemsType = {
           .focus()
           .deleteRange(range)
           .setEmbed({ provider: "vimeo" })
-          .run();
-      },
-    },
-    {
-      title: "Framer",
-      description: "Embed Framer prototype",
-      searchTerms: ["framer"],
-      icon: FramerIcon,
-      command: ({ editor, range }: CommandProps) => {
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .setEmbed({ provider: "framer" })
           .run();
       },
     },

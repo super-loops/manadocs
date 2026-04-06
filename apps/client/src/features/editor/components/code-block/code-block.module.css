@@ -1,6 +1,39 @@
+.wrapper {
+    position: relative;
+}
+
+.toolbar {
+    position: absolute;
+    top: -32px;
+    right: 0;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+/* Hover zone: covers toolbar area + the code block itself */
+.wrapper::before {
+    content: "";
+    position: absolute;
+    top: -36px;
+    left: 0;
+    right: 0;
+    height: 36px;
+}
+
+.wrapper:hover .toolbar {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .selectInput {
     height: 25px;
     min-height: 25px;
+}
+
+.selectWrapper {
+    /* keep select visible when its dropdown is open */
 }
 
 .error {
@@ -17,8 +50,8 @@
     justify-content: center;
 }
 
-.menuGroup {
-    @media print {
+@media print {
+    .toolbar {
         display: none;
     }
 }
