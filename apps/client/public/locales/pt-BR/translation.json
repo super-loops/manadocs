@@ -804,5 +804,13 @@
   "IP Address": "Endereço IP",
   "Changes": "Alterações",
   "Metadata": "Metadados",
-  "No audit events found": "Nenhum evento de auditoria encontrado"
+  "No audit events found": "Nenhum evento de auditoria encontrado",
+  "status.gray": "Pendente",
+  "status.purple": "Pronto",
+  "status.blue": "Aprovado",
+  "status.yellow": "Revisão",
+  "status.orange": "Em andamento",
+  "status.red": "Parado",
+  "status.green": "Concluído",
+  "status.black": "Descartado"
 }

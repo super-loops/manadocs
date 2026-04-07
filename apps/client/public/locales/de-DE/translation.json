@@ -802,5 +802,13 @@
   "IP Address": "IP-Adresse",
   "Changes": "Änderungen",
   "Metadata": "Metadaten",
-  "No audit events found": "Keine Audit-Ereignisse gefunden"
+  "No audit events found": "Keine Audit-Ereignisse gefunden",
+  "status.gray": "Ausstehend",
+  "status.purple": "Bereit",
+  "status.blue": "Genehmigt",
+  "status.yellow": "Überprüfung",
+  "status.orange": "In Bearbeitung",
+  "status.red": "Gestoppt",
+  "status.green": "Erledigt",
+  "status.black": "Verworfen"
 }

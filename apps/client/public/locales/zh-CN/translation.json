@@ -806,5 +806,13 @@
   "IP Address": "IP 地址",
   "Changes": "变更",
   "Metadata": "元数据",
-  "No audit events found": "未找到审计事件"
+  "No audit events found": "未找到审计事件",
+  "status.gray": "待处理",
+  "status.purple": "准备中",
+  "status.blue": "已批准",
+  "status.yellow": "复审",
+  "status.orange": "处理中",
+  "status.red": "已停止",
+  "status.green": "已完成",
+  "status.black": "已废弃"
 }

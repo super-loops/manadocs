@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Popover, UnstyledButton, Group, Text, Box } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import classes from "./status.module.css";
-import { STATUS_PRESETS, type StatusColor } from "@manadocs/editor-ext";
+import type { StatusColor } from "@manadocs/editor-ext";
 
-const PRESET_ENTRIES = Object.entries(STATUS_PRESETS) as [
-  StatusColor,
-  string,
-][];
+const STATUS_COLORS: StatusColor[] = [
+  "gray",
+  "purple",
+  "blue",
+  "yellow",
+  "orange",
+  "red",
+  "green",
+  "black",
+];
 
 const colorClassMap: Record<StatusColor, string> = {
   gray: classes.colorGray,
@@ -24,6 +31,7 @@ const colorClassMap: Record<StatusColor, string> = {
 export default function StatusView(props: NodeViewProps) {
   const { node, updateAttributes, editor, getPos } = props;
   const { color } = node.attrs as { text: string; color: StatusColor };
+  const { t } = useTranslation();
 
   const [opened, setOpened] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -41,21 +49,21 @@ export default function StatusView(props: NodeViewProps) {
   // sync focusedIndex when dropdown opens
   useEffect(() => {
     if (opened) {
-      const idx = PRESET_ENTRIES.findIndex(([c]) => c === color);
+      const idx = STATUS_COLORS.indexOf(color);
       setFocusedIndex(idx >= 0 ? idx : 0);
     }
   }, [opened, color]);
 
-  const label = STATUS_PRESETS[color as StatusColor] ?? color;
+  const label = t(`status.${color}`, color);
   const isEditable = editor.isEditable;
 
   const handleSelect = useCallback(
     (newColor: StatusColor) => {
-      updateAttributes({ color: newColor, text: STATUS_PRESETS[newColor] });
+      updateAttributes({ color: newColor, text: t(`status.${newColor}`, newColor) });
       setOpened(false);
       editor.commands.focus(getPos() + node.nodeSize);
     },
-    [updateAttributes, editor, getPos, node.nodeSize],
+    [updateAttributes, editor, getPos, node.nodeSize, t],
   );
 
   const open = () => {
@@ -84,19 +92,19 @@ export default function StatusView(props: NodeViewProps) {
       case "ArrowDown":
         e.preventDefault();
         setFocusedIndex((i) =>
-          i < PRESET_ENTRIES.length - 1 ? i + 1 : 0,
+          i < STATUS_COLORS.length - 1 ? i + 1 : 0,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setFocusedIndex((i) =>
-          i > 0 ? i - 1 : PRESET_ENTRIES.length - 1,
+          i > 0 ? i - 1 : STATUS_COLORS.length - 1,
         );
         break;
       case "Enter":
         e.preventDefault();
-        if (focusedIndex >= 0 && focusedIndex < PRESET_ENTRIES.length) {
-          handleSelect(PRESET_ENTRIES[focusedIndex][0]);
+        if (focusedIndex >= 0 && focusedIndex < STATUS_COLORS.length) {
+          handleSelect(STATUS_COLORS[focusedIndex]);
         }
         break;
       case "Escape":
@@ -141,7 +149,7 @@ export default function StatusView(props: NodeViewProps) {
           onMouseEnter={open}
           onMouseLeave={scheduleClose}
         >
-          {PRESET_ENTRIES.map(([presetColor, presetLabel], index) => (
+          {STATUS_COLORS.map((presetColor, index) => (
             <UnstyledButton
               key={presetColor}
               className={clsx(
@@ -161,7 +169,7 @@ export default function StatusView(props: NodeViewProps) {
                   )}
                 />
                 <Text size="sm" fw={color === presetColor ? 600 : 400}>
-                  {presetLabel}
+                  {t(`status.${presetColor}`, presetColor)}
                 </Text>
               </Group>
             </UnstyledButton>

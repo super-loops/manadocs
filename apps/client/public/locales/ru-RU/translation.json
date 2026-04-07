@@ -805,5 +805,13 @@
   "IP Address": "IP-адрес",
   "Changes": "Изменения",
   "Metadata": "Метаданные",
-  "No audit events found": "События аудита не найдены"
+  "No audit events found": "События аудита не найдены",
+  "status.gray": "Ожидание",
+  "status.purple": "Готово",
+  "status.blue": "Одобрено",
+  "status.yellow": "На проверке",
+  "status.orange": "В работе",
+  "status.red": "Остановлено",
+  "status.green": "Завершено",
+  "status.black": "Отклонено"
 }

@@ -834,5 +834,13 @@
   "Shows compiled system prompt and available tools": "컴파일된 시스템 프롬프트와 사용 가능한 도구를 표시합니다",
   "System prompt": "시스템 프롬프트",
   "Available tools": "사용 가능한 도구",
-  "Refresh": "새로고침"
+  "Refresh": "새로고침",
+  "status.gray": "대기",
+  "status.purple": "준비",
+  "status.blue": "승인됨",
+  "status.yellow": "재검토",
+  "status.orange": "처리중",
+  "status.red": "정지",
+  "status.green": "완료",
+  "status.black": "폐기"
 }

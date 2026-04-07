@@ -803,5 +803,13 @@
   "IP Address": "Indirizzo IP",
   "Changes": "Modifiche",
   "Metadata": "Metadati",
-  "No audit events found": "Nessun evento di audit trovato"
+  "No audit events found": "Nessun evento di audit trovato",
+  "status.gray": "In attesa",
+  "status.purple": "Pronto",
+  "status.blue": "Approvato",
+  "status.yellow": "Da rivedere",
+  "status.orange": "In corso",
+  "status.red": "Fermato",
+  "status.green": "Completato",
+  "status.black": "Scartato"
 }

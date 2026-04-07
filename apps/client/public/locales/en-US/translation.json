@@ -834,5 +834,13 @@
   "Shows compiled system prompt and available tools": "Shows compiled system prompt and available tools",
   "System prompt": "System prompt",
   "Available tools": "Available tools",
-  "Refresh": "Refresh"
+  "Refresh": "Refresh",
+  "status.gray": "Pending",
+  "status.purple": "Ready",
+  "status.blue": "Approved",
+  "status.yellow": "Review",
+  "status.orange": "In Progress",
+  "status.red": "Stopped",
+  "status.green": "Done",
+  "status.black": "Discarded"
 }

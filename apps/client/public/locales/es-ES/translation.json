@@ -806,5 +806,13 @@
   "IP Address": "Dirección IP",
   "Changes": "Cambios",
   "Metadata": "Metadatos",
-  "No audit events found": "No se encontraron eventos de auditoría"
+  "No audit events found": "No se encontraron eventos de auditoría",
+  "status.gray": "Pendiente",
+  "status.purple": "Listo",
+  "status.blue": "Aprobado",
+  "status.yellow": "Revisión",
+  "status.orange": "En proceso",
+  "status.red": "Detenido",
+  "status.green": "Completado",
+  "status.black": "Descartado"
 }

@@ -801,5 +801,13 @@
   "IP Address": "IP-adres",
   "Changes": "Wijzigingen",
   "Metadata": "Metadata",
-  "No audit events found": "Geen audit-gebeurtenissen gevonden"
+  "No audit events found": "Geen audit-gebeurtenissen gevonden",
+  "status.gray": "In afwachting",
+  "status.purple": "Gereed",
+  "status.blue": "Goedgekeurd",
+  "status.yellow": "Herziening",
+  "status.orange": "In behandeling",
+  "status.red": "Gestopt",
+  "status.green": "Voltooid",
+  "status.black": "Verworpen"
 }

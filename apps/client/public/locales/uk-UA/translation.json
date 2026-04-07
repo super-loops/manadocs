@@ -806,5 +806,13 @@
   "IP Address": "IP-адреса",
   "Changes": "Зміни",
   "Metadata": "Метадані",
-  "No audit events found": "Подій аудиту не знайдено"
+  "No audit events found": "Подій аудиту не знайдено",
+  "status.gray": "Очікування",
+  "status.purple": "Готово",
+  "status.blue": "Затверджено",
+  "status.yellow": "На перевірці",
+  "status.orange": "В роботі",
+  "status.red": "Зупинено",
+  "status.green": "Завершено",
+  "status.black": "Відхилено"
 }

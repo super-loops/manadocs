@@ -806,5 +806,13 @@
   "IP Address": "IP アドレス",
   "Changes": "変更内容",
   "Metadata": "メタデータ",
-  "No audit events found": "監査イベントが見つかりません"
+  "No audit events found": "監査イベントが見つかりません",
+  "status.gray": "保留",
+  "status.purple": "準備",
+  "status.blue": "承認済み",
+  "status.yellow": "再確認",
+  "status.orange": "処理中",
+  "status.red": "停止",
+  "status.green": "完了",
+  "status.black": "廃棄"
 }
