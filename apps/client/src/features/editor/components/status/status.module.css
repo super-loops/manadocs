@@ -63,7 +63,8 @@
   border-radius: 4px;
 }
 
-.presetItem:hover {
+.presetItem:hover,
+.presetItemFocused {
   background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
 }
 
