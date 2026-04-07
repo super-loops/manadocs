@@ -378,11 +378,15 @@ const NODE_DOCS: Record<string, NodeDoc> = {
   },
   status: {
     category: 'inline',
-    summary: 'Status pill (badge).',
-    attrs: { label: 'string', color: 'gray | blue | green | yellow | red' },
+    summary:
+      'Status badge (preset). The color determines the label automatically: gray=대기, purple=준비, blue=승인됨, yellow=재검토, orange=처리중, red=정지, green=완료, black=폐기. Only set color; text is derived.',
+    attrs: {
+      color:
+        'gray | purple | blue | yellow | orange | red | green | black',
+    },
     example: {
       type: 'status',
-      attrs: { label: 'In Progress', color: 'blue' },
+      attrs: { color: 'blue' },
     },
   },
   // marks

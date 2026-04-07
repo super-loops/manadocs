@@ -19,11 +19,24 @@ declare module '@tiptap/core' {
 
 export type StatusColor =
   | 'gray'
+  | 'purple'
   | 'blue'
-  | 'green'
   | 'yellow'
+  | 'orange'
   | 'red'
-  | 'purple';
+  | 'green'
+  | 'black';
+
+export const STATUS_PRESETS: Record<StatusColor, string> = {
+  gray: '대기',
+  purple: '준비',
+  blue: '승인됨',
+  yellow: '재검토',
+  orange: '처리중',
+  red: '정지',
+  green: '완료',
+  black: '폐기',
+};
 
 export interface StatusOption {
   HTMLAttributes: Record<string, any>;
@@ -74,13 +87,15 @@ export const Status = Node.create<StatusOption, StatusStorage>({
   },
 
   renderHTML({ HTMLAttributes }) {
+    const color = HTMLAttributes.color as StatusColor;
+    const label = STATUS_PRESETS[color] ?? HTMLAttributes.text ?? '';
     return [
       'span',
       {
         'data-type': this.name,
-        'data-color': HTMLAttributes.color,
+        'data-color': color,
       },
-      HTMLAttributes.text,
+      label,
     ];
   },
 
@@ -95,12 +110,11 @@ export const Status = Node.create<StatusOption, StatusStorage>({
         (attributes) =>
         ({ commands }) => {
           this.storage.autoOpen = true;
+          const color = (attributes?.color || 'gray') as StatusColor;
+          const text = STATUS_PRESETS[color] ?? attributes?.text ?? '';
           return commands.insertContent({
             type: this.name,
-            attrs: {
-              text: attributes?.text ?? '',
-              color: attributes?.color || 'gray',
-            },
+            attrs: { text, color },
           });
         },
     };
