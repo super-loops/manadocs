@@ -57,6 +57,42 @@ export class WsService {
     await this.broadcastToAuthorizedUsers(room, client.data.userId, pageId, data);
   }
 
+  /**
+   * Emit a tree event from the server side (not from a client socket).
+   * Used when pages are created/updated/deleted via REST API or MCP,
+   * so all connected clients get notified.
+   */
+  async emitTreeEvent(spaceId: string, data: any): Promise<void> {
+    if (!this.server) return;
+
+    const room = getSpaceRoomName(spaceId);
+
+    if (data.operation === 'refetchRootTreeNodeEvent') {
+      this.server.to(room).emit('message', data);
+      return;
+    }
+
+    const hasRestrictions = await this.spaceHasRestrictions(spaceId);
+    if (!hasRestrictions) {
+      this.server.to(room).emit('message', data);
+      return;
+    }
+
+    const pageId = this.extractPageId(data);
+    if (!pageId) {
+      return;
+    }
+
+    const isRestricted =
+      await this.pagePermissionRepo.hasRestrictedAncestor(pageId);
+    if (!isRestricted) {
+      this.server.to(room).emit('message', data);
+      return;
+    }
+
+    await this.broadcastToAuthorizedUsers(room, null, pageId, data);
+  }
+
   async invalidateSpaceRestrictionCache(spaceId: string): Promise<void> {
     await this.cacheManager.del(
       `${WS_SPACE_RESTRICTION_CACHE_PREFIX}${spaceId}`,

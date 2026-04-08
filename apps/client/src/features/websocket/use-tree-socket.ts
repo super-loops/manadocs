@@ -41,7 +41,9 @@ export const useTreeSocket = () => {
   }, []);
 
   useEffect(() => {
-    socket?.on("message", (event: WebSocketEvent) => {
+    if (!socket) return;
+
+    const handler = (event: WebSocketEvent) => {
       const initialData = initialTreeData.current;
       const treeApi = new SimpleTree<SpaceTreeNode>(initialData);
 
@@ -68,6 +70,17 @@ export const useTreeSocket = () => {
         case "addTreeNode":
           if (treeApi.find(event.payload.data.id)) return;
 
+          // Update parent's hasChildren flag
+          if (event.payload.parentId) {
+            const parentNode = treeApi.find(event.payload.parentId);
+            if (parentNode && !parentNode.data.hasChildren) {
+              treeApi.update({
+                id: event.payload.parentId,
+                changes: { hasChildren: true },
+              });
+            }
+          }
+
           treeApi.create({
             parentId: event.payload.parentId,
             index: event.payload.index,
@@ -79,6 +92,8 @@ export const useTreeSocket = () => {
         case "moveTreeNode":
           // move node
           if (treeApi.find(event.payload.id)) {
+            const oldParentId = event.payload.oldParentId;
+
             treeApi.move({
               id: event.payload.id,
               parentId: event.payload.parentId,
@@ -93,13 +108,51 @@ export const useTreeSocket = () => {
               },
             });
 
+            // Update old parent's hasChildren if it lost its last child
+            if (oldParentId && oldParentId !== event.payload.parentId) {
+              const oldParent = treeApi.find(oldParentId);
+              if (oldParent && oldParent.children?.length === 0) {
+                treeApi.update({
+                  id: oldParentId,
+                  changes: { hasChildren: false },
+                });
+              }
+            }
+
+            // Update new parent's hasChildren
+            if (event.payload.parentId) {
+              const newParent = treeApi.find(event.payload.parentId);
+              if (newParent && !newParent.data.hasChildren) {
+                treeApi.update({
+                  id: event.payload.parentId,
+                  changes: { hasChildren: true },
+                });
+              }
+            }
+
             setTreeData(treeApi.data);
           }
 
           break;
         case "deleteTreeNode":
           if (treeApi.find(event.payload.node.id)) {
+            // Check parent before dropping to update hasChildren
+            const deletedNode = treeApi.find(event.payload.node.id);
+            const parentId = deletedNode?.parent?.id;
+
             treeApi.drop({ id: event.payload.node.id });
+
+            // If parent has no more children, update hasChildren flag
+            if (parentId) {
+              const parentNode = treeApi.find(parentId);
+              if (parentNode && parentNode.children?.length === 0) {
+                treeApi.update({
+                  id: parentId,
+                  changes: { hasChildren: false },
+                });
+              }
+            }
+
             setTreeData(treeApi.data);
 
             queryClient.invalidateQueries({
@@ -108,6 +161,11 @@ export const useTreeSocket = () => {
           }
           break;
       }
-    });
+    };
+
+    socket.on("message", handler);
+    return () => {
+      socket.off("message", handler);
+    };
   }, [socket]);
 };

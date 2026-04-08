@@ -48,6 +48,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CollaborationGateway } from '../../../collaboration/collaboration.gateway';
 import { markdownToHtml } from '@manadocs/editor-ext';
 import { WatcherService } from '../../watcher/watcher.service';
+import { WsService } from '../../../ws/ws.service';
 import { sql } from 'kysely';
 
 @Injectable()
@@ -66,6 +67,7 @@ export class PageService {
     private eventEmitter: EventEmitter2,
     private collaborationGateway: CollaborationGateway,
     private readonly watcherService: WatcherService,
+    private readonly wsService: WsService,
   ) {}
 
   async findById(
@@ -147,6 +149,30 @@ export class PageService {
       })
       .catch((err) =>
         this.logger.warn(`Failed to queue add-page-watchers: ${err.message}`),
+      );
+
+    this.wsService
+      .emitTreeEvent(page.spaceId, {
+        operation: 'addTreeNode',
+        spaceId: page.spaceId,
+        payload: {
+          parentId: page.parentPageId ?? null,
+          index: 0,
+          data: {
+            id: page.id,
+            slugId: page.slugId,
+            name: page.title ?? '',
+            icon: page.icon,
+            position: page.position,
+            spaceId: page.spaceId,
+            parentPageId: page.parentPageId,
+            hasChildren: false,
+            children: [],
+          },
+        },
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit addTreeNode: ${err.message}`),
       );
 
     return page;
@@ -238,13 +264,34 @@ export class PageService {
       );
     }
 
-    return await this.pageRepo.findById(page.id, {
+    const updatedPage = await this.pageRepo.findById(page.id, {
       includeSpace: true,
       includeContent: true,
       includeCreator: true,
       includeLastUpdatedBy: true,
       includeContributors: true,
     });
+
+    if (updatePageDto.title !== undefined || updatePageDto.icon !== undefined) {
+      this.wsService
+        .emitTreeEvent(updatedPage.spaceId, {
+          operation: 'updateOne',
+          spaceId: updatedPage.spaceId,
+          entity: ['pages'],
+          id: updatedPage.id,
+          payload: {
+            title: updatedPage.title,
+            slugId: updatedPage.slugId,
+            icon: updatedPage.icon,
+            parentPageId: updatedPage.parentPageId,
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(`Failed to emit updateOne: ${err.message}`),
+        );
+    }
+
+    return updatedPage;
   }
 
   async updatePageContent(
@@ -465,6 +512,25 @@ export class PageService {
         });
       }
     });
+
+    // Notify both source and target spaces to refresh their trees
+    this.wsService
+      .emitTreeEvent(rootPage.spaceId, {
+        operation: 'refetchRootTreeNodeEvent',
+        spaceId: rootPage.spaceId,
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit refetchRootTreeNodeEvent: ${err.message}`),
+      );
+
+    this.wsService
+      .emitTreeEvent(spaceId, {
+        operation: 'refetchRootTreeNodeEvent',
+        spaceId: spaceId,
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit refetchRootTreeNodeEvent: ${err.message}`),
+      );
 
     return { childPageIds };
   }
@@ -687,6 +753,30 @@ export class PageService {
     const hasChildren = pages.length > 1;
     const childPageIds = insertedPageIds.filter((id) => id !== newPageId);
 
+    this.wsService
+      .emitTreeEvent(spaceId, {
+        operation: 'addTreeNode',
+        spaceId: spaceId,
+        payload: {
+          parentId: duplicatedPage.parentPageId ?? null,
+          index: 0,
+          data: {
+            id: duplicatedPage.id,
+            slugId: duplicatedPage.slugId,
+            name: duplicatedPage.title ?? '',
+            icon: duplicatedPage.icon,
+            position: duplicatedPage.position,
+            spaceId: duplicatedPage.spaceId,
+            parentPageId: duplicatedPage.parentPageId,
+            hasChildren,
+            children: [],
+          },
+        },
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit addTreeNode: ${err.message}`),
+      );
+
     return {
       ...duplicatedPage,
       hasChildren,
@@ -849,7 +939,9 @@ export class PageService {
     return result;
   }
 
-  async forceDelete(pageId: string, workspaceId: string): Promise<void> {
+  async forceDelete(page: Page, workspaceId: string): Promise<void> {
+    const pageId = page.id;
+
     // Get all descendant IDs (including the page itself) using recursive CTE
     const descendants = await this.db
       .withRecursive('page_descendants', (db) =>
@@ -894,15 +986,45 @@ export class PageService {
         pageIds: pageIds,
         workspaceId,
       });
+
+      this.wsService
+        .emitTreeEvent(page.spaceId, {
+          operation: 'deleteTreeNode',
+          spaceId: page.spaceId,
+          payload: {
+            node: {
+              id: page.id,
+              slugId: page.slugId,
+            },
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(`Failed to emit deleteTreeNode: ${err.message}`),
+        );
     }
   }
 
   async removePage(
-    pageId: string,
+    page: Page,
     userId: string,
     workspaceId: string,
   ): Promise<void> {
-    await this.pageRepo.removePage(pageId, userId, workspaceId);
+    await this.pageRepo.removePage(page.id, userId, workspaceId);
+
+    this.wsService
+      .emitTreeEvent(page.spaceId, {
+        operation: 'deleteTreeNode',
+        spaceId: page.spaceId,
+        payload: {
+          node: {
+            id: page.id,
+            slugId: page.slugId,
+          },
+        },
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit deleteTreeNode: ${err.message}`),
+      );
   }
 
   private async parseProsemirrorContent(

@@ -47,6 +47,7 @@ import {
   IAuditService,
 } from '../../integrations/audit/audit.service';
 import { getPageTitle } from '../../common/helpers';
+import { WsService } from '../../ws/ws.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -58,6 +59,7 @@ export class PageController {
     private readonly spaceAbility: SpaceAbilityFactory,
     private readonly pageAccessService: PageAccessService,
     @Inject(AUDIT_SERVICE) private readonly auditService: IAuditService,
+    private readonly wsService: WsService,
   ) {}
 
   @HttpCode(HttpStatus.OK)
@@ -224,7 +226,7 @@ export class PageController {
           'Only space admins can permanently delete pages',
         );
       }
-      await this.pageService.forceDelete(deletePageDto.pageId, workspace.id);
+      await this.pageService.forceDelete(page, workspace.id);
 
       this.auditService.log({
         event: AuditEvent.PAGE_DELETED,
@@ -245,7 +247,7 @@ export class PageController {
       await this.pageAccessService.validateCanEdit(page, user);
 
       await this.pageService.removePage(
-        deletePageDto.pageId,
+        page,
         user.id,
         workspace.id,
       );
@@ -304,9 +306,33 @@ export class PageController {
       },
     });
 
-    return this.pageRepo.findById(pageIdDto.pageId, {
+    const restoredPage = await this.pageRepo.findById(pageIdDto.pageId, {
       includeHasChildren: true,
     });
+
+    this.wsService
+      .emitTreeEvent(restoredPage.spaceId, {
+        operation: 'addTreeNode',
+        spaceId: restoredPage.spaceId,
+        payload: {
+          parentId: restoredPage.parentPageId ?? null,
+          index: 0,
+          data: {
+            id: restoredPage.id,
+            slugId: restoredPage.slugId,
+            name: restoredPage.title ?? '',
+            icon: restoredPage.icon,
+            position: restoredPage.position,
+            spaceId: restoredPage.spaceId,
+            parentPageId: restoredPage.parentPageId,
+            hasChildren: (restoredPage as any).hasChildren ?? false,
+            children: [],
+          },
+        },
+      })
+      .catch(() => {});
+
+    return restoredPage;
   }
 
   @HttpCode(HttpStatus.OK)
