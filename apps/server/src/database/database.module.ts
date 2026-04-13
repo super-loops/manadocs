@@ -26,6 +26,11 @@ import { PageListener } from '@manadocs/db/listeners/page.listener';
 import { PostgresJSDialect } from 'kysely-postgres-js';
 import * as postgres from 'postgres';
 import { normalizePostgresUrl } from '../common/helpers';
+import { ReviewRepo } from './repos/review/review.repo';
+import { ReviewHistoryRepo } from './repos/review/review-history.repo';
+import { ReviewAnchorRepo } from './repos/review/review-anchor.repo';
+import { ReviewAssigneeRepo } from './repos/review/review-assignee.repo';
+import { SequenceRepo } from './repos/review/sequence.repo';
 
 @Global()
 @Module({
@@ -83,6 +88,11 @@ import { normalizePostgresUrl } from '../common/helpers';
     NotificationRepo,
     WatcherRepo,
     PageListener,
+    ReviewRepo,
+    ReviewHistoryRepo,
+    ReviewAnchorRepo,
+    ReviewAssigneeRepo,
+    SequenceRepo,
   ],
   exports: [
     WorkspaceRepo,
@@ -102,6 +112,11 @@ import { normalizePostgresUrl } from '../common/helpers';
     ShareRepo,
     NotificationRepo,
     WatcherRepo,
+    ReviewRepo,
+    ReviewHistoryRepo,
+    ReviewAnchorRepo,
+    ReviewAssigneeRepo,
+    SequenceRepo,
   ],
 })
 export class DatabaseModule implements OnApplicationBootstrap {
