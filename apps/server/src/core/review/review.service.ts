@@ -62,7 +62,7 @@ export class ReviewService {
       'review',
     );
 
-    const content = dto.content ? JSON.parse(dto.content) : null;
+    const content = dto.content ?? null;
 
     const review = await this.reviewRepo.insertReview({
       sequenceId,
@@ -201,7 +201,7 @@ export class ReviewService {
       throw new NotFoundException('Review not found');
     }
 
-    const content = JSON.parse(dto.content);
+    const content = dto.content;
 
     const history = await this.reviewHistoryRepo.insertHistory({
       reviewId: review.id,

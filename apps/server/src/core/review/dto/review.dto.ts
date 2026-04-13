@@ -1,7 +1,7 @@
 import {
   IsArray,
   IsIn,
-  IsJSON,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -16,7 +16,7 @@ export class CreateReviewDto {
   title?: string;
 
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   content?: any;
 
   @IsOptional()
@@ -42,7 +42,7 @@ export class AddReviewCommentDto {
   @IsUUID()
   reviewId: string;
 
-  @IsJSON()
+  @IsObject()
   content: any;
 }
 

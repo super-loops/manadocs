@@ -1,7 +1,9 @@
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
-  await db.transaction().execute(async (trx) => {
+  // Kysely migrations already run inside a transaction; use db directly as trx.
+  const trx = db;
+  {
     // 1. Load parent page-comments to migrate
     const parentComments = await trx
       .selectFrom('comments')
@@ -160,7 +162,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     console.log(
       `[migrate-comments-to-reviews] reviews=${reviewRows.length} histories=${historyRows.length} childComments=${childCount} notificationsLinked=${notificationUpdates} workspaces=${workspaceIds.size}`,
     );
-  });
+  }
 }
 
 // WARNING: This down function is destructive and best-effort. It assumes no
@@ -171,18 +173,17 @@ export async function down(db: Kysely<any>): Promise<void> {
     '[migrate-comments-to-reviews] down() is destructive: deletes ALL reviews/review_histories and clears notifications.review_id. Only safe if no post-migration review data exists.',
   );
 
-  await db.transaction().execute(async (trx) => {
-    await trx
-      .updateTable('notifications')
-      .set({ review_id: null })
-      .where('review_id', 'is not', null)
-      .execute();
+  const trx = db;
+  await trx
+    .updateTable('notifications')
+    .set({ review_id: null })
+    .where('review_id', 'is not', null)
+    .execute();
 
-    await trx.deleteFrom('review_histories').execute();
-    await trx.deleteFrom('reviews').execute();
-    await trx
-      .deleteFrom('sequences')
-      .where('sequence_name', 'in', ['review', 'review_anchor'])
-      .execute();
-  });
+  await trx.deleteFrom('review_histories').execute();
+  await trx.deleteFrom('reviews').execute();
+  await trx
+    .deleteFrom('sequences')
+    .where('sequence_name', 'in', ['review', 'review_anchor'])
+    .execute();
 }
