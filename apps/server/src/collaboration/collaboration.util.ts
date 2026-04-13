@@ -36,6 +36,7 @@ import {
   Columns,
   Column,
   Status,
+  ReviewAnchor,
   addUniqueIdsToDoc,
   htmlToMarkdown,
 } from '@manadocs/editor-ext';
@@ -97,6 +98,7 @@ export const tiptapExtensions = [
   Columns,
   Column,
   Status,
+  ReviewAnchor,
 ] as any;
 
 export function jsonToHtml(tiptapJson: any) {
