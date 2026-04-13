@@ -8,9 +8,13 @@ import {
   IPageMentionNotificationJob,
   IPageUpdateNotificationJob,
   IPermissionGrantedNotificationJob,
+  IReviewAssignedNotificationJob,
+  IReviewCommentCreatedNotificationJob,
+  IReviewStatusChangedNotificationJob,
 } from '../../integrations/queue/constants/queue.interface';
 import { CommentNotificationService } from './services/comment.notification';
 import { PageNotificationService } from './services/page.notification';
+import { ReviewNotificationService } from './services/review.notification';
 import { DomainService } from '../../integrations/environment/domain.service';
 import {
   InMemoryQueue,
@@ -25,6 +29,7 @@ export class NotificationProcessor implements OnModuleInit {
   constructor(
     private readonly commentNotificationService: CommentNotificationService,
     private readonly pageNotificationService: PageNotificationService,
+    private readonly reviewNotificationService: ReviewNotificationService,
     private readonly domainService: DomainService,
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.NOTIFICATION_QUEUE) private readonly queue: InMemoryQueue,
@@ -41,6 +46,9 @@ export class NotificationProcessor implements OnModuleInit {
       | IPageMentionNotificationJob
       | IPageUpdateNotificationJob
       | IPermissionGrantedNotificationJob
+      | IReviewAssignedNotificationJob
+      | IReviewStatusChangedNotificationJob
+      | IReviewCommentCreatedNotificationJob
     >,
   ): Promise<void> {
     try {
@@ -60,6 +68,27 @@ export class NotificationProcessor implements OnModuleInit {
           await this.commentNotificationService.processResolved(
             job.data as ICommentResolvedNotificationJob,
             appUrl,
+          );
+          break;
+        }
+
+        case QueueJob.REVIEW_ASSIGNED: {
+          await this.reviewNotificationService.processAssigned(
+            job.data as IReviewAssignedNotificationJob,
+          );
+          break;
+        }
+
+        case QueueJob.REVIEW_STATUS_CHANGED: {
+          await this.reviewNotificationService.processStatusChanged(
+            job.data as IReviewStatusChangedNotificationJob,
+          );
+          break;
+        }
+
+        case QueueJob.REVIEW_COMMENT_CREATED: {
+          await this.reviewNotificationService.processCommentCreated(
+            job.data as IReviewCommentCreatedNotificationJob,
           );
           break;
         }
