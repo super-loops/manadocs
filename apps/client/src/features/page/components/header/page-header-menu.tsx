@@ -11,6 +11,7 @@ import {
   IconList,
   IconMarkdown,
   IconMessage,
+  IconMessageCircle,
   IconPrinter,
   IconTrash,
   IconWifiOff,
@@ -19,6 +20,7 @@ import React, { useEffect, useRef, useState } from "react";
 import useToggleAside from "@/hooks/use-toggle-aside.tsx";
 import { useAtom, useAtomValue } from "jotai";
 import { historyAtoms } from "@/features/page-history/atoms/history-atoms.ts";
+import { reviewSidebarOpenAtom } from "@/features/review/atoms/review-atom";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useParams } from "react-router-dom";
@@ -53,6 +55,7 @@ interface PageHeaderMenuProps {
 export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
   const { t } = useTranslation();
   const toggleAside = useToggleAside();
+  const [, setReviewSidebarOpen] = useAtom(reviewSidebarOpenAtom);
 
   useHotkeys(
     [
@@ -88,6 +91,16 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
           onClick={() => toggleAside("comments")}
         >
           <IconMessage size={20} stroke={2} />
+        </ActionIcon>
+      </Tooltip>
+
+      <Tooltip label={t("Reviews")} openDelay={250} withArrow>
+        <ActionIcon
+          variant="subtle"
+          color="dark"
+          onClick={() => setReviewSidebarOpen((v) => !v)}
+        >
+          <IconMessageCircle size={20} stroke={2} />
         </ActionIcon>
       </Tooltip>
 
