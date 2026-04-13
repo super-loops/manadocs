@@ -413,6 +413,7 @@ export interface Notifications {
   pageId: string | null;
   spaceId: string | null;
   commentId: string | null;
+  reviewId: string | null;
   data: Json | null;
   readAt: Timestamp | null;
   emailedAt: Timestamp | null;
@@ -469,6 +470,63 @@ export interface UserSessions {
   createdAt: Generated<Timestamp>;
 }
 
+export interface Reviews {
+  id: Generated<string>;
+  sequenceId: Int8;
+  title: string | null;
+  status: Generated<string>;
+  content: Json | null;
+  creatorId: string | null;
+  pageId: string | null;
+  spaceId: string;
+  workspaceId: string;
+  resolvedAt: Timestamp | null;
+  resolvedById: string | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+  deletedAt: Timestamp | null;
+}
+
+export interface ReviewHistories {
+  id: Generated<string>;
+  reviewId: string;
+  type: string;
+  content: Json | null;
+  oldStatus: string | null;
+  newStatus: string | null;
+  creatorId: string | null;
+  workspaceId: string;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+  editedAt: Timestamp | null;
+  deletedAt: Timestamp | null;
+}
+
+export interface ReviewAnchors {
+  id: Generated<string>;
+  sequenceId: Int8;
+  reviewId: string;
+  pageId: string;
+  workspaceId: string;
+  creatorId: string | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface ReviewAssignees {
+  id: Generated<string>;
+  reviewId: string;
+  userId: string | null;
+  groupId: string | null;
+  createdAt: Generated<Timestamp>;
+}
+
+export interface Sequences {
+  workspaceId: string;
+  sequenceName: string;
+  currentValue: Generated<Int8>;
+}
+
 export interface DB {
   apiKeys: ApiKeys;
   apiTokens: ApiTokens;
@@ -498,4 +556,9 @@ export interface DB {
   watchers: Watchers;
   workspaceInvitations: WorkspaceInvitations;
   workspaces: Workspaces;
+  reviews: Reviews;
+  reviewHistories: ReviewHistories;
+  reviewAnchors: ReviewAnchors;
+  reviewAssignees: ReviewAssignees;
+  sequences: Sequences;
 }

@@ -27,6 +27,11 @@ import {
   Watchers,
   Audit as _Audit,
   ApiTokens,
+  Reviews,
+  ReviewHistories,
+  ReviewAnchors,
+  ReviewAssignees,
+  Sequences,
 } from './db';
 import { PageEmbeddings } from '@manadocs/db/types/embeddings.types';
 
@@ -173,3 +178,25 @@ export type UpdatableAudit = Updateable<Omit<_Audit, 'id'>>;
 export type ApiToken = Selectable<ApiTokens>;
 export type InsertableApiToken = Insertable<ApiTokens>;
 export type UpdatableApiToken = Updateable<Omit<ApiTokens, 'id'>>;
+
+// Review
+export type Review = Selectable<Reviews>;
+export type InsertableReview = Insertable<Reviews>;
+export type UpdatableReview = Updateable<Omit<Reviews, 'id'>>;
+
+// Review History
+export type ReviewHistory = Selectable<ReviewHistories>;
+export type InsertableReviewHistory = Insertable<ReviewHistories>;
+export type UpdatableReviewHistory = Updateable<Omit<ReviewHistories, 'id'>>;
+
+// Review Anchor
+export type ReviewAnchor = Selectable<ReviewAnchors>;
+export type InsertableReviewAnchor = Insertable<ReviewAnchors>;
+export type UpdatableReviewAnchor = Updateable<Omit<ReviewAnchors, 'id'>>;
+
+// Review Assignee
+export type ReviewAssignee = Selectable<ReviewAssignees>;
+export type InsertableReviewAssignee = Insertable<ReviewAssignees>;
+
+// Sequence
+export type Sequence = Selectable<Sequences>;
