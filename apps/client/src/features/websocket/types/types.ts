@@ -1,6 +1,5 @@
 import { SpaceTreeNode } from "@/features/page/tree/types.ts";
 import { IPage } from "@/features/page/types/page.types";
-import { IComment } from "@/features/comment/types/comment.types";
 import {
   IReview,
   IReviewAnchor,
@@ -12,30 +11,6 @@ export type InvalidateEvent = {
   spaceId: string;
   entity: Array<string>;
   id?: string;
-};
-
-export type CommentCreatedEvent = {
-  operation: "commentCreated";
-  pageId: string;
-  comment: IComment;
-};
-
-export type CommentUpdatedEvent = {
-  operation: "commentUpdated";
-  pageId: string;
-  comment: IComment;
-};
-
-export type CommentDeletedEvent = {
-  operation: "commentDeleted";
-  pageId: string;
-  commentId: string;
-};
-
-export type CommentResolvedEvent = {
-  operation: "commentResolved";
-  pageId: string;
-  comment: IComment;
 };
 
 export type UpdateEvent = {
@@ -130,10 +105,6 @@ export type ReviewAnchorDeletedEvent = {
 
 export type WebSocketEvent =
   | InvalidateEvent
-  | CommentCreatedEvent
-  | CommentUpdatedEvent
-  | CommentDeletedEvent
-  | CommentResolvedEvent
   | UpdateEvent
   | DeleteEvent
   | AddTreeNodeEvent

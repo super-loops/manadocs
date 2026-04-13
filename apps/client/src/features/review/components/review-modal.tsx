@@ -29,7 +29,7 @@ import {
 } from "@/features/review/types/review.types";
 import { CustomAvatar } from "@/components/ui/custom-avatar";
 import { MultiUserSelect } from "@/features/group/components/multi-user-select";
-import CommentEditor from "@/features/comment/components/comment-editor";
+import ReviewEditor from "./review-editor";
 import { buildPageUrl } from "@/features/page/page.utils";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import ReviewStatusBadge from "./review-status-badge";
@@ -340,7 +340,7 @@ function HistoryEntry({ history }: { history: IReviewHistory }) {
           </Text>
         </Group>
         {history.content ? (
-          <CommentEditor defaultContent={history.content} editable={false} />
+          <ReviewEditor defaultContent={history.content} editable={false} />
         ) : null}
       </Box>
     </Group>
@@ -369,7 +369,7 @@ function ReviewCommentInput({ isSending, onSend }: ReviewCommentInputProps) {
 
   return (
     <Box>
-      <CommentEditor
+      <ReviewEditor
         ref={editorRef}
         onUpdate={setContent}
         onSave={handleSave}

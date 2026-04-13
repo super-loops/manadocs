@@ -40,12 +40,6 @@ export function NotificationItem({
 
   const getNotificationMessageKey = (): string => {
     switch (notification.type) {
-      case "comment.user_mention":
-        return "<bold>{{name}}</bold> mentioned you in a comment";
-      case "comment.created":
-        return "<bold>{{name}}</bold> commented on a page";
-      case "comment.resolved":
-        return "<bold>{{name}}</bold> resolved a comment";
       case "review.assigned":
         return "<bold>{{name}}</bold> assigned you to a review";
       case "review.status_changed":

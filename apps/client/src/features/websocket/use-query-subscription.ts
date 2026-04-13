@@ -1,18 +1,14 @@
 import React from "react";
 import { socketAtom } from "@/features/websocket/atoms/socket-atom.ts";
 import { useAtom } from "jotai";
-import { InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { WebSocketEvent } from "@/features/websocket/types";
-import { IPage } from "../page/types/page.types";
-import { IPagination } from "@/lib/types";
 import {
   invalidateOnCreatePage,
   invalidateOnDeletePage,
   updateCacheOnMovePage,
   invalidateOnUpdatePage,
 } from "../page/queries/page-query";
-import { RQ_KEY } from "../comment/queries/comment-query";
-import { IComment } from "@/features/comment/types/comment.types";
 import {
   RQ_REVIEW,
   RQ_REVIEW_ANCHORS,
@@ -35,66 +31,6 @@ export const useQuerySubscription = () => {
             queryKey: [...data.entity, data.id].filter(Boolean),
           });
           break;
-        case "commentCreated": {
-          const createCache = queryClient.getQueryData(
-            RQ_KEY(data.pageId),
-          ) as InfiniteData<IPagination<IComment>> | undefined;
-
-          if (createCache && createCache.pages.length > 0) {
-            const alreadyExists = createCache.pages.some((page) =>
-              page.items.some((c) => c.id === data.comment.id),
-            );
-            if (alreadyExists) break;
-
-            const lastIdx = createCache.pages.length - 1;
-            queryClient.setQueryData(RQ_KEY(data.pageId), {
-              ...createCache,
-              pages: createCache.pages.map((page, i) =>
-                i === lastIdx
-                  ? { ...page, items: [...page.items, data.comment] }
-                  : page,
-              ),
-            });
-          }
-          break;
-        }
-        case "commentUpdated":
-        case "commentResolved": {
-          const updateCache = queryClient.getQueryData(
-            RQ_KEY(data.pageId),
-          ) as InfiniteData<IPagination<IComment>> | undefined;
-
-          if (updateCache) {
-            queryClient.setQueryData(RQ_KEY(data.pageId), {
-              ...updateCache,
-              pages: updateCache.pages.map((page) => ({
-                ...page,
-                items: page.items.map((comment) =>
-                  comment.id === data.comment.id ? data.comment : comment,
-                ),
-              })),
-            });
-          }
-          break;
-        }
-        case "commentDeleted": {
-          const deleteCache = queryClient.getQueryData(
-            RQ_KEY(data.pageId),
-          ) as InfiniteData<IPagination<IComment>> | undefined;
-
-          if (deleteCache) {
-            queryClient.setQueryData(RQ_KEY(data.pageId), {
-              ...deleteCache,
-              pages: deleteCache.pages.map((page) => ({
-                ...page,
-                items: page.items.filter(
-                  (comment) => comment.id !== data.commentId,
-                ),
-              })),
-            });
-          }
-          break;
-        }
         case "addTreeNode":
           invalidateOnCreatePage(data.payload.data);
           break;

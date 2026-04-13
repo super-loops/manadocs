@@ -1,7 +1,4 @@
 export type NotificationType =
-  | "comment.user_mention"
-  | "comment.created"
-  | "comment.resolved"
   | "review.assigned"
   | "review.status_changed"
   | "review.comment_created"

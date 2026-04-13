@@ -10,7 +10,6 @@ import {
   IconLink,
   IconList,
   IconMarkdown,
-  IconMessage,
   IconMessageCircle,
   IconPrinter,
   IconTrash,
@@ -83,16 +82,6 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
       <ConnectionWarning />
 
       {!readOnly && <PageStateSegmentedControl size="xs" />}
-
-      <Tooltip label={t("Comments")} openDelay={250} withArrow>
-        <ActionIcon
-          variant="subtle"
-          color="dark"
-          onClick={() => toggleAside("comments")}
-        >
-          <IconMessage size={20} stroke={2} />
-        </ActionIcon>
-      </Tooltip>
 
       <Tooltip label={t("Reviews")} openDelay={250} withArrow>
         <ActionIcon

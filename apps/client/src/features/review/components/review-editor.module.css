@@ -1,26 +1,4 @@
-.wrapper {
-    padding: var(--mantine-spacing-md);
-}
-
-.focused-thread {
-    border: 2px solid #8d7249;
-}
-
-.textSelection {
-    margin-top: 4px;
-    border-left: 2px solid var(--mantine-color-gray-6);
-    padding: 8px;
-    background: var(--mantine-color-gray-light);
-    cursor: pointer;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    -ms-word-break: break-word;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-.commentEditor {
+.reviewEditor {
 
     .focused {
         border-radius: var(--mantine-radius-sm);
@@ -47,9 +25,4 @@
         margin-block-start: 0;
         margin-block-end: 0;
     }
-
-    .actions {
-
-    }
 }
-

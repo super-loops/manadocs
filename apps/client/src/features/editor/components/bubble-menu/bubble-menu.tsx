@@ -8,7 +8,6 @@ import {
   IconItalic,
   IconStrikethrough,
   IconUnderline,
-  IconMessage,
   IconSparkles,
 } from "@tabler/icons-react";
 import clsx from "clsx";
@@ -17,12 +16,7 @@ import { ActionIcon, Button, rem, Tooltip } from "@mantine/core";
 import { ColorSelector } from "./color-selector";
 import { NodeSelector } from "./node-selector";
 import { TextAlignmentSelector } from "./text-alignment-selector";
-import {
-  draftCommentIdAtom,
-  showCommentPopupAtom,
-} from "@/features/comment/atoms/comment-atom";
 import { useAtom, useAtomValue } from "jotai";
-import { v7 as uuid7 } from "uuid";
 import { isCellSelection, isTextSelected } from "@manadocs/editor-ext";
 import { LinkSelector } from "@/features/editor/components/bubble-menu/link-selector.tsx";
 import { useTranslation } from "react-i18next";
@@ -43,18 +37,11 @@ type EditorBubbleMenuProps = Omit<BubbleMenuProps, "children" | "editor"> & {
 export const EditorBubbleMenu: FC<EditorBubbleMenuProps> = (props) => {
   const { t } = useTranslation();
   const [showAiMenu, setShowAiMenu] = useAtom(showAiMenuAtom);
-  const [showCommentPopup, setShowCommentPopup] = useAtom(showCommentPopupAtom);
   const workspace = useAtomValue(workspaceAtom);
   const isGenerativeAiEnabled = workspace?.settings?.ai?.generative === true;
-  const [, setDraftCommentId] = useAtom(draftCommentIdAtom);
-  const showCommentPopupRef = useRef(showCommentPopup);
   const showAiMenuRef = useRef(showAiMenu);
   const [showLinkMenu] = useAtom(showLinkMenuAtom);
   const showLinkMenuRef = useRef(showLinkMenu);
-
-  useEffect(() => {
-    showCommentPopupRef.current = showCommentPopup;
-  }, [showCommentPopup]);
 
   useEffect(() => {
     showAiMenuRef.current = showAiMenu;
@@ -77,7 +64,6 @@ export const EditorBubbleMenu: FC<EditorBubbleMenuProps> = (props) => {
         isUnderline: ctx.editor.isActive("underline"),
         isStrike: ctx.editor.isActive("strike"),
         isCode: ctx.editor.isActive("code"),
-        isComment: ctx.editor.isActive("comment"),
       };
     },
   });
@@ -115,19 +101,6 @@ export const EditorBubbleMenu: FC<EditorBubbleMenuProps> = (props) => {
     },
   ];
 
-  const commentItem: BubbleMenuItem = {
-    name: "Comment",
-    isActive: () => editorState?.isComment,
-    command: () => {
-      const commentId = uuid7();
-
-      props.editor.chain().focus().setCommentDecoration().run();
-      setDraftCommentId(commentId);
-      setShowCommentPopup(true);
-    },
-    icon: IconMessage,
-  };
-
   const bubbleMenuProps: EditorBubbleMenuProps = {
     ...props,
     shouldShow: ({ state, editor }) => {
@@ -141,8 +114,7 @@ export const EditorBubbleMenu: FC<EditorBubbleMenuProps> = (props) => {
         isNodeSelection(selection) ||
         isCellSelection(selection) ||
         showAiMenuRef.current ||
-        showLinkMenuRef.current ||
-        showCommentPopupRef?.current
+        showLinkMenuRef.current
       ) {
         return false;
       }
@@ -238,19 +210,6 @@ export const EditorBubbleMenu: FC<EditorBubbleMenuProps> = (props) => {
             setIsTextAlignmentOpen(false);
           }}
         />
-
-        <Tooltip label={t(commentItem.name)} withArrow withinPortal={false}>
-          <ActionIcon
-            variant="default"
-            size="lg"
-            radius="6px"
-            aria-label={t(commentItem.name)}
-            style={{ border: "none" }}
-            onClick={commentItem.command}
-          >
-            <IconMessage size={16} stroke={2} />
-          </ActionIcon>
-        </Tooltip>
       </div>
     </BubbleMenu>
   );

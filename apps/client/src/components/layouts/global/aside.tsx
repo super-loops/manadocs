@@ -1,5 +1,4 @@
 import { Box, ScrollArea, Text } from "@mantine/core";
-import CommentListWithTabs from "@/features/comment/components/comment-list-with-tabs.tsx";
 import { useAtom } from "jotai";
 import { asideStateAtom } from "@/components/layouts/global/hooks/atoms/sidebar-atom.ts";
 import React, { ReactNode } from "react";
@@ -17,10 +16,6 @@ export default function Aside() {
   let component: ReactNode;
 
   switch (tab) {
-    case "comments":
-      component = <CommentListWithTabs />;
-      title = "Comments";
-      break;
     case "toc":
       component = <TableOfContents editor={pageEditor} />;
       title = "Table of contents";
@@ -38,17 +33,13 @@ export default function Aside() {
             {t(title)}
           </Text>
 
-          {tab === "comments" ? (
-            <CommentListWithTabs />
-          ) : (
-            <ScrollArea
-              style={{ height: "85vh" }}
-              scrollbarSize={5}
-              type="scroll"
-            >
-              <div style={{ paddingBottom: "200px" }}>{component}</div>
-            </ScrollArea>
-          )}
+          <ScrollArea
+            style={{ height: "85vh" }}
+            scrollbarSize={5}
+            type="scroll"
+          >
+            <div style={{ paddingBottom: "200px" }}>{component}</div>
+          </ScrollArea>
         </>
       )}
     </Box>

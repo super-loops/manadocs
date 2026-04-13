@@ -2,7 +2,7 @@ import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Mention, LinkExtension } from "@manadocs/editor-ext";
-import classes from "./comment.module.css";
+import classes from "./review-editor.module.css";
 import { useFocusWithin } from "@mantine/hooks";
 import clsx from "clsx";
 import { forwardRef, useEffect, useImperativeHandle } from "react";
@@ -11,7 +11,7 @@ import EmojiCommand from "@/features/editor/extensions/emoji-command";
 import mentionRenderItems from "@/features/editor/components/mention/mention-suggestion";
 import MentionView from "@/features/editor/components/mention/mention-view";
 
-interface CommentEditorProps {
+interface ReviewEditorProps {
   defaultContent?: any;
   onUpdate?: any;
   onSave?: any;
@@ -20,7 +20,7 @@ interface CommentEditorProps {
   autofocus?: boolean;
 }
 
-const CommentEditor = forwardRef(
+const ReviewEditor = forwardRef(
   (
     {
       defaultContent,
@@ -29,13 +29,13 @@ const CommentEditor = forwardRef(
       editable,
       placeholder,
       autofocus,
-    }: CommentEditorProps,
+    }: ReviewEditorProps,
     ref,
   ) => {
     const { t } = useTranslation();
     const { ref: focusRef, focused } = useFocusWithin();
 
-    const commentEditor = useEditor({
+    const reviewEditor = useEditor({
       extensions: [
         StarterKit.configure({
           gapcursor: false,
@@ -102,37 +102,34 @@ const CommentEditor = forwardRef(
       autofocus: (autofocus && "end") || false,
     });
 
-    // Sync content from props for read-only editors (e.g. when updated via
-    // websocket on another browser). Skip for editable editors to avoid
-    // resetting the cursor position on every keystroke.
     useEffect(() => {
-      if (!editable && commentEditor && defaultContent) {
-        commentEditor.commands.setContent(defaultContent);
+      if (!editable && reviewEditor && defaultContent) {
+        reviewEditor.commands.setContent(defaultContent);
       }
-    }, [defaultContent, editable, commentEditor]);
+    }, [defaultContent, editable, reviewEditor]);
 
     useEffect(() => {
       setTimeout(() => {
         if (autofocus) {
-          commentEditor?.commands.focus("end");
+          reviewEditor?.commands.focus("end");
         }
       }, 10);
-    }, [commentEditor, autofocus]);
+    }, [reviewEditor, autofocus]);
 
     useImperativeHandle(ref, () => ({
       clearContent: () => {
-        commentEditor.commands.clearContent();
+        reviewEditor.commands.clearContent();
       },
     }));
 
     return (
       <div
         ref={focusRef}
-        className={classes.commentEditor}
+        className={classes.reviewEditor}
         data-editable={editable || undefined}
       >
         <EditorContent
-          editor={commentEditor}
+          editor={reviewEditor}
           className={clsx(classes.ProseMirror, { [classes.focused]: focused })}
         />
       </div>
@@ -140,4 +137,4 @@ const CommentEditor = forwardRef(
   },
 );
 
-export default CommentEditor;
+export default ReviewEditor;

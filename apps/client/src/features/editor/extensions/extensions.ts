@@ -16,7 +16,6 @@ import { Collaboration, isChangeOrigin } from "@tiptap/extension-collaboration";
 import { CollaborationCaret } from "@tiptap/extension-collaboration-caret";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import {
-  Comment,
   Details,
   DetailsContent,
   DetailsSummary,
@@ -199,11 +198,6 @@ export const mainExtensions = [
   Color,
   SlashCommand,
   EmojiCommand,
-  Comment.configure({
-    HTMLAttributes: {
-      class: "comment-mark",
-    },
-  }),
   Mention.configure({
     suggestion: {
       allowSpaces: true,
