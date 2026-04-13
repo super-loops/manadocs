@@ -64,9 +64,6 @@ export class UserService {
     const notificationSettings: Record<string, NotificationSettingKey> = {
       notificationPageUpdates: 'page.updated',
       notificationPageUserMention: 'page.userMention',
-      notificationCommentUserMention: 'comment.userMention',
-      notificationCommentCreated: 'comment.created',
-      notificationCommentResolved: 'comment.resolved',
     };
 
     for (const [dtoField, settingKey] of Object.entries(notificationSettings)) {

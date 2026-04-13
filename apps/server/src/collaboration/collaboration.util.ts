@@ -10,7 +10,6 @@ import { TaskList, TaskItem } from '@tiptap/extension-list';
 import {
   Heading,
   Callout,
-  Comment,
   CustomCodeBlock,
   Details,
   DetailsContent,
@@ -61,7 +60,6 @@ export const tiptapExtensions = [
   UniqueID.configure({
     types: ['heading', 'paragraph'],
   }),
-  Comment,
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
   TaskList,
   TaskItem.configure({

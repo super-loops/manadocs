@@ -3,8 +3,6 @@ import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
 import { QueueJob, QueueName } from '../../integrations/queue/constants';
 import {
-  ICommentNotificationJob,
-  ICommentResolvedNotificationJob,
   IPageMentionNotificationJob,
   IPageUpdateNotificationJob,
   IPermissionGrantedNotificationJob,
@@ -12,7 +10,6 @@ import {
   IReviewCommentCreatedNotificationJob,
   IReviewStatusChangedNotificationJob,
 } from '../../integrations/queue/constants/queue.interface';
-import { CommentNotificationService } from './services/comment.notification';
 import { PageNotificationService } from './services/page.notification';
 import { ReviewNotificationService } from './services/review.notification';
 import { DomainService } from '../../integrations/environment/domain.service';
@@ -27,7 +24,6 @@ export class NotificationProcessor implements OnModuleInit {
   private readonly logger = new Logger(NotificationProcessor.name);
 
   constructor(
-    private readonly commentNotificationService: CommentNotificationService,
     private readonly pageNotificationService: PageNotificationService,
     private readonly reviewNotificationService: ReviewNotificationService,
     private readonly domainService: DomainService,
@@ -41,8 +37,6 @@ export class NotificationProcessor implements OnModuleInit {
 
   async process(
     job: InMemoryJob<
-      | ICommentNotificationJob
-      | ICommentResolvedNotificationJob
       | IPageMentionNotificationJob
       | IPageUpdateNotificationJob
       | IPermissionGrantedNotificationJob
@@ -56,22 +50,6 @@ export class NotificationProcessor implements OnModuleInit {
       const appUrl = await this.getWorkspaceUrl(workspaceId);
 
       switch (job.name) {
-        case QueueJob.COMMENT_NOTIFICATION: {
-          await this.commentNotificationService.processComment(
-            job.data as ICommentNotificationJob,
-            appUrl,
-          );
-          break;
-        }
-
-        case QueueJob.COMMENT_RESOLVED_NOTIFICATION: {
-          await this.commentNotificationService.processResolved(
-            job.data as ICommentResolvedNotificationJob,
-            appUrl,
-          );
-          break;
-        }
-
         case QueueJob.REVIEW_ASSIGNED: {
           await this.reviewNotificationService.processAssigned(
             job.data as IReviewAssignedNotificationJob,

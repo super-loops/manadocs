@@ -177,25 +177,6 @@ export interface Billing {
   workspaceId: string;
 }
 
-export interface Comments {
-  content: Json | null;
-  createdAt: Generated<Timestamp>;
-  creatorId: string | null;
-  deletedAt: Timestamp | null;
-  editedAt: Timestamp | null;
-  id: Generated<string>;
-  lastEditedById: string | null;
-  pageId: string;
-  parentCommentId: string | null;
-  resolvedAt: Timestamp | null;
-  resolvedById: string | null;
-  selection: string | null;
-  spaceId: string;
-  type: string | null;
-  updatedAt: Generated<Timestamp>;
-  workspaceId: string;
-}
-
 export interface FileTasks {
   createdAt: Generated<Timestamp>;
   creatorId: string | null;
@@ -412,7 +393,6 @@ export interface Notifications {
   actorId: string | null;
   pageId: string | null;
   spaceId: string | null;
-  commentId: string | null;
   reviewId: string | null;
   data: Json | null;
   readAt: Timestamp | null;
@@ -537,7 +517,6 @@ export interface DB {
   authProviders: AuthProviders;
   backlinks: Backlinks;
   billing: Billing;
-  comments: Comments;
   fileTasks: FileTasks;
   groups: Groups;
   groupUsers: GroupUsers;

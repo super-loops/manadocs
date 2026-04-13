@@ -28,7 +28,6 @@ import {
   getAttachmentIds,
   getProsemirrorContent,
   isAttachmentNode,
-  removeMarkTypeFromDoc,
 } from '../../../common/helpers/prosemirror/utils';
 import {
   htmlToJson,
@@ -487,13 +486,6 @@ export class PageService {
           .where('pageId', 'in', pageIdsToMove)
           .execute();
 
-        // Update comments
-        await trx
-          .updateTable('comments')
-          .set({ spaceId: spaceId })
-          .where('pageId', 'in', pageIdsToMove)
-          .execute();
-
         // Update attachments
         await this.attachmentRepo.updateAttachmentsByPageId(
           { spaceId },
@@ -582,8 +574,7 @@ export class PageService {
         const pageContent = getProsemirrorContent(page.content);
         const pageFromMap = pageMap.get(page.id);
 
-        const doc = jsonToNode(pageContent);
-        const prosemirrorDoc = removeMarkTypeFromDoc(doc, 'comment');
+        const prosemirrorDoc = jsonToNode(pageContent);
 
         const attachmentIds = getAttachmentIds(prosemirrorDoc.toJSON());
 

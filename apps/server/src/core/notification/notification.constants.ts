@@ -1,7 +1,4 @@
 export const NotificationType = {
-  COMMENT_USER_MENTION: 'comment.user_mention',
-  COMMENT_CREATED: 'comment.created',
-  COMMENT_RESOLVED: 'comment.resolved',
   REVIEW_ASSIGNED: 'review.assigned',
   REVIEW_STATUS_CHANGED: 'review.status_changed',
   REVIEW_COMMENT_CREATED: 'review.comment_created',
@@ -15,27 +12,18 @@ export type NotificationType =
 
 export type NotificationSettingKey =
   | 'page.updated'
-  | 'page.userMention'
-  | 'comment.userMention'
-  | 'comment.created'
-  | 'comment.resolved';
+  | 'page.userMention';
 
 export const NotificationTypeToSettingKey: Partial<
   Record<NotificationType, NotificationSettingKey>
 > = {
   [NotificationType.PAGE_UPDATED]: 'page.updated',
   [NotificationType.PAGE_USER_MENTION]: 'page.userMention',
-  [NotificationType.COMMENT_USER_MENTION]: 'comment.userMention',
-  [NotificationType.COMMENT_CREATED]: 'comment.created',
-  [NotificationType.COMMENT_RESOLVED]: 'comment.resolved',
 };
 
 export type NotificationTab = 'direct' | 'updates' | 'all';
 
 export const DIRECT_NOTIFICATION_TYPES: NotificationType[] = [
-  NotificationType.COMMENT_USER_MENTION,
-  NotificationType.COMMENT_CREATED,
-  NotificationType.COMMENT_RESOLVED,
   NotificationType.REVIEW_ASSIGNED,
   NotificationType.REVIEW_STATUS_CHANGED,
   NotificationType.REVIEW_COMMENT_CREATED,

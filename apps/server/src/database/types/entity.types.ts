@@ -1,7 +1,6 @@
 import { Insertable, Selectable, Updateable } from 'kysely';
 import {
   Attachments,
-  Comments,
   Groups,
   Notifications,
   PageAccess as _PageAccess,
@@ -83,11 +82,6 @@ export type UpdatablePage = Updateable<Omit<Pages, 'id'>>;
 export type PageHistory = Selectable<History>;
 export type InsertablePageHistory = Insertable<History>;
 export type UpdatablePageHistory = Updateable<Omit<History, 'id'>>;
-
-// Comment
-export type Comment = Selectable<Comments>;
-export type InsertableComment = Insertable<Comments>;
-export type UpdatableComment = Updateable<Omit<Comments, 'id'>>;
 
 // Attachment
 export type Attachment = Selectable<Attachments>;

@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { PageModule } from './page/page.module';
 import { AttachmentModule } from './attachment/attachment.module';
-import { CommentModule } from './comment/comment.module';
 import { SearchModule } from './search/search.module';
 import { SpaceModule } from './space/space.module';
 import { GroupModule } from './group/group.module';
@@ -35,7 +34,6 @@ import { ClsMiddleware } from 'nestjs-cls';
     WorkspaceModule,
     PageModule,
     AttachmentModule,
-    CommentModule,
     ReviewModule,
     SearchModule,
     SpaceModule,

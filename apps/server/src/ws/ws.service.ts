@@ -124,29 +124,6 @@ export class WsService {
     await this.broadcastToAuthorizedUsers(room, null, pageId, data);
   }
 
-  async emitCommentEvent(
-    spaceId: string,
-    pageId: string,
-    data: any,
-  ): Promise<void> {
-    const room = getSpaceRoomName(spaceId);
-
-    const hasRestrictions = await this.spaceHasRestrictions(spaceId);
-    if (!hasRestrictions) {
-      this.server.to(room).emit('message', data);
-      return;
-    }
-
-    const isRestricted =
-      await this.pagePermissionRepo.hasRestrictedAncestor(pageId);
-    if (!isRestricted) {
-      this.server.to(room).emit('message', data);
-      return;
-    }
-
-    await this.broadcastToAuthorizedUsers(room, null, pageId, data);
-  }
-
   async emitToUsers(userIds: string[], data: any): Promise<void> {
     if (userIds.length === 0) return;
     const rooms = userIds.map((id) => getUserRoomName(id));

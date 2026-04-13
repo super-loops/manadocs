@@ -65,8 +65,6 @@ export enum QueueJob {
 
   PAGE_HISTORY = 'page-history',
 
-  COMMENT_NOTIFICATION = 'comment-notification',
-  COMMENT_RESOLVED_NOTIFICATION = 'comment-resolved-notification',
   REVIEW_ASSIGNED = 'review-assigned',
   REVIEW_STATUS_CHANGED = 'review-status-changed',
   REVIEW_COMMENT_CREATED = 'review-comment-created',

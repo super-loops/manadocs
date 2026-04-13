@@ -28,28 +28,7 @@ export interface INotificationCreateJob {
   actorId?: string;
   pageId?: string;
   spaceId?: string;
-  commentId?: string;
   data?: Record<string, unknown>;
-}
-
-export interface ICommentNotificationJob {
-  commentId: string;
-  parentCommentId?: string;
-  pageId: string;
-  spaceId: string;
-  workspaceId: string;
-  actorId: string;
-  mentionedUserIds: string[];
-  notifyWatchers: boolean;
-}
-
-export interface ICommentResolvedNotificationJob {
-  commentId: string;
-  commentCreatorId: string;
-  pageId: string;
-  spaceId: string;
-  workspaceId: string;
-  actorId: string;
 }
 
 export interface IPageMentionNotificationJob {

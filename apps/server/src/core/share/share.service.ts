@@ -15,7 +15,6 @@ import {
   getAttachmentIds,
   getProsemirrorContent,
   isAttachmentNode,
-  removeMarkTypeFromDoc,
 } from '../../common/helpers/prosemirror/utils';
 import { Node } from '@tiptap/pm/model';
 import { ShareRepo } from '@manadocs/db/repos/share/share.repo';
@@ -335,7 +334,6 @@ export class ShareService {
       updateAttachmentAttr(node, 'url', token);
     });
 
-    const removeCommentMarks = removeMarkTypeFromDoc(doc, 'comment');
-    return removeCommentMarks.toJSON();
+    return doc.toJSON();
   }
 }

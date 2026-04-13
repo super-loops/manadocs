@@ -10,7 +10,6 @@ import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 import { SpaceMemberRepo } from '@manadocs/db/repos/space/space-member.repo';
 import { PageRepo } from './repos/page/page.repo';
 import { PagePermissionRepo } from './repos/page/page-permission.repo';
-import { CommentRepo } from './repos/comment/comment.repo';
 import { PageHistoryRepo } from './repos/page/page-history.repo';
 import { AttachmentRepo } from './repos/attachment/attachment.repo';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
@@ -79,7 +78,6 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     PageRepo,
     PagePermissionRepo,
     PageHistoryRepo,
-    CommentRepo,
     AttachmentRepo,
     UserTokenRepo,
     UserSessionRepo,
@@ -104,7 +102,6 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     PageRepo,
     PagePermissionRepo,
     PageHistoryRepo,
-    CommentRepo,
     AttachmentRepo,
     UserTokenRepo,
     UserSessionRepo,
