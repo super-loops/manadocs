@@ -25,6 +25,7 @@ import { ApiTokenModule } from './api-token/api-token.module';
 import { AuditModule } from './audit/audit.module';
 import { ConfigModule } from './config/config.module';
 import { McpModule } from './mcp/mcp.module';
+import { ReviewModule } from './review/review.module';
 import { ClsMiddleware } from 'nestjs-cls';
 
 @Module({
@@ -35,6 +36,7 @@ import { ClsMiddleware } from 'nestjs-cls';
     PageModule,
     AttachmentModule,
     CommentModule,
+    ReviewModule,
     SearchModule,
     SpaceModule,
     GroupModule,

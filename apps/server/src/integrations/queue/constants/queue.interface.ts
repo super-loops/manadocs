@@ -67,6 +67,33 @@ export interface IPageUpdateNotificationJob {
   actorIds: string[];
 }
 
+export interface IReviewAssignedNotificationJob {
+  reviewId: string;
+  pageId: string;
+  spaceId: string;
+  workspaceId: string;
+  actorId: string;
+}
+
+export interface IReviewStatusChangedNotificationJob {
+  reviewId: string;
+  oldStatus: string;
+  newStatus: string;
+  pageId: string;
+  spaceId: string;
+  workspaceId: string;
+  actorId: string;
+}
+
+export interface IReviewCommentCreatedNotificationJob {
+  reviewId: string;
+  historyId: string;
+  pageId: string;
+  spaceId: string;
+  workspaceId: string;
+  actorId: string;
+}
+
 export interface IPermissionGrantedNotificationJob {
   userIds: string[];
   pageId: string;
