@@ -1,6 +1,11 @@
 import { SpaceTreeNode } from "@/features/page/tree/types.ts";
 import { IPage } from "@/features/page/types/page.types";
 import { IComment } from "@/features/comment/types/comment.types";
+import {
+  IReview,
+  IReviewAnchor,
+  IReviewHistory,
+} from "@/features/review/types/review.types";
 
 export type InvalidateEvent = {
   operation: "invalidate";
@@ -85,6 +90,44 @@ export type RefetchRootTreeNodeEvent = {
   spaceId: string;
 };
 
+export type ReviewCreatedEvent = {
+  operation: "reviewCreated";
+  pageId: string;
+  review: IReview;
+};
+
+export type ReviewUpdatedEvent = {
+  operation: "reviewUpdated";
+  pageId: string;
+  review: IReview;
+};
+
+export type ReviewDeletedEvent = {
+  operation: "reviewDeleted";
+  pageId: string;
+  reviewId: string;
+};
+
+export type ReviewCommentAddedEvent = {
+  operation: "reviewCommentAdded";
+  pageId: string;
+  reviewId: string;
+  history: IReviewHistory;
+};
+
+export type ReviewAnchorCreatedEvent = {
+  operation: "reviewAnchorCreated";
+  pageId: string;
+  anchor: IReviewAnchor & { reviewSequenceId: number | string; reviewStatus: string };
+};
+
+export type ReviewAnchorDeletedEvent = {
+  operation: "reviewAnchorDeleted";
+  pageId: string;
+  anchorId: string;
+  reviewId: string;
+};
+
 export type WebSocketEvent =
   | InvalidateEvent
   | CommentCreatedEvent
@@ -96,4 +139,10 @@ export type WebSocketEvent =
   | AddTreeNodeEvent
   | MoveTreeNodeEvent
   | DeleteTreeNodeEvent
-  | RefetchRootTreeNodeEvent;
+  | RefetchRootTreeNodeEvent
+  | ReviewCreatedEvent
+  | ReviewUpdatedEvent
+  | ReviewDeletedEvent
+  | ReviewCommentAddedEvent
+  | ReviewAnchorCreatedEvent
+  | ReviewAnchorDeletedEvent;

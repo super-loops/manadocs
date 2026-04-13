@@ -19,6 +19,8 @@ import { useMarkReadMutation } from "../queries/notification-query";
 import { buildPageUrl } from "@/features/page/page.utils";
 import { formatRelativeTime } from "../notification.utils";
 import classes from "../notification.module.css";
+import { useSetAtom } from "jotai";
+import { openReviewModalAtom } from "@/features/review/atoms/review-atom";
 
 type NotificationItemProps = {
   notification: INotification;
@@ -31,6 +33,7 @@ export function NotificationItem({
 }: NotificationItemProps) {
   const { t } = useTranslation();
   const markRead = useMarkReadMutation();
+  const setOpenReviewModal = useSetAtom(openReviewModalAtom);
   const [hovered, setHovered] = useState(false);
 
   const isUnread = !notification.readAt;
@@ -43,6 +46,12 @@ export function NotificationItem({
         return "<bold>{{name}}</bold> commented on a page";
       case "comment.resolved":
         return "<bold>{{name}}</bold> resolved a comment";
+      case "review.assigned":
+        return "<bold>{{name}}</bold> assigned you to a review";
+      case "review.status_changed":
+        return "<bold>{{name}}</bold> changed the status of a review";
+      case "review.comment_created":
+        return "<bold>{{name}}</bold> commented on a review";
       case "page.user_mention":
         return "<bold>{{name}}</bold> mentioned you on a page";
       case "page.permission_granted":
@@ -71,8 +80,16 @@ export function NotificationItem({
     }
   };
 
+  const isReviewNotification =
+    notification.type === "review.assigned" ||
+    notification.type === "review.status_changed" ||
+    notification.type === "review.comment_created";
+
   const handleClick = () => {
     markReadIfNeeded();
+    if (isReviewNotification && notification.reviewId) {
+      setOpenReviewModal(notification.reviewId);
+    }
     onNavigate();
   };
 

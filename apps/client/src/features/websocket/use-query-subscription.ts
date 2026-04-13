@@ -13,6 +13,10 @@ import {
 } from "../page/queries/page-query";
 import { RQ_KEY } from "../comment/queries/comment-query";
 import { IComment } from "@/features/comment/types/comment.types";
+import {
+  RQ_REVIEW,
+  RQ_REVIEW_ANCHORS,
+} from "@/features/review/queries/review-query";
 
 export const useQuerySubscription = () => {
   const queryClient = useQueryClient();
@@ -146,6 +150,59 @@ export const useQuerySubscription = () => {
           );
       */
           break;
+        case "reviewCreated":
+        case "reviewUpdated":
+        case "reviewDeleted": {
+          queryClient.invalidateQueries({
+            queryKey: ["reviews", "page", data.pageId],
+          });
+          queryClient.invalidateQueries({ queryKey: ["reviews", "assigned"] });
+          const reviewId =
+            data.operation === "reviewDeleted"
+              ? data.reviewId
+              : data.review?.id;
+          if (reviewId) {
+            queryClient.invalidateQueries({ queryKey: RQ_REVIEW(reviewId) });
+          }
+          if (data.operation === "reviewDeleted") {
+            queryClient.invalidateQueries({
+              queryKey: RQ_REVIEW_ANCHORS(data.pageId),
+            });
+          }
+          break;
+        }
+        case "reviewCommentAdded": {
+          queryClient.invalidateQueries({
+            queryKey: RQ_REVIEW(data.reviewId),
+          });
+          break;
+        }
+        case "reviewAnchorCreated": {
+          queryClient.invalidateQueries({
+            queryKey: RQ_REVIEW_ANCHORS(data.pageId),
+          });
+          if (data.anchor?.reviewId) {
+            queryClient.invalidateQueries({
+              queryKey: RQ_REVIEW(data.anchor.reviewId),
+            });
+          }
+          queryClient.invalidateQueries({
+            queryKey: ["reviews", "page", data.pageId],
+          });
+          break;
+        }
+        case "reviewAnchorDeleted": {
+          queryClient.invalidateQueries({
+            queryKey: RQ_REVIEW_ANCHORS(data.pageId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: RQ_REVIEW(data.reviewId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["reviews", "page", data.pageId],
+          });
+          break;
+        }
         case "refetchRootTreeNodeEvent": {
           const spaceId = data.spaceId;
           queryClient.refetchQueries({

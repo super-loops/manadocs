@@ -2,6 +2,9 @@ export type NotificationType =
   | "comment.user_mention"
   | "comment.created"
   | "comment.resolved"
+  | "review.assigned"
+  | "review.status_changed"
+  | "review.comment_created"
   | "page.user_mention"
   | "page.permission_granted"
   | "page.updated";
@@ -15,6 +18,7 @@ export type INotification = {
   pageId: string | null;
   spaceId: string | null;
   commentId: string | null;
+  reviewId: string | null;
   data: Record<string, unknown> | null;
   readAt: string | null;
   emailedAt: string | null;

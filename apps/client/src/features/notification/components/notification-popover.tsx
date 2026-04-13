@@ -1,14 +1,17 @@
 import { useState } from "react";
 import {
   ActionIcon,
+  Divider,
   Group,
   Indicator,
   Menu,
   Popover,
   ScrollArea,
+  Stack,
   Tabs,
   Text,
   Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import {
   IconBell,
@@ -16,6 +19,7 @@ import {
   IconChecks,
   IconDots,
   IconFilter,
+  IconMessageCircle,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NotificationList } from "./notification-list";
@@ -28,6 +32,10 @@ import {
   useUnreadCountQuery,
 } from "../queries/notification-query";
 import classes from "../notification.module.css";
+import { useAssignedReviewsQuery } from "@/features/review/queries/review-query";
+import { useSetAtom } from "jotai";
+import { openReviewModalAtom } from "@/features/review/atoms/review-atom";
+import { IReview } from "@/features/review/types/review.types";
 
 export function NotificationPopover() {
   const { t } = useTranslation();
@@ -37,8 +45,15 @@ export function NotificationPopover() {
 
   const { data: unreadData } = useUnreadCountQuery();
   const markAllRead = useMarkAllReadMutation();
+  const { data: assignedReviewsData } = useAssignedReviewsQuery([
+    "open",
+    "progress",
+  ]);
+  const setOpenReviewModal = useSetAtom(openReviewModalAtom);
 
   const unreadCount = unreadData?.count ?? 0;
+  const assignedReviews = (assignedReviewsData?.items ?? []).slice(0, 20);
+  const assignedCount = assignedReviewsData?.items?.length ?? 0;
 
   const handleMarkAllRead = () => {
     markAllRead.mutate();
@@ -150,6 +165,53 @@ export function NotificationPopover() {
           scrollbarSize={6}
           style={{ overscrollBehavior: "contain" }}
         >
+          {assignedReviews.length > 0 && (
+            <>
+              <Text size="xs" fw={600} c="dimmed" px="md" pt="sm" pb={4}>
+                {t("Assigned reviews")}
+                {assignedCount > assignedReviews.length
+                  ? ` (${assignedReviews.length}+)`
+                  : ` (${assignedCount})`}
+              </Text>
+              <Stack gap={0}>
+                {assignedReviews.map((review: IReview) => (
+                  <UnstyledButton
+                    key={review.id}
+                    className={classes.notificationItem}
+                    onClick={() => {
+                      setOpenReviewModal(review.id);
+                      setOpened(false);
+                    }}
+                  >
+                    <Group wrap="nowrap" align="flex-start" gap="sm">
+                      <IconMessageCircle
+                        size={16}
+                        stroke={1.5}
+                        style={{
+                          flexShrink: 0,
+                          color: "var(--mantine-color-dimmed)",
+                          marginTop: 2,
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text size="sm" lineClamp={1}>
+                          {review.title || t("Untitled review")}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {review.status === "open"
+                            ? t("Open")
+                            : review.status === "progress"
+                              ? t("In progress")
+                              : t("Resolved")}
+                        </Text>
+                      </div>
+                    </Group>
+                  </UnstyledButton>
+                ))}
+              </Stack>
+              <Divider className={classes.divider} />
+            </>
+          )}
           <NotificationList
             tab={tab}
             filter={filter}
