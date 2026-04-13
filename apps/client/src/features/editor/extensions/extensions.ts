@@ -49,6 +49,7 @@ import {
   Columns,
   Column,
   Status,
+  ReviewAnchor,
 } from "@manadocs/editor-ext";
 import {
   randomElement,
@@ -68,6 +69,7 @@ import MathBlockView from "@/features/editor/components/math/math-block.tsx";
 import ImageView from "@/features/editor/components/image/image-view.tsx";
 import CalloutView from "@/features/editor/components/callout/callout-view.tsx";
 import StatusView from "@/features/editor/components/status/status-view.tsx";
+import ReviewAnchorView from "@/features/editor/components/review/review-anchor-view.tsx";
 import VideoView from "@/features/editor/components/video/video-view.tsx";
 import AudioView from "@/features/editor/components/audio/audio-view.tsx";
 import AttachmentView from "@/features/editor/components/attachment/attachment-view.tsx";
@@ -304,6 +306,9 @@ export const mainExtensions = [
   }),
   Status.configure({
     view: StatusView,
+  }),
+  ReviewAnchor.configure({
+    view: ReviewAnchorView,
   }),
   MarkdownClipboard.configure({
     transformPastedText: true,

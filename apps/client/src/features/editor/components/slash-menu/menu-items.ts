@@ -25,7 +25,9 @@ import {
   IconColumns3,
   IconColumns2,
   IconTag,
+  IconAnchor,
 } from "@tabler/icons-react";
+import { openReviewSelectPopup } from "@/features/editor/components/review/review-select-popup";
 import {
   CommandProps,
   SlashMenuGroupedItemsType,
@@ -432,6 +434,18 @@ const CommandGroups: SlashMenuGroupedItemsType = {
           .deleteRange(range)
           .insertContent(currentDate)
           .run();
+      },
+    },
+    {
+      title: "Review",
+      description: "Start a review on a selection or insertion point.",
+      searchTerms: ["review", "anchor", "comment", "feedback"],
+      icon: IconAnchor,
+      command: ({ editor, range }: CommandProps) => {
+        // @ts-ignore
+        const pageId = editor.storage?.pageId;
+        if (!pageId) return;
+        openReviewSelectPopup(editor, range, pageId);
       },
     },
     {

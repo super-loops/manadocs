@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
 
 export type ReviewAnchorStatus = 'open' | 'progress' | 'resolved';
 
@@ -97,6 +98,11 @@ export const ReviewAnchor = Node.create<ReviewAnchorOptions>({
       mergeAttributes(HTMLAttributes, { 'data-type': this.name }),
       '',
     ];
+  },
+
+  addNodeView() {
+    this.editor.isInitialized = true;
+    return ReactNodeViewRenderer(this.options.view);
   },
 
   addCommands() {
