@@ -146,9 +146,13 @@ export class QueueRuntime {
     return this.db.transaction().execute(async (trx) => {
       // Insert the canonical job row. If a unique_key collides with an active
       // job on this queue, do nothing (idempotent enqueue).
+      // Pass the payload as a JS object. postgres.js auto-encodes it once for
+      // the jsonb column, yielding jsonb_typeof='object'. Pre-serializing with
+      // JSON.stringify here would double-encode as a jsonb scalar string and
+      // break every consumer that destructures job.data.
       const inserted = await sql<{ id: string }>`
         INSERT INTO jobs (queue_name, job_name, data, priority, unique_key, max_attempts)
-        VALUES (${queueName}, ${jobName}, ${JSON.stringify(data)}::jsonb, ${priority}, ${uniqueKey}, ${maxAttempts})
+        VALUES (${queueName}, ${jobName}, ${data}, ${priority}, ${uniqueKey}, ${maxAttempts})
         ON CONFLICT (queue_name, unique_key)
           WHERE unique_key IS NOT NULL AND finished_at IS NULL
           DO NOTHING
