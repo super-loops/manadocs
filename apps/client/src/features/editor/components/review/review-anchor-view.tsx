@@ -46,7 +46,7 @@ export default function ReviewAnchorView(props: NodeViewProps) {
           alignItems: "center",
           padding: "0 6px",
           margin: "0 1px",
-          borderRadius: 10,
+          borderRadius: 4,
           fontSize: "0.85em",
           fontWeight: 600,
           lineHeight: 1.6,

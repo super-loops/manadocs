@@ -385,7 +385,7 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
         onChange={(value) => setActiveTab(value || "evidence")}
         variant="default"
       >
-        <Tabs.List>
+        <Tabs.List grow>
           <Tabs.Tab
             value="evidence"
             rightSection={
@@ -394,7 +394,7 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
               </Badge>
             }
           >
-            {TAB_ICON.evidence} {t("Evidence")}
+            {TAB_ICON.evidence}
           </Tabs.Tab>
           <Tabs.Tab
             value="assignees"
@@ -404,7 +404,7 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
               </Badge>
             }
           >
-            {TAB_ICON.assignees} {t("Assignees")}
+            {TAB_ICON.assignees}
           </Tabs.Tab>
           <Tabs.Tab
             value="anchors"
@@ -414,9 +414,19 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
               </Badge>
             }
           >
-            {TAB_ICON.anchors} {t("Anchors")}
+            {TAB_ICON.anchors}
           </Tabs.Tab>
         </Tabs.List>
+
+        {/* 선택된 탭의 라벨을 탭바 아래에 헤더로 표시 (탭 자체는 아이콘+카운트만으로 컴팩트) */}
+        <Text fw={600} size="sm" mt="sm" mb="xs">
+          {activeTab === "evidence" &&
+            `${TAB_ICON.evidence} ${t("Evidence")}`}
+          {activeTab === "assignees" &&
+            `${TAB_ICON.assignees} ${t("Assignees")}`}
+          {activeTab === "anchors" &&
+            `${TAB_ICON.anchors} ${t("Anchors")}`}
+        </Text>
 
         <Tabs.Panel value="evidence" pt="sm">
           <Stack gap="xs">

@@ -50,6 +50,7 @@ export const theme = createTheme({
     Badge: Badge.extend({
       defaultProps: {
         tt: "none",
+        radius: "sm",
       },
     }),
   },
