@@ -19,27 +19,31 @@ export async function up(db: Kysely<any>): Promise<void> {
     const workspaceSeq = new Map<string, number>();
     const reviewRows: any[] = [];
 
+    // CamelCasePlugin is active on the Kysely instance, so result rows expose
+    // camelCase keys (workspaceId, spaceId, ...) even though the DB columns
+    // are snake_case. Read with camelCase to avoid undefined values that
+    // would otherwise become NULL on insert.
     for (const c of parentComments) {
       const reviewId = crypto.randomUUID();
       commentToReview.set(c.id, reviewId);
 
-      const next = (workspaceSeq.get(c.workspace_id) ?? 0) + 1;
-      workspaceSeq.set(c.workspace_id, next);
+      const next = (workspaceSeq.get(c.workspaceId) ?? 0) + 1;
+      workspaceSeq.set(c.workspaceId, next);
 
       reviewRows.push({
         id: reviewId,
         sequence_id: next,
         title: null,
-        status: c.resolved_at ? 'resolved' : 'open',
+        status: c.resolvedAt ? 'resolved' : 'open',
         content: c.content,
-        creator_id: c.creator_id,
-        page_id: c.page_id,
-        space_id: c.space_id,
-        workspace_id: c.workspace_id,
-        resolved_at: c.resolved_at,
-        resolved_by_id: c.resolved_by_id ?? null,
-        created_at: c.created_at,
-        updated_at: c.updated_at ?? c.created_at,
+        creator_id: c.creatorId,
+        page_id: c.pageId,
+        space_id: c.spaceId,
+        workspace_id: c.workspaceId,
+        resolved_at: c.resolvedAt,
+        resolved_by_id: c.resolvedById ?? null,
+        created_at: c.createdAt,
+        updated_at: c.updatedAt ?? c.createdAt,
         deleted_at: null,
       });
     }
@@ -63,11 +67,11 @@ export async function up(db: Kysely<any>): Promise<void> {
       content: c.content,
       old_status: null,
       new_status: null,
-      creator_id: c.creator_id,
-      workspace_id: c.workspace_id,
-      created_at: c.created_at,
-      updated_at: c.updated_at ?? c.created_at,
-      edited_at: c.edited_at ?? null,
+      creator_id: c.creatorId,
+      workspace_id: c.workspaceId,
+      created_at: c.createdAt,
+      updated_at: c.updatedAt ?? c.createdAt,
+      edited_at: c.editedAt ?? null,
       deleted_at: null,
     }));
 
@@ -86,7 +90,7 @@ export async function up(db: Kysely<any>): Promise<void> {
         .execute();
 
       for (const c of children) {
-        const reviewId = commentToReview.get(c.parent_comment_id!);
+        const reviewId = commentToReview.get(c.parentCommentId!);
         if (!reviewId) continue;
         childCount += 1;
         historyRows.push({
@@ -96,11 +100,11 @@ export async function up(db: Kysely<any>): Promise<void> {
           content: c.content,
           old_status: null,
           new_status: null,
-          creator_id: c.creator_id,
-          workspace_id: c.workspace_id,
-          created_at: c.created_at,
-          updated_at: c.updated_at ?? c.created_at,
-          edited_at: c.edited_at ?? null,
+          creator_id: c.creatorId,
+          workspace_id: c.workspaceId,
+          created_at: c.createdAt,
+          updated_at: c.updatedAt ?? c.createdAt,
+          edited_at: c.editedAt ?? null,
           deleted_at: null,
         });
       }
