@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 current_phase: 6
 issue: 1
 slug: review-visual-improvement
