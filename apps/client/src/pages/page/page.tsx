@@ -119,7 +119,7 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         />
         <MemoizedHistoryModal pageId={page.id} />
         <ReviewSidebar />
-        <ReviewAnchorDropZone />
+        {canEdit && <ReviewAnchorDropZone />}
       </div>
     )
   );

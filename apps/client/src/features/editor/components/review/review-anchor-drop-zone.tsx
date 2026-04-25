@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
 import { useParams } from "react-router-dom";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
@@ -19,9 +19,24 @@ export default function ReviewAnchorDropZone() {
   const { data: page } = usePageQuery({ pageId: extractPageSlugId(pageSlug) });
   const createAnchor = useCreateReviewAnchorMutation();
 
+  // mutation 객체는 매 렌더 새로 만들어지므로 useEffect 의존성에서 제외하고
+  // ref로 최신 핸들만 들고 가서 안에서 호출한다.
+  const createAnchorRef = useRef(createAnchor);
+  createAnchorRef.current = createAnchor;
+  const pageIdRef = useRef(page?.id);
+  pageIdRef.current = page?.id;
+
   useEffect(() => {
-    if (!editor || !page) return;
-    const dom = editor.view.dom as HTMLElement;
+    if (!editor || editor.isDestroyed) return;
+
+    let dom: HTMLElement;
+    try {
+      dom = editor.view.dom as HTMLElement;
+    } catch {
+      // view가 아직 마운트되지 않았거나 이미 정리된 경우
+      return;
+    }
+    if (!dom) return;
 
     const isReviewDrag = (e: DragEvent) => {
       const types = e.dataTransfer?.types;
@@ -42,18 +57,28 @@ export default function ReviewAnchorDropZone() {
       if (!isReviewDrag(e)) return;
       e.preventDefault();
       const reviewId = e.dataTransfer?.getData(REVIEW_DRAG_MIME);
-      if (!reviewId) return;
+      const pageId = pageIdRef.current;
+      if (!reviewId || !pageId) return;
+      if (editor.isDestroyed) return;
 
-      const coords = { left: e.clientX, top: e.clientY };
-      const posInfo = editor.view.posAtCoords(coords);
-      if (!posInfo) return;
-      const pos = posInfo.pos;
+      let pos: number;
+      try {
+        const posInfo = editor.view.posAtCoords({
+          left: e.clientX,
+          top: e.clientY,
+        });
+        if (!posInfo) return;
+        pos = posInfo.pos;
+      } catch {
+        return;
+      }
 
       try {
-        const anchor = await createAnchor.mutateAsync({
+        const anchor = await createAnchorRef.current.mutateAsync({
           reviewId,
-          pageId: page.id,
+          pageId,
         });
+        if (editor.isDestroyed) return;
         editor
           .chain()
           .focus()
@@ -74,10 +99,14 @@ export default function ReviewAnchorDropZone() {
     dom.addEventListener("dragover", handleDragOver);
     dom.addEventListener("drop", handleDrop);
     return () => {
-      dom.removeEventListener("dragover", handleDragOver);
-      dom.removeEventListener("drop", handleDrop);
+      try {
+        dom.removeEventListener("dragover", handleDragOver);
+        dom.removeEventListener("drop", handleDrop);
+      } catch {
+        // dom이 이미 분리되었으면 무시
+      }
     };
-  }, [editor, page?.id, createAnchor]);
+  }, [editor]);
 
   return null;
 }
