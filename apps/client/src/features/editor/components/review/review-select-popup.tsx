@@ -71,7 +71,7 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
   };
 
   const handleCreateNew = async () => {
-    const review = await createReview.mutateAsync({ pageId, content: null });
+    const review = await createReview.mutateAsync({ pageId });
     const anchor = await createAnchor.mutateAsync({ reviewId: review.id, pageId });
     insertAnchor(review, anchor);
   };

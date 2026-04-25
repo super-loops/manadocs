@@ -2,6 +2,7 @@ import api from "@/lib/api-client";
 import {
   IReview,
   IReviewAnchor,
+  IReviewHistory,
   ICreateReview,
   IChangeReviewStatus,
   IAddReviewComment,
@@ -10,6 +11,9 @@ import {
   IUpdateReviewAssignees,
   IReviewsByPageParams,
   IAssignedReviewsParams,
+  IUpdateReview,
+  IUpdateReviewComment,
+  IDeleteReviewComment,
 } from "@/features/review/types/review.types";
 import { IPagination } from "@/lib/types.ts";
 
@@ -80,4 +84,22 @@ export async function getReviewAnchorsByPage(
 
 export async function deleteReview(reviewId: string): Promise<void> {
   await api.post("/reviews/delete", { reviewId });
+}
+
+export async function updateReview(data: IUpdateReview): Promise<IReview> {
+  const req = await api.post<IReview>("/reviews/update", data);
+  return req.data;
+}
+
+export async function updateReviewComment(
+  data: IUpdateReviewComment,
+): Promise<IReviewHistory> {
+  const req = await api.post<IReviewHistory>("/reviews/update-comment", data);
+  return req.data;
+}
+
+export async function deleteReviewComment(
+  data: IDeleteReviewComment,
+): Promise<void> {
+  await api.post("/reviews/delete-comment", data);
 }

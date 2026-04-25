@@ -30,18 +30,18 @@ import { extractPageSlugId } from "@/lib";
 import { CustomAvatar } from "@/components/ui/custom-avatar";
 import ReviewStatusBadge from "./review-status-badge";
 
-function extractProseMirrorText(node: any, limit = 200): string {
-  if (!node) return "";
-  if (typeof node === "string") return node;
-  if (typeof node.text === "string") return node.text;
-  const content = node.content;
+function extractPreviewText(value: any, limit = 200): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value.text === "string") return value.text;
+  const content = value.content;
   if (!Array.isArray(content)) return "";
   let out = "";
   for (const child of content) {
     if (out.length > 0 && child?.type && child.type !== "text") {
       out += " ";
     }
-    out += extractProseMirrorText(child, limit);
+    out += extractPreviewText(child, limit);
     if (out.length >= limit) break;
   }
   return out;
@@ -103,7 +103,7 @@ interface ReviewCardProps {
 }
 
 function ReviewCard({ review, onClick }: ReviewCardProps) {
-  const preview = extractProseMirrorText(review.content).slice(0, 80).trim();
+  const preview = extractPreviewText(review.content).slice(0, 80).trim();
   const assignees = review.assignees ?? [];
   const visibleAssignees = assignees.slice(0, 3);
   const overflow = Math.max(0, assignees.length - visibleAssignees.length);

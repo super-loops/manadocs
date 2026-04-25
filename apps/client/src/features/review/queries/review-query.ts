@@ -12,15 +12,19 @@ import {
   createReviewAnchor,
   deleteReview,
   deleteReviewAnchor,
+  deleteReviewComment,
   getAssignedReviews,
   getReviewAnchorsByPage,
   getReviewById,
   getReviewsByPage,
+  updateReview,
   updateReviewAssignees,
+  updateReviewComment,
 } from "@/features/review/services/review-service";
 import {
   IReview,
   IReviewAnchor,
+  IReviewHistory,
   ReviewStatus,
   ICreateReview,
   IChangeReviewStatus,
@@ -28,6 +32,9 @@ import {
   ICreateReviewAnchor,
   IDeleteReviewAnchor,
   IUpdateReviewAssignees,
+  IUpdateReview,
+  IUpdateReviewComment,
+  IDeleteReviewComment,
 } from "@/features/review/types/review.types";
 import { IPagination } from "@/lib/types.ts";
 import { notifications } from "@mantine/notifications";
@@ -264,6 +271,63 @@ export function useUpdateReviewAssigneesMutation() {
     onError: () => {
       notifications.show({
         message: t("Failed to update assignees"),
+        color: "red",
+      });
+    },
+  });
+}
+
+export function useUpdateReviewMutation() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation<IReview, Error, IUpdateReview>({
+    mutationFn: (data) => updateReview(data),
+    onSuccess: (review) => {
+      queryClient.setQueryData(RQ_REVIEW(review.id), (prev: IReview | undefined) =>
+        prev ? { ...prev, ...review } : review,
+      );
+      invalidatePageReviews(queryClient, review.pageId);
+    },
+    onError: () => {
+      notifications.show({
+        message: t("Failed to update review"),
+        color: "red",
+      });
+    },
+  });
+}
+
+export function useUpdateReviewCommentMutation(reviewId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation<IReviewHistory, Error, IUpdateReviewComment>({
+    mutationFn: (data) => updateReviewComment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: RQ_REVIEW(reviewId) });
+    },
+    onError: () => {
+      notifications.show({
+        message: t("Failed to update comment"),
+        color: "red",
+      });
+    },
+  });
+}
+
+export function useDeleteReviewCommentMutation(reviewId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation<void, Error, IDeleteReviewComment>({
+    mutationFn: (data) => deleteReviewComment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: RQ_REVIEW(reviewId) });
+    },
+    onError: () => {
+      notifications.show({
+        message: t("Failed to delete comment"),
         color: "red",
       });
     },

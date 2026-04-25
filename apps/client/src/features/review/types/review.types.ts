@@ -92,7 +92,7 @@ export interface IReview {
 export interface ICreateReview {
   pageId: string;
   title?: string;
-  content?: any;
+  content?: string;
   assigneeUserIds?: string[];
   assigneeGroupIds?: string[];
 }
@@ -104,7 +104,7 @@ export interface IChangeReviewStatus {
 
 export interface IAddReviewComment {
   reviewId: string;
-  content: any;
+  content: string;
 }
 
 export interface ICreateReviewAnchor {
@@ -120,6 +120,21 @@ export interface IUpdateReviewAssignees {
   reviewId: string;
   assigneeUserIds?: string[];
   assigneeGroupIds?: string[];
+}
+
+export interface IUpdateReview {
+  reviewId: string;
+  title?: string;
+  content?: string;
+}
+
+export interface IUpdateReviewComment {
+  historyId: string;
+  content: string;
+}
+
+export interface IDeleteReviewComment {
+  historyId: string;
 }
 
 export interface IReviewsByPageParams extends QueryParams {

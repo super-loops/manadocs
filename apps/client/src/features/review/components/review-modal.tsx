@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActionIcon,
   Badge,
@@ -11,6 +11,7 @@ import {
   Select,
   Stack,
   Text,
+  Textarea,
 } from "@mantine/core";
 import { IconArrowUp, IconBookmark, IconPlus, IconX } from "@tabler/icons-react";
 import { useAtom, useSetAtom } from "jotai";
@@ -30,10 +31,10 @@ import {
 } from "@/features/review/types/review.types";
 import { CustomAvatar } from "@/components/ui/custom-avatar";
 import { MultiUserSelect } from "@/features/group/components/multi-user-select";
-import ReviewEditor from "./review-editor";
 import { buildPageUrl } from "@/features/page/page.utils";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import ReviewStatusBadge from "./review-status-badge";
+import ReviewCommentBubble from "./review-comment-bubble";
 
 const STATUS_LABEL: Record<ReviewStatus, string> = {
   open: "Open",
@@ -315,7 +316,7 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
         ) : (
           <Stack gap="sm">
             {histories.map((h) => (
-              <HistoryEntry key={h.id} history={h} />
+              <HistoryEntry key={h.id} history={h} reviewId={review.id} />
             ))}
           </Stack>
         )}
@@ -334,7 +335,12 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
   );
 }
 
-function HistoryEntry({ history }: { history: IReviewHistory }) {
+interface HistoryEntryProps {
+  history: IReviewHistory;
+  reviewId: string;
+}
+
+function HistoryEntry({ history, reviewId }: HistoryEntryProps) {
   const { t } = useTranslation();
   const createdAtAgo = useTimeAgo(history.createdAt);
   const creatorName = history.creator?.name || t("Unknown");
@@ -356,58 +362,42 @@ function HistoryEntry({ history }: { history: IReviewHistory }) {
     );
   }
 
-  return (
-    <Group align="flex-start" gap="sm" wrap="nowrap">
-      <CustomAvatar
-        size="sm"
-        avatarUrl={history.creator?.avatarUrl ?? null}
-        name={creatorName}
-      />
-      <Box style={{ flex: 1, minWidth: 0 }}>
-        <Group gap="xs">
-          <Text size="sm" fw={500}>
-            {creatorName}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {createdAtAgo}
-          </Text>
-        </Group>
-        {history.content ? (
-          <ReviewEditor defaultContent={history.content} editable={false} />
-        ) : null}
-      </Box>
-    </Group>
-  );
+  return <ReviewCommentBubble history={history} reviewId={reviewId} />;
 }
 
 interface ReviewCommentInputProps {
   reviewId: string;
   isSending: boolean;
-  onSend: (content: any) => Promise<unknown>;
+  onSend: (content: string) => Promise<unknown>;
 }
 
 function ReviewCommentInput({ isSending, onSend }: ReviewCommentInputProps) {
   const { t } = useTranslation();
-  const [content, setContent] = useState<any>(null);
-  const editorRef = useRef<any>(null);
+  const [content, setContent] = useState("");
 
   const handleSave = useCallback(async () => {
-    if (!content) return;
-    await onSend(content);
-    setContent(null);
-    editorRef.current?.clearContent();
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    await onSend(trimmed);
+    setContent("");
   }, [content, onSend]);
 
-  const hasContent = !!content;
+  const hasContent = !!content.trim();
 
   return (
     <Box>
-      <ReviewEditor
-        ref={editorRef}
-        onUpdate={setContent}
-        onSave={handleSave}
-        editable={true}
-        placeholder={t("Add a comment...")}
+      <Textarea
+        value={content}
+        onChange={(e) => setContent(e.currentTarget.value)}
+        autosize
+        minRows={2}
+        placeholder={t("Add a comment... (markdown supported)")}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleSave();
+          }
+        }}
       />
       <Group justify="flex-end" mt="xs">
         <Button

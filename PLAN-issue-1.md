@@ -1,6 +1,6 @@
 ---
 status: in-progress
-current_phase: 3
+current_phase: 4
 issue: 1
 slug: review-visual-improvement
 last_updated: 2026-04-25
@@ -132,27 +132,11 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **3-1. ReviewCommentBubble 컴포넌트** (FF-9)
-  - 출력: 다음 레이아웃 — `[유저 아바타] [말풍선(content)]` / 말풍선 하단에 작은 글씨로 `유저명 · 수정시간 · [수정][삭제]`
-  - 파일 경계: `apps/client/src/features/review/components/review-comment-bubble.tsx` 신규
-  - 완료 기준: 말풍선 톤이 카톡/슬랙처럼 둥근 풍선, 본인 코멘트와 타인 코멘트의 정렬/색조 차이 (필요 시), 본인 코멘트만 수정/삭제 버튼 표시
-
-- [ ] **3-2. 코멘트 markdown 렌더링** (FF-9)
-  - 출력: 저장된 markdown 문자열을 Tiptap 렌더 파이프라인으로 표시 (페이지 본문 렌더와 같은 톤). 본문(`reviews.content`)도 동일 컴포넌트 사용
-  - 파일 경계: 신규 markdown→Tiptap 렌더 헬퍼 — 위치는 `apps/client/src/features/review/components/` 또는 공용으로 `apps/client/src/lib/markdown-render/` 다음 에이전트 판단
-  - 의존: 3-1
-  - 완료 기준: `**굵게**` `*기울임*` `[링크](url)` `\`code\`` 정도가 잘 렌더링됨
-
-- [ ] **3-3. 수정/삭제 동작 연결** (FF-9)
-  - 출력: 수정 버튼 → 인라인 편집 모드(말풍선 자리에 textarea), 저장 시 1-4 API 호출 / 삭제 버튼 → 확인 후 1-4 API 호출
-  - 파일 경계: 3-1
-  - 의존: 1-4, 3-1
-  - 완료 기준: 수정/삭제 후 화면이 즉시 갱신, `editedAt` 있는 코멘트는 "(수정됨)" 마커, `deletedAt` 있는 코멘트는 본문이 "(삭제됨)" 으로 마스킹되고 수정 버튼 비표시
-
-- [ ] **3-4. 코멘트 입력창** (FF-9 보조)
-  - 출력: 기존 코멘트 입력창(`ReviewCommentInput`)도 plain text + markdown 입력에 맞게 정돈 (이미 그렇다면 손대지 않음)
-  - 파일 경계: 기존 `ReviewCommentInput`
-  - 완료 기준: 입력 → 전송 → 새 말풍선이 즉시 추가
+- [x] **3-1. ReviewCommentBubble 컴포넌트** — 말풍선 + 인라인 편집 + 수정/삭제 (`review-comment-bubble.tsx`)
+- [x] **3-2. markdown 렌더 헬퍼** — `review-markdown.tsx` (marked + DOMPurify + TypographyStylesProvider)
+- [x] **3-3. 수정/삭제 연결** — Phase 1 API 호출 + editedAt/deletedAt 마커 + 마스킹
+- [x] **3-4. 코멘트 입력창 정돈** — Textarea (plain text + markdown 안내), Cmd/Ctrl+Enter 전송
+- [x] **회귀 정리** — review-sidebar `ReviewCard.preview` 가 string content도 처리, review-select-popup의 `content: null` 제거
 
 **Phase 3 완료 기준:** 코멘트가 말풍선 줄로 깔끔하게 보이고, 본인 코멘트는 수정/삭제 가능하며, 그 흔적이 명시적으로 남는다.
 
