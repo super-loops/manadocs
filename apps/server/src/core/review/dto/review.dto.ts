@@ -46,7 +46,7 @@ export class ChangeReviewStatusDto {
   @IsUUID()
   reviewId: string;
 
-  @IsIn(['open', 'progress', 'resolved'])
+  @IsIn(['open', 'progress', 'resolved', 'drop'])
   status: string;
 }
 
@@ -109,13 +109,13 @@ export class ReviewPageIdDto {
   pageId: string;
 
   @IsOptional()
-  @IsIn(['open', 'progress', 'resolved'])
+  @IsIn(['open', 'progress', 'resolved', 'drop'])
   status?: string;
 }
 
 export class AssignedReviewsDto {
   @IsOptional()
   @IsArray()
-  @IsIn(['open', 'progress', 'resolved'], { each: true })
+  @IsIn(['open', 'progress', 'resolved', 'drop'], { each: true })
   statuses?: string[];
 }

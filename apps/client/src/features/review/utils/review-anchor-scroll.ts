@@ -21,11 +21,13 @@ export function scrollToReviewAnchor(anchorId: string): boolean {
 /**
  * 노드가 아직 마운트되지 않았을 가능성에 대비해 짧게 재시도한다.
  * 페이지 라우팅 직후 호출되는 경우 유용.
+ * 모든 시도가 실패하면 onFinalFail 콜백을 호출한다 (orphan 정리에 활용).
  */
 export function scrollToReviewAnchorWithRetry(
   anchorId: string,
   attempts = 6,
   intervalMs = 120,
+  onFinalFail?: () => void,
 ): void {
   let tries = 0;
   const tick = () => {
@@ -33,6 +35,8 @@ export function scrollToReviewAnchorWithRetry(
     tries += 1;
     if (tries < attempts) {
       window.setTimeout(tick, intervalMs);
+    } else if (onFinalFail) {
+      onFinalFail();
     }
   };
   tick();

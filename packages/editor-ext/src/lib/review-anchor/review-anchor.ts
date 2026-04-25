@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 
-export type ReviewAnchorStatus = 'open' | 'progress' | 'resolved';
+export type ReviewAnchorStatus = 'open' | 'progress' | 'resolved' | 'drop';
 
 export interface ReviewAnchorAttributes {
   anchorId: string;

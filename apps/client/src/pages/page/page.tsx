@@ -4,7 +4,9 @@ import { FullEditor } from "@/features/editor/full-editor";
 import HistoryModal from "@/features/page-history/components/history-modal";
 import ReviewSidebar from "@/features/review/components/review-sidebar";
 import ReviewAnchorDropZone from "@/features/editor/components/review/review-anchor-drop-zone";
+import ReviewAnchorSync from "@/features/editor/components/review/review-anchor-sync";
 import { scrollToReviewAnchorWithRetry } from "@/features/review/utils/review-anchor-scroll";
+import { useDeleteReviewAnchorMutation } from "@/features/review/queries/review-query";
 import { Helmet } from "react-helmet-async";
 import PageHeader from "@/features/page/components/header/page-header.tsx";
 import { extractPageSlugId } from "@/lib";
@@ -57,14 +59,22 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
   const { data: space } = useGetSpaceBySlugQuery(page?.space?.slug);
 
   const canEdit = page?.permissions?.canEdit ?? false;
+  const deleteAnchorMutation = useDeleteReviewAnchorMutation(page?.id);
 
   useEffect(() => {
     if (!page) return;
-    const anchorId = (location.state as { anchorId?: string } | null)?.anchorId;
-    if (anchorId) {
-      scrollToReviewAnchorWithRetry(anchorId);
-    }
-  }, [page?.id, location.state]);
+    const state = location.state as
+      | { anchorId?: string; autoCleanup?: boolean }
+      | null;
+    const anchorId = state?.anchorId;
+    if (!anchorId) return;
+    scrollToReviewAnchorWithRetry(anchorId, 6, 150, () => {
+      // 모든 retry 후에도 노드를 찾지 못함 → orphan
+      if (state?.autoCleanup) {
+        deleteAnchorMutation.mutate({ anchorId });
+      }
+    });
+  }, [page?.id, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return <></>;
@@ -120,6 +130,7 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         <MemoizedHistoryModal pageId={page.id} />
         <ReviewSidebar />
         {canEdit && <ReviewAnchorDropZone />}
+        {canEdit && <ReviewAnchorSync />}
       </div>
     )
   );

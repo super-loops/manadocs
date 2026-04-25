@@ -1,4 +1,5 @@
 import {
+  Badge,
   createTheme,
   CSSVariablesResolver,
   MantineColorsTuple,
@@ -45,6 +46,11 @@ export const theme = createTheme({
           }),
         },
       }),
+    }),
+    Badge: Badge.extend({
+      defaultProps: {
+        tt: "none",
+      },
     }),
   },
   /***

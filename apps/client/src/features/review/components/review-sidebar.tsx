@@ -24,6 +24,7 @@ import {
   IReview,
   IReviewAssignee,
   ReviewStatus,
+  reviewSidebarLabel,
 } from "@/features/review/types/review.types";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { extractPageSlugId } from "@/lib";
@@ -121,9 +122,9 @@ function ReviewCard({ review, onClick }: ReviewCardProps) {
       <Group justify="space-between" wrap="nowrap">
         <Group gap="xs" wrap="nowrap">
           <Badge variant="light" color="gray" size="sm">
-            #RE_{review.sequenceId}
+            {reviewSidebarLabel(review.sequenceId)}
           </Badge>
-          <ReviewStatusBadge status={review.status} />
+          <ReviewStatusBadge status={review.status} format="abbrev" />
         </Group>
         <Group gap={4} wrap="nowrap">
           <IconBookmark size={14} stroke={1.5} />
@@ -182,6 +183,9 @@ export default function ReviewSidebar() {
       padding={selectedReviewId ? 0 : "md"}
       title={selectedReviewId ? null : t("Reviews")}
       withCloseButton={!selectedReviewId}
+      withOverlay={false}
+      lockScroll={false}
+      closeOnClickOutside={false}
     >
       {selectedReviewId ? (
         <ScrollArea h="100%" scrollbarSize={5} type="scroll">

@@ -146,11 +146,12 @@ function invalidatePageReviews(
   queryClient: ReturnType<typeof useQueryClient>,
   pageId?: string | null,
 ) {
+  // refetchOnMount: false 기본값과 무관하게 즉시 다시 가져오도록 refetchQueries 강제 사용
   if (pageId) {
-    queryClient.invalidateQueries({ queryKey: ["reviews", "page", pageId] });
-    queryClient.invalidateQueries({ queryKey: RQ_REVIEW_ANCHORS(pageId) });
+    queryClient.refetchQueries({ queryKey: ["reviews", "page", pageId] });
+    queryClient.refetchQueries({ queryKey: RQ_REVIEW_ANCHORS(pageId) });
   }
-  queryClient.invalidateQueries({ queryKey: ["reviews", "assigned"] });
+  queryClient.refetchQueries({ queryKey: ["reviews", "assigned"] });
 }
 
 export function useCreateReviewMutation() {

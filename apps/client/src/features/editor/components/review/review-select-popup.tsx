@@ -22,7 +22,10 @@ import {
   useCreateReviewMutation,
   useReviewsByPageQuery,
 } from "@/features/review/queries/review-query";
-import { IReview } from "@/features/review/types/review.types";
+import {
+  IReview,
+  reviewSidebarLabel,
+} from "@/features/review/types/review.types";
 
 type Props = {
   editor: Editor;
@@ -34,6 +37,8 @@ type Props = {
 function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [phase, setPhase] = useState<"list" | "create">("list");
+  const [newTitle, setNewTitle] = useState("");
   const { data } = useReviewsByPageQuery(pageId, "open");
   const createReview = useCreateReviewMutation();
   const createAnchor = useCreateReviewAnchorMutation();
@@ -41,12 +46,16 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
   const filtered = useMemo(() => {
     const items = data?.items ?? [];
     if (!search.trim()) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (r) =>
-        (r.title ?? "").toLowerCase().includes(q) ||
-        String(r.sequenceId).includes(q),
-    );
+    // `#1`, `1`, `untitled`, title 모두 매칭
+    const raw = search.trim().toLowerCase();
+    const numeric = raw.replace(/^#/, "");
+    return items.filter((r) => {
+      const titleMatch = (r.title ?? "").toLowerCase().includes(raw);
+      const seqMatch = String(r.sequenceId).includes(numeric);
+      const untitledMatch =
+        !r.title && "untitled".includes(raw); // 타이틀 없으면 "untitled" 키워드로도
+      return titleMatch || seqMatch || untitledMatch;
+    });
   }, [data, search]);
 
   const insertAnchor = (review: IReview, anchor: { id: string; sequenceId: number | string }) => {
@@ -70,9 +79,15 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
     insertAnchor(review, anchor);
   };
 
-  const handleCreateNew = async () => {
-    const review = await createReview.mutateAsync({ pageId });
-    const anchor = await createAnchor.mutateAsync({ reviewId: review.id, pageId });
+  const handleCreateConfirm = async () => {
+    const review = await createReview.mutateAsync({
+      pageId,
+      title: newTitle.trim() || undefined,
+    });
+    const anchor = await createAnchor.mutateAsync({
+      reviewId: review.id,
+      pageId,
+    });
     insertAnchor(review, anchor);
   };
 
@@ -82,15 +97,50 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
     <Modal
       opened
       onClose={onClose}
-      title={t("Insert review anchor")}
+      title={
+        phase === "create" ? t("Create new review") : t("Insert review anchor")
+      }
       size="md"
       centered
     >
+      {phase === "create" ? (
+        <Stack gap="sm">
+          <TextInput
+            label={t("Title")}
+            placeholder={t("Title (optional)")}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.currentTarget.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreateConfirm();
+            }}
+          />
+          <Group justify="flex-end" gap="xs">
+            <Button
+              variant="subtle"
+              onClick={() => {
+                setPhase("list");
+                setNewTitle("");
+              }}
+              disabled={busy}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              leftSection={<IconPlus size={14} />}
+              onClick={handleCreateConfirm}
+              loading={busy}
+            >
+              {t("Create")}
+            </Button>
+          </Group>
+        </Stack>
+      ) : (
       <Stack gap="sm">
         <Button
           leftSection={<IconPlus size={16} />}
           variant="light"
-          onClick={handleCreateNew}
+          onClick={() => setPhase("create")}
           loading={busy}
           fullWidth
         >
@@ -124,7 +174,7 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
                   <Group gap={8} wrap="nowrap">
                     <IconAnchor size={16} />
                     <Text size="sm" fw={500}>
-                      #RE_{review.sequenceId}
+                      {reviewSidebarLabel(review.sequenceId)}
                     </Text>
                     <Text size="sm" c="dimmed" truncate>
                       {review.title ?? t("Untitled review")}
@@ -136,6 +186,7 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
           </Stack>
         </ScrollArea.Autosize>
       </Stack>
+      )}
     </Modal>
   );
 }
