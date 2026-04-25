@@ -15,7 +15,7 @@ const STATUS_COLORS: Record<ReviewAnchorStatus, { bg: string; fg: string }> = {
 
 export default function ReviewAnchorView(props: NodeViewProps) {
   const { node } = props;
-  const { reviewId, reviewSequenceId, sequenceId, status } = node.attrs as {
+  const { anchorId, reviewId, reviewSequenceId, sequenceId, status } = node.attrs as {
     anchorId: string;
     reviewId: string;
     sequenceId: number;
@@ -38,6 +38,8 @@ export default function ReviewAnchorView(props: NodeViewProps) {
       <span
         role="button"
         tabIndex={0}
+        className="review-anchor-target"
+        data-anchor-id={anchorId}
         data-review-id={reviewId}
         data-status={status}
         onClick={handleClick}

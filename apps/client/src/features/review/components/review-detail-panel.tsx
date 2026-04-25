@@ -23,6 +23,8 @@ import {
 } from "@tabler/icons-react";
 import { useSetAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
+import { scrollToReviewAnchor } from "@/features/review/utils/review-anchor-scroll";
+import { REVIEW_DRAG_MIME } from "@/features/editor/components/review/review-anchor-drop-zone";
 import { useTranslation } from "react-i18next";
 import {
   useAddReviewCommentMutation,
@@ -380,9 +382,26 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
       <Divider />
 
       <Stack gap="xs">
-        <Text size="sm" fw={600}>
-          {t("Anchors")}
-        </Text>
+        <Group justify="space-between" wrap="nowrap" align="center">
+          <Text size="sm" fw={600}>
+            {t("Anchors")}
+          </Text>
+          <Badge
+            variant="light"
+            color="blue"
+            size="sm"
+            leftSection={<IconBookmark size={12} />}
+            style={{ cursor: "grab", userSelect: "none" }}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData(REVIEW_DRAG_MIME, review.id);
+              e.dataTransfer.effectAllowed = "copy";
+            }}
+            title={t("Drag to add a new anchor in the document")}
+          >
+            {t("Drag to add")}
+          </Badge>
+        </Group>
         {anchors.length === 0 ? (
           <Text size="xs" c="dimmed">
             {t("No anchors")}
@@ -395,7 +414,10 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
                 ? buildPageUrl(undefined, page.slugId, page.title ?? undefined)
                 : null;
               const handleAnchorClick = () => {
-                if (to) navigate(to);
+                // 같은 페이지에 노드가 있으면 즉시 스크롤+하이라이트
+                if (scrollToReviewAnchor(anchor.id)) return;
+                // 없으면 라우터 이동 (page 컴포넌트가 state.anchorId로 처리)
+                if (to) navigate(to, { state: { anchorId: anchor.id } });
               };
               return (
                 <Group

@@ -1,6 +1,6 @@
 ---
 status: in-progress
-current_phase: 5
+current_phase: 6
 issue: 1
 slug: review-visual-improvement
 last_updated: 2026-04-25
@@ -167,23 +167,9 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **5-1. 앵커 드래그 핸들 컴포넌트** (FF-11)
-  - 출력: 디테일 패널 Anchors 섹션의 각 앵커(또는 별도 "새 앵커 추가" 핸들)에 드래그 가능한 핸들. HTML5 drag-and-drop 또는 라이브러리 사용 (다음 에이전트 판단, 새 의존성은 자제)
-  - 파일 경계: `apps/client/src/features/review/components/anchor-drag-handle.tsx` 신규
-  - 완료 기준: 핸들을 잡고 끌면 ghost가 보이고, 드롭 가능 영역이 시각적으로 표시
-
-- [ ] **5-2. 에디터 드롭 처리 + 앵커 생성 API 연동** (FF-11)
-  - 입력: 드롭 이벤트(에디터 좌표, reviewId)
-  - 출력: 드롭 위치에 새 `review_anchor` Tiptap 노드 삽입 + 백엔드 anchor 생성 API 호출 → 성공 시 사이드바 Anchors 목록 갱신
-  - 파일 경계: `packages/editor-ext/src/lib/review-anchor/review-anchor.ts` (드롭 핸들러 추가), 클라이언트 측 anchor mutation hook
-  - 의존: 5-1
-  - 완료 기준: 한 리뷰에 앵커 2개 이상을 드래그로 추가, 새로고침 후에도 보존
-
-- [ ] **5-3. 앵커 목록 클릭 → 스크롤 + 하이라이트** (FF-12)
-  - 출력: Anchors 목록의 항목 클릭 시 — (a) 해당 페이지가 다르면 라우터로 이동, (b) 같은 페이지면 즉시 해당 앵커 노드로 스크롤, (c) 1~2초간 하이라이트 펄스 애니메이션 (CSS keyframes 또는 Mantine `Transition`)
-  - 파일 경계: review-anchor Tiptap 확장 (포커스/스크롤 메서드), 디테일 패널 Anchors 섹션
-  - 의존: 없음 (5-1·5-2와 독립적으로 진행 가능)
-  - 완료 기준: 클릭 시 스크롤 위치가 정확하고 하이라이트가 명확히 인지됨
+- [x] **5-1. 앵커 드래그 핸들** — Detail panel의 Anchors 헤더에 draggable Badge ("Drag to add")
+- [x] **5-2. 에디터 드롭 + API 연동** — `review-anchor-drop-zone.tsx` (REVIEW_DRAG_MIME, posAtCoords, createAnchor → insertReviewAnchor)
+- [x] **5-3. 앵커 목록 클릭 → 스크롤 + 하이라이트** — `scrollToReviewAnchor` util + `review-anchor.css` 펄스 애니메이션 + page.tsx의 location.state 기반 라우팅 후 자동 스크롤
 
 **Phase 5 완료 기준:** 시나리오 ②가 그대로 동작. 한 리뷰에 N개의 앵커를 드래그로 추가/이동/클릭으로 점프할 수 있다.
 

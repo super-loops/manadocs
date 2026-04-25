@@ -1,14 +1,16 @@
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { FullEditor } from "@/features/editor/full-editor";
 import HistoryModal from "@/features/page-history/components/history-modal";
 import ReviewSidebar from "@/features/review/components/review-sidebar";
+import ReviewAnchorDropZone from "@/features/editor/components/review/review-anchor-drop-zone";
+import { scrollToReviewAnchorWithRetry } from "@/features/review/utils/review-anchor-scroll";
 import { Helmet } from "react-helmet-async";
 import PageHeader from "@/features/page/components/header/page-header.tsx";
 import { extractPageSlugId } from "@/lib";
 import { useGetSpaceBySlugQuery } from "@/features/space/queries/space-query.ts";
 import { useTranslation } from "react-i18next";
-import React from "react";
+import React, { useEffect } from "react";
 import { EmptyState } from "@/components/ui/empty-state.tsx";
 import { IconAlertTriangle, IconFileOff } from "@tabler/icons-react";
 import { Button } from "@mantine/core";
@@ -44,6 +46,7 @@ export default function Page() {
 
 function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
   const { t } = useTranslation();
+  const location = useLocation();
 
   const {
     data: page,
@@ -54,6 +57,14 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
   const { data: space } = useGetSpaceBySlugQuery(page?.space?.slug);
 
   const canEdit = page?.permissions?.canEdit ?? false;
+
+  useEffect(() => {
+    if (!page) return;
+    const anchorId = (location.state as { anchorId?: string } | null)?.anchorId;
+    if (anchorId) {
+      scrollToReviewAnchorWithRetry(anchorId);
+    }
+  }, [page?.id, location.state]);
 
   if (isLoading) {
     return <></>;
@@ -108,6 +119,7 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         />
         <MemoizedHistoryModal pageId={page.id} />
         <ReviewSidebar />
+        <ReviewAnchorDropZone />
       </div>
     )
   );

@@ -1,0 +1,22 @@
+@keyframes reviewAnchorPulse {
+  0% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0 var(--mantine-color-yellow-4);
+  }
+  30% {
+    outline: 2px solid var(--mantine-color-yellow-5);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(250, 176, 5, 0.35);
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.review-anchor-highlight {
+  animation: reviewAnchorPulse 1.4s ease-out;
+  border-radius: 10px;
+}
