@@ -15,9 +15,9 @@ import { useAtom, useSetAtom } from "jotai";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  openReviewModalAtom,
   reviewSidebarOpenAtom,
   reviewSidebarTabAtom,
+  selectedReviewIdAtom,
 } from "@/features/review/atoms/review-atom";
 import { useReviewsByPageQuery } from "@/features/review/queries/review-query";
 import {
@@ -29,6 +29,7 @@ import { usePageQuery } from "@/features/page/queries/page-query";
 import { extractPageSlugId } from "@/lib";
 import { CustomAvatar } from "@/components/ui/custom-avatar";
 import ReviewStatusBadge from "./review-status-badge";
+import ReviewDetailPanel from "./review-detail-panel";
 
 function extractPreviewText(value: any, limit = 200): string {
   if (!value) return "";
@@ -58,7 +59,7 @@ interface ReviewListForStatusProps {
 
 function ReviewListForStatus({ pageId, status }: ReviewListForStatusProps) {
   const { t } = useTranslation();
-  const setOpenReview = useSetAtom(openReviewModalAtom);
+  const setSelectedReviewId = useSetAtom(selectedReviewIdAtom);
   const { data, isLoading } = useReviewsByPageQuery(pageId, status);
 
   if (!pageId || isLoading) {
@@ -90,7 +91,7 @@ function ReviewListForStatus({ pageId, status }: ReviewListForStatusProps) {
         <ReviewCard
           key={review.id}
           review={review}
-          onClick={() => setOpenReview(review.id)}
+          onClick={() => setSelectedReviewId(review.id)}
         />
       ))}
     </Stack>
@@ -163,42 +164,59 @@ export default function ReviewSidebar() {
   const { t } = useTranslation();
   const [opened, setOpened] = useAtom(reviewSidebarOpenAtom);
   const [tab, setTab] = useAtom(reviewSidebarTabAtom);
+  const [selectedReviewId, setSelectedReviewId] = useAtom(selectedReviewIdAtom);
   const { pageSlug } = useParams();
   const { data: page } = usePageQuery({ pageId: extractPageSlugId(pageSlug) });
+
+  const handleClose = () => {
+    setSelectedReviewId(null);
+    setOpened(false);
+  };
 
   return (
     <Drawer
       opened={opened}
-      onClose={() => setOpened(false)}
+      onClose={handleClose}
       position="right"
       size="md"
-      padding="md"
-      title={t("Reviews")}
+      padding={selectedReviewId ? 0 : "md"}
+      title={selectedReviewId ? null : t("Reviews")}
+      withCloseButton={!selectedReviewId}
     >
-      <Tabs
-        value={tab}
-        onChange={(value) => setTab((value as ReviewStatus) || "open")}
-        variant="default"
-        style={{ display: "flex", flexDirection: "column", height: "100%" }}
-      >
-        <Tabs.List>
-          <Tabs.Tab value="open">{t("Open")}</Tabs.Tab>
-          <Tabs.Tab value="progress">{t("In Progress")}</Tabs.Tab>
-          <Tabs.Tab value="resolved">{t("Resolved")}</Tabs.Tab>
-        </Tabs.List>
-
-        <ScrollArea style={{ flex: "1 1 auto" }} scrollbarSize={5} type="scroll">
-          <Tabs.Panel value="open">
-            <ReviewListForStatus pageId={page?.id} status="open" />
-          </Tabs.Panel>
-          <Tabs.Panel value="progress">
-            <ReviewListForStatus pageId={page?.id} status="progress" />
-          </Tabs.Panel>
-          <Tabs.Panel value="resolved">
-            <ReviewListForStatus pageId={page?.id} status="resolved" />
-          </Tabs.Panel>
+      {selectedReviewId ? (
+        <ScrollArea h="100%" scrollbarSize={5} type="scroll">
+          <ReviewDetailPanel reviewId={selectedReviewId} />
         </ScrollArea>
-      </Tabs>
+      ) : (
+        <Tabs
+          value={tab}
+          onChange={(value) => setTab((value as ReviewStatus) || "open")}
+          variant="default"
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="open">{t("Open")}</Tabs.Tab>
+            <Tabs.Tab value="progress">{t("In Progress")}</Tabs.Tab>
+            <Tabs.Tab value="resolved">{t("Resolved")}</Tabs.Tab>
+          </Tabs.List>
+
+          <ScrollArea
+            style={{ flex: "1 1 auto" }}
+            scrollbarSize={5}
+            type="scroll"
+          >
+            <Tabs.Panel value="open">
+              <ReviewListForStatus pageId={page?.id} status="open" />
+            </Tabs.Panel>
+            <Tabs.Panel value="progress">
+              <ReviewListForStatus pageId={page?.id} status="progress" />
+            </Tabs.Panel>
+            <Tabs.Panel value="resolved">
+              <ReviewListForStatus pageId={page?.id} status="resolved" />
+            </Tabs.Panel>
+          </ScrollArea>
+        </Tabs>
+      )}
     </Drawer>
   );
 }

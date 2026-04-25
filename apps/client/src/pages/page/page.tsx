@@ -3,7 +3,6 @@ import { usePageQuery } from "@/features/page/queries/page-query";
 import { FullEditor } from "@/features/editor/full-editor";
 import HistoryModal from "@/features/page-history/components/history-modal";
 import ReviewSidebar from "@/features/review/components/review-sidebar";
-import ReviewModal from "@/features/review/components/review-modal";
 import { Helmet } from "react-helmet-async";
 import PageHeader from "@/features/page/components/header/page-header.tsx";
 import { extractPageSlugId } from "@/lib";
@@ -109,7 +108,6 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         />
         <MemoizedHistoryModal pageId={page.id} />
         <ReviewSidebar />
-        <ReviewModal />
       </div>
     )
   );

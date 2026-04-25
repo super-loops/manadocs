@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActionIcon,
   Badge,
@@ -7,14 +7,21 @@ import {
   Checkbox,
   Divider,
   Group,
-  Modal,
   Select,
   Stack,
   Text,
+  TextInput,
   Textarea,
 } from "@mantine/core";
-import { IconArrowUp, IconBookmark, IconPlus, IconX } from "@tabler/icons-react";
-import { useAtom, useSetAtom } from "jotai";
+import {
+  IconArrowLeft,
+  IconArrowUp,
+  IconBookmark,
+  IconEdit,
+  IconPlus,
+  IconX,
+} from "@tabler/icons-react";
+import { useSetAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -22,11 +29,14 @@ import {
   useChangeReviewStatusMutation,
   useReviewQuery,
   useUpdateReviewAssigneesMutation,
+  useUpdateReviewMutation,
 } from "@/features/review/queries/review-query";
-import { openReviewModalAtom } from "@/features/review/atoms/review-atom";
+import { selectedReviewIdAtom } from "@/features/review/atoms/review-atom";
 import {
   IReviewAssignee,
   IReviewHistory,
+  REVIEW_ANCHOR_ICON,
+  REVIEW_STATUS_EMOJI,
   ReviewStatus,
 } from "@/features/review/types/review.types";
 import { CustomAvatar } from "@/components/ui/custom-avatar";
@@ -35,6 +45,7 @@ import { buildPageUrl } from "@/features/page/page.utils";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import ReviewStatusBadge from "./review-status-badge";
 import ReviewCommentBubble from "./review-comment-bubble";
+import ReviewMarkdown from "./review-markdown";
 
 const STATUS_LABEL: Record<ReviewStatus, string> = {
   open: "Open",
@@ -46,44 +57,46 @@ function assigneeLabel(a: IReviewAssignee): string {
   return a.user?.name || a.group?.name || "?";
 }
 
-export default function ReviewModal() {
-  const [reviewId, setReviewId] = useAtom(openReviewModalAtom);
-  const opened = !!reviewId;
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={() => setReviewId(null)}
-      title={null}
-      withCloseButton={false}
-      size="lg"
-      padding="md"
-    >
-      {reviewId && <ReviewModalContent reviewId={reviewId} />}
-    </Modal>
-  );
+function toMarkdownString(content: any): string {
+  if (typeof content === "string") return content;
+  if (content == null) return "";
+  return "";
 }
 
-interface ReviewModalContentProps {
+interface ReviewDetailPanelProps {
   reviewId: string;
 }
 
-function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
+export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const setOpenReview = useSetAtom(openReviewModalAtom);
+  const setSelectedReviewId = useSetAtom(selectedReviewIdAtom);
   const { data: review, isLoading } = useReviewQuery(reviewId);
   const changeStatusMutation = useChangeReviewStatusMutation();
   const updateAssigneesMutation = useUpdateReviewAssigneesMutation();
   const addCommentMutation = useAddReviewCommentMutation();
+  const updateReviewMutation = useUpdateReviewMutation();
+
   const [assigneePickerOpen, setAssigneePickerOpen] = useState(false);
   const [hideStatusChanges, setHideStatusChanges] = useState(true);
+
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [contentEditing, setContentEditing] = useState(false);
+  const [contentDraft, setContentDraft] = useState("");
+
+  useEffect(() => {
+    if (review) {
+      setTitleDraft(review.title ?? "");
+      setContentDraft(toMarkdownString(review.content));
+    }
+  }, [review?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const statusOptions = useMemo(
     () =>
       (Object.keys(STATUS_LABEL) as ReviewStatus[]).map((s) => ({
         value: s,
-        label: t(STATUS_LABEL[s]),
+        label: `${REVIEW_STATUS_EMOJI[s]} ${t(STATUS_LABEL[s])}`,
       })),
     [t],
   );
@@ -139,6 +152,24 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
     [review, updateAssigneesMutation],
   );
 
+  const handleSaveTitle = useCallback(async () => {
+    if (!review) return;
+    await updateReviewMutation.mutateAsync({
+      reviewId: review.id,
+      title: titleDraft,
+    });
+    setTitleEditing(false);
+  }, [review, titleDraft, updateReviewMutation]);
+
+  const handleSaveContent = useCallback(async () => {
+    if (!review) return;
+    await updateReviewMutation.mutateAsync({
+      reviewId: review.id,
+      content: contentDraft,
+    });
+    setContentEditing(false);
+  }, [review, contentDraft, updateReviewMutation]);
+
   if (isLoading || !review) {
     return (
       <Box p="md">
@@ -160,34 +191,130 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
     : allHistories;
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
+    <Stack gap="md" p="md">
+      <Group justify="space-between" wrap="nowrap" align="center">
         <Group gap="xs" wrap="nowrap">
-          <Text fw={600} size="lg">
-            #RE_{review.sequenceId}
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            onClick={() => setSelectedReviewId(null)}
+            aria-label={t("Back to list")}
+          >
+            <IconArrowLeft size={16} />
+          </ActionIcon>
+          <Text fw={600} size="md">
+            RE_{review.sequenceId}
           </Text>
           <ReviewStatusBadge status={review.status} />
         </Group>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          onClick={() => setOpenReview(null)}
-          aria-label={t("Close")}
-        >
-          <IconX size={18} />
-        </ActionIcon>
       </Group>
 
-      <Group gap="sm" wrap="nowrap">
-        <Select
-          data={statusOptions}
-          value={review.status}
-          onChange={handleChangeStatus}
-          allowDeselect={false}
-          size="xs"
-          w={160}
-        />
-      </Group>
+      <Select
+        data={statusOptions}
+        value={review.status}
+        onChange={handleChangeStatus}
+        allowDeselect={false}
+        size="xs"
+      />
+
+      <Divider />
+
+      <Stack gap={4}>
+        {titleEditing ? (
+          <Stack gap="xs">
+            <TextInput
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.currentTarget.value)}
+              placeholder={t("Title")}
+              size="sm"
+              autoFocus
+            />
+            <Group justify="flex-end" gap="xs">
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  setTitleEditing(false);
+                  setTitleDraft(review.title ?? "");
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                size="xs"
+                onClick={handleSaveTitle}
+                loading={updateReviewMutation.isPending}
+              >
+                {t("Save")}
+              </Button>
+            </Group>
+          </Stack>
+        ) : (
+          <Group justify="space-between" wrap="nowrap" align="flex-start">
+            <Text fw={600} size="lg" style={{ flex: 1, minWidth: 0 }}>
+              {review.title || (
+                <Text span c="dimmed" fs="italic" size="md">
+                  {t("Untitled review")}
+                </Text>
+              )}
+            </Text>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              onClick={() => setTitleEditing(true)}
+              aria-label={t("Edit title")}
+            >
+              <IconEdit size={14} />
+            </ActionIcon>
+          </Group>
+        )}
+
+        {contentEditing ? (
+          <Stack gap="xs">
+            <Textarea
+              value={contentDraft}
+              onChange={(e) => setContentDraft(e.currentTarget.value)}
+              autosize
+              minRows={3}
+              size="sm"
+              placeholder={t("Description (markdown supported)")}
+            />
+            <Group justify="flex-end" gap="xs">
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => {
+                  setContentEditing(false);
+                  setContentDraft(toMarkdownString(review.content));
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                size="xs"
+                onClick={handleSaveContent}
+                loading={updateReviewMutation.isPending}
+              >
+                {t("Save")}
+              </Button>
+            </Group>
+          </Stack>
+        ) : (
+          <Box
+            onClick={() => setContentEditing(true)}
+            style={{ cursor: "text", minHeight: "1em" }}
+          >
+            {toMarkdownString(review.content) ? (
+              <ReviewMarkdown content={toMarkdownString(review.content)} />
+            ) : (
+              <Text size="sm" c="dimmed" fs="italic">
+                {t("Click to add description...")}
+              </Text>
+            )}
+          </Box>
+        )}
+      </Stack>
 
       <Divider />
 
@@ -268,10 +395,7 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
                 ? buildPageUrl(undefined, page.slugId, page.title ?? undefined)
                 : null;
               const handleAnchorClick = () => {
-                if (to) {
-                  setOpenReview(null);
-                  navigate(to);
-                }
+                if (to) navigate(to);
               };
               return (
                 <Group
@@ -283,7 +407,7 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
                 >
                   <IconBookmark size={14} stroke={1.5} />
                   <Badge variant="light" size="sm" color="gray">
-                    #AC_{anchor.sequenceId}
+                    {REVIEW_ANCHOR_ICON} RE_{review.sequenceId}-A_{anchor.sequenceId}
                   </Badge>
                   <Text size="sm" lineClamp={1}>
                     {page?.title || t("untitled")}
@@ -325,7 +449,6 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
       <Divider />
 
       <ReviewCommentInput
-        reviewId={review.id}
         isSending={addCommentMutation.isPending}
         onSend={(content) =>
           addCommentMutation.mutateAsync({ reviewId: review.id, content })
@@ -346,9 +469,7 @@ function HistoryEntry({ history, reviewId }: HistoryEntryProps) {
   const creatorName = history.creator?.name || t("Unknown");
 
   if (history.type === "status") {
-    const from = history.oldStatus
-      ? t(STATUS_LABEL[history.oldStatus])
-      : "—";
+    const from = history.oldStatus ? t(STATUS_LABEL[history.oldStatus]) : "—";
     const to = history.newStatus ? t(STATUS_LABEL[history.newStatus]) : "—";
     return (
       <Text size="xs" c="dimmed">
@@ -366,7 +487,6 @@ function HistoryEntry({ history, reviewId }: HistoryEntryProps) {
 }
 
 interface ReviewCommentInputProps {
-  reviewId: string;
   isSending: boolean;
   onSend: (content: string) => Promise<unknown>;
 }

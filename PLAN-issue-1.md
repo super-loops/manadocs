@@ -1,6 +1,6 @@
 ---
 status: in-progress
-current_phase: 4
+current_phase: 5
 issue: 1
 slug: review-visual-improvement
 last_updated: 2026-04-25
@@ -150,30 +150,10 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **4-1. 디테일 선택 atom** (FF-10)
-  - 출력: 현재 선택된 reviewId atom (예: `selectedReviewIdAtom`). 사이드바가 열려있을 때 카드 클릭 시 이 atom 갱신
-  - 파일 경계: `apps/client/src/features/review/atoms/review-atom.ts`
-  - 완료 기준: atom 상태 변화에 따라 디테일 패널이 토글
-
-- [ ] **4-2. ReviewDetailPanel 컴포넌트** (FF-10)
-  - 출력: 사이드바 안에서 카드 목록을 가리고/덮고 디테일을 보여주는 패널. 헤더에 "목록으로" 버튼. 내용:
-    - 상단: 뱃지(2-1) + 상태 셀렉트(2-3) + Assignees(2-4, 2-5)
-    - 중단: 본문 타이틀(굵게) + 본문(markdown 렌더, 3-2)
-    - 하단: Anchors 목록 + 코멘트 목록(3-1) + 코멘트 입력(3-4) + History(2-6)
-  - 파일 경계: `apps/client/src/features/review/components/review-detail-panel.tsx` 신규
-  - 의존: 4-1, Phase 2·3 컴포넌트
-  - 완료 기준: 카드 → 디테일 → 뒤로가기 흐름이 매끄러움. 사이드바 width 안에서 스크롤이 자연스러움
-
-- [ ] **4-3. 본문 타이틀/내용 입력 폼** (FF-1, FF-10)
-  - 출력: Review 생성 시 타이틀/내용 입력 가능 (생성 폼이 어디에 있는지 다음 에이전트가 확인 — 사이드바에 신규 버튼이거나 페이지 우클릭 메뉴 등). 디테일 패널에서는 작성자가 타이틀/내용을 인라인 편집 가능
-  - 파일 경계: 생성 폼 위치 + `review-detail-panel.tsx`
-  - 의존: 1-2, 1-3
-  - 완료 기준: 새 리뷰 생성 시 타이틀/내용 입력 → 저장 → 디테일에서 그대로 보임
-
-- [ ] **4-4. 모달 deprecate** (FF-10)
-  - 출력: 기존 `review-modal.tsx` 의 진입점(`openReviewModalAtom`)을 사이드바 디테일 패널로 모두 리다이렉트. 코드는 일단 남겨두되 호출되는 곳이 없음을 확인 후 제거 (한 PR에서 제거해도 OK)
-  - 파일 경계: `review-modal.tsx`, 호출하는 모든 지점
-  - 완료 기준: 어떤 흐름에서도 모달이 뜨지 않음. 카드 클릭은 모두 디테일 패널로 연결
+- [x] **4-1. 디테일 선택 atom** — `selectedReviewIdAtom` + `openReviewModalAtom` 을 derived로 (외부 진입점 자동 호환)
+- [x] **4-2. ReviewDetailPanel 컴포넌트** — 사이드바 안 풀 패널, "← 목록으로" 헤더, ScrollArea
+- [x] **4-3. 본문 타이틀/내용 인라인 편집** — TextInput / Textarea + Save/Cancel + ReviewMarkdown 렌더
+- [x] **4-4. 모달 deprecate** — `review-modal.tsx` 삭제 + `page.tsx` 정리 (외부 호출은 atom 기반이라 변경 불필요)
 
 **Phase 4 완료 기준:** 모달이 사라지고 사이드바 인스펙터로 모든 리뷰 디테일이 다뤄진다. 시나리오 ①(가독성)이 충족됨.
 
