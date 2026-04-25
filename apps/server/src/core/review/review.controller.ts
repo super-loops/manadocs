@@ -20,6 +20,9 @@ import {
   ReviewIdDto,
   ReviewPageIdDto,
   AssignedReviewsDto,
+  UpdateReviewDto,
+  UpdateReviewCommentDto,
+  DeleteReviewCommentDto,
 } from './dto/review.dto';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
@@ -109,12 +112,46 @@ export class ReviewController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('update')
+  async update(
+    @Body() dto: UpdateReviewDto,
+    @AuthUser() user: User,
+  ) {
+    const review = await this.reviewService.findById(dto.reviewId);
+    if (review.pageId) {
+      const page = await this.pageRepo.findById(review.pageId);
+      if (page) {
+        await this.pageAccessService.validateCanView(page, user);
+      }
+    }
+    return this.reviewService.updateReview(dto, user);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('add-comment')
   async addComment(
     @Body() dto: AddReviewCommentDto,
     @AuthUser() user: User,
   ) {
     return this.reviewService.addComment(dto, user);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('update-comment')
+  async updateComment(
+    @Body() dto: UpdateReviewCommentDto,
+    @AuthUser() user: User,
+  ) {
+    return this.reviewService.updateComment(dto, user);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('delete-comment')
+  async deleteComment(
+    @Body() dto: DeleteReviewCommentDto,
+    @AuthUser() user: User,
+  ) {
+    await this.reviewService.deleteComment(dto, user);
   }
 
   @HttpCode(HttpStatus.OK)

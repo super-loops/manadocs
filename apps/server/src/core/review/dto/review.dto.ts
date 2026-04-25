@@ -1,7 +1,6 @@
 import {
   IsArray,
   IsIn,
-  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -16,8 +15,8 @@ export class CreateReviewDto {
   title?: string;
 
   @IsOptional()
-  @IsObject()
-  content?: any;
+  @IsString()
+  content?: string;
 
   @IsOptional()
   @IsArray()
@@ -28,6 +27,19 @@ export class CreateReviewDto {
   @IsArray()
   @IsUUID('all', { each: true })
   assigneeGroupIds?: string[];
+}
+
+export class UpdateReviewDto {
+  @IsUUID()
+  reviewId: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  content?: string;
 }
 
 export class ChangeReviewStatusDto {
@@ -42,8 +54,21 @@ export class AddReviewCommentDto {
   @IsUUID()
   reviewId: string;
 
-  @IsObject()
-  content: any;
+  @IsString()
+  content: string;
+}
+
+export class UpdateReviewCommentDto {
+  @IsUUID()
+  historyId: string;
+
+  @IsString()
+  content: string;
+}
+
+export class DeleteReviewCommentDto {
+  @IsUUID()
+  historyId: string;
 }
 
 export class CreateReviewAnchorDto {

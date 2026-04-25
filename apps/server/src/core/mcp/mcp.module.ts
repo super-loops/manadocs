@@ -3,6 +3,7 @@ import { ApiTokenModule } from '../api-token/api-token.module';
 import { PageModule } from '../page/page.module';
 import { SearchModule } from '../search/search.module';
 import { CollaborationModule } from '../../collaboration/collaboration.module';
+import { ReviewModule } from '../review/review.module';
 import { McpController } from './mcp.controller';
 import { McpService } from './mcp.service';
 import { McpSessionService } from './mcp-session.service';
@@ -21,9 +22,22 @@ import { SearchInPageTool } from './tools/search-in-page.tool';
 import { PatchPageBlocksTool } from './tools/patch-page-blocks.tool';
 import { DescribeContentSchemaTool } from './tools/describe-content-schema.tool';
 import { DuplicatePageTool } from './tools/duplicate-page.tool';
+import { ListReviewsTool } from './tools/list-reviews.tool';
+import { GetReviewTool } from './tools/get-review.tool';
+import { CreateReviewTool } from './tools/create-review.tool';
+import { UpdateReviewTool } from './tools/update-review.tool';
+import { AddReviewCommentTool } from './tools/add-review-comment.tool';
+import { UpdateReviewCommentTool } from './tools/update-review-comment.tool';
+import { DeleteReviewCommentTool } from './tools/delete-review-comment.tool';
 
 @Module({
-  imports: [ApiTokenModule, PageModule, SearchModule, CollaborationModule],
+  imports: [
+    ApiTokenModule,
+    PageModule,
+    SearchModule,
+    CollaborationModule,
+    ReviewModule,
+  ],
   controllers: [McpController],
   providers: [
     McpService,
@@ -43,6 +57,13 @@ import { DuplicatePageTool } from './tools/duplicate-page.tool';
     PatchPageBlocksTool,
     DescribeContentSchemaTool,
     DuplicatePageTool,
+    ListReviewsTool,
+    GetReviewTool,
+    CreateReviewTool,
+    UpdateReviewTool,
+    AddReviewCommentTool,
+    UpdateReviewCommentTool,
+    DeleteReviewCommentTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })

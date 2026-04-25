@@ -21,7 +21,11 @@ import {
   AddReviewCommentDto,
   CreateReviewAnchorDto,
   UpdateReviewAssigneesDto,
+  UpdateReviewDto,
+  UpdateReviewCommentDto,
+  DeleteReviewCommentDto,
 } from './dto/review.dto';
+import { ForbiddenException } from '@nestjs/common';
 
 @Injectable()
 export class ReviewService {
@@ -195,6 +199,33 @@ export class ReviewService {
     return updatedReview;
   }
 
+  async updateReview(dto: UpdateReviewDto, user: User) {
+    const review = await this.reviewRepo.findById(dto.reviewId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const updateData: any = { updatedAt: new Date() };
+    if (dto.title !== undefined) updateData.title = dto.title;
+    if (dto.content !== undefined) updateData.content = dto.content;
+
+    await this.reviewRepo.updateReview(updateData, dto.reviewId);
+
+    const updatedReview = await this.findById(dto.reviewId);
+
+    this.wsService
+      .emitReviewEvent(review.spaceId, review.pageId, {
+        operation: 'reviewUpdated',
+        pageId: review.pageId,
+        review: updatedReview,
+      })
+      .catch((err) =>
+        this.logger.warn(`Failed to emit reviewUpdated: ${err.message}`),
+      );
+
+    return updatedReview;
+  }
+
   async addComment(dto: AddReviewCommentDto, user: User) {
     const review = await this.reviewRepo.findById(dto.reviewId);
     if (!review) {
@@ -247,6 +278,85 @@ export class ReviewService {
       );
 
     return createdHistory;
+  }
+
+  async updateComment(dto: UpdateReviewCommentDto, user: User) {
+    const history = await this.reviewHistoryRepo.findById(dto.historyId);
+    if (!history) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (history.type !== 'comment') {
+      throw new BadRequestException('Only comments can be edited');
+    }
+    if (history.deletedAt) {
+      throw new BadRequestException('Comment has been deleted');
+    }
+    if (history.creatorId !== user.id) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    await this.reviewHistoryRepo.updateHistory(
+      {
+        content: dto.content,
+        editedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      dto.historyId,
+    );
+
+    const review = await this.reviewRepo.findById(history.reviewId);
+    const histories = await this.reviewHistoryRepo.findByReviewId(
+      history.reviewId,
+    );
+    const updated = histories.find((h) => h.id === history.id);
+
+    if (review) {
+      this.wsService
+        .emitReviewEvent(review.spaceId, review.pageId, {
+          operation: 'reviewCommentUpdated',
+          pageId: review.pageId,
+          reviewId: review.id,
+          history: updated,
+        })
+        .catch((err) =>
+          this.logger.warn(`Failed to emit reviewCommentUpdated: ${err.message}`),
+        );
+    }
+
+    return updated;
+  }
+
+  async deleteComment(dto: DeleteReviewCommentDto, user: User) {
+    const history = await this.reviewHistoryRepo.findById(dto.historyId);
+    if (!history) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (history.type !== 'comment') {
+      throw new BadRequestException('Only comments can be deleted');
+    }
+    if (history.deletedAt) {
+      return;
+    }
+    if (history.creatorId !== user.id) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    await this.reviewHistoryRepo.deleteHistory(dto.historyId);
+
+    const review = await this.reviewRepo.findById(history.reviewId);
+
+    if (review) {
+      this.wsService
+        .emitReviewEvent(review.spaceId, review.pageId, {
+          operation: 'reviewCommentDeleted',
+          pageId: review.pageId,
+          reviewId: review.id,
+          historyId: history.id,
+        })
+        .catch((err) =>
+          this.logger.warn(`Failed to emit reviewCommentDeleted: ${err.message}`),
+        );
+    }
   }
 
   async createAnchor(dto: CreateReviewAnchorDto, user: User) {

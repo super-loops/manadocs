@@ -21,9 +21,16 @@ export class ReviewHistoryRepo {
       .selectAll('reviewHistories')
       .select((eb) => this.withCreator(eb))
       .where('reviewId', '=', reviewId)
-      .where('deletedAt', 'is', null)
       .orderBy('createdAt', 'asc')
       .execute();
+  }
+
+  async findById(historyId: string): Promise<ReviewHistory | undefined> {
+    return this.db
+      .selectFrom('reviewHistories')
+      .selectAll('reviewHistories')
+      .where('id', '=', historyId)
+      .executeTakeFirst();
   }
 
   async insertHistory(

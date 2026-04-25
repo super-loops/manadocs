@@ -1,6 +1,6 @@
 ---
-status: planning
-current_phase: 0
+status: in-progress
+current_phase: 2
 issue: 1
 slug: review-visual-improvement
 last_updated: 2026-04-25
@@ -91,39 +91,11 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **1-1. Reviews 컬럼 추가 마이그레이션** (FF-1)
-  - 입력: 없음 (스키마 변경)
-  - 출력: `reviews.title` (varchar, nullable), `reviews.content` (text, nullable) 컬럼이 추가된다
-  - 파일 경계: `apps/server/src/database/migrations/20260425T120000-add-review-content.ts` 신규
-  - 의존: 없음
-  - 완료 기준: 로컬에서 마이그레이션 실행 → 롤백 → 재실행 모두 성공. `db.d.ts` 자동 생성 갱신
-
-- [ ] **1-2. ReviewService/Repo: title/content 처리** (FF-1)
-  - 입력: 클라이언트의 create/update payload
-  - 출력: 새 필드를 포함해 저장/조회되는 Review
-  - 파일 경계: `apps/server/src/database/repos/review/review.repo.ts`, `apps/server/src/core/review/review.service.ts`
-  - 의존: 1-1
-  - 완료 기준: REST 엔드포인트에서 title/content 왕복 통신 확인 (curl 또는 Insomnia)
-
-- [ ] **1-3. DTO 확장** (FF-1)
-  - 출력: `ReviewDto` 류에 `title?: string`, `content?: string` 추가 + class-validator 데코레이터 (max length 등 합리적 기본값은 다음 에이전트 판단)
-  - 파일 경계: `apps/server/src/core/review/dto/review.dto.ts`
-  - 의존: 1-1
-  - 완료 기준: DTO 검증 단위 테스트 추가, 빈 문자열/누락 케이스 통과
-
-- [ ] **1-4. 코멘트 수정/삭제 서비스** (FF-2)
-  - 입력: historyId + 새 content (수정) / historyId (삭제)
-  - 출력: `editedAt` 갱신 / `deletedAt` 마킹된 row. 삭제된 row는 조회 시 content를 마스킹하거나 클라이언트가 deletedAt 보고 분기
-  - 파일 경계: `apps/server/src/core/review/review.service.ts` (또는 `review-history.service.ts` 분리 — 다음 에이전트 판단), `review-history.repo.ts`
-  - 의존: 1-1, 1-2
-  - 완료 기준: 본인 코멘트만 수정/삭제 가능 (권한 체크), `review_histories.editedAt`/`deletedAt` 컬럼이 정확히 갱신됨, 단위 테스트 통과
-  - 비고: 스키마는 이미 존재 — 마이그레이션 불필요
-
-- [ ] **1-5. MCP review tool 신설** (FF-3)
-  - 출력: 다음 도구가 MCP에 노출 — `list-reviews`, `get-review`, `create-review`, `update-review`, `add-review-comment`, `update-review-comment`, `delete-review-comment` (네이밍/세분화는 다음 에이전트 판단, 기존 `*.tool.ts` 패턴 참고)
-  - 파일 경계: `apps/server/src/core/mcp/tools/` 하위 `review-*.tool.ts` 신규, `mcp-tool.registry.ts` 등록
-  - 의존: 1-2, 1-3, 1-4
-  - 완료 기준: MCP inspector(또는 수동 호출)로 각 tool 호출 시 정상 응답, 권한/워크스페이스 격리 동작
+- [x] **1-1. Reviews 컬럼 추가 마이그레이션** (FF-1) — *no-op: `title`/`content` 컬럼이 첫 마이그레이션에 이미 존재*
+- [x] **1-2. ReviewService/Repo: title/content 처리** (FF-1) — `updateReview` 메서드 신규 추가
+- [x] **1-3. DTO 확장** (FF-1) — `UpdateReviewDto` 신규, `content` 타입 `object → string` (markdown)
+- [x] **1-4. 코멘트 수정/삭제 서비스** (FF-2) — `updateComment`/`deleteComment` 본인 권한 체크
+- [x] **1-5. MCP review tool 신설** (FF-3) — 7개 tool 신규 + registry/module 등록
 
 **Phase 1 완료 기준:** REST + MCP 양쪽에서 새 필드(title/content)와 코멘트 수정/삭제가 동작한다. 프론트 변경 없음 — Phase 2~5가 호출할 표면이 잠긴 상태.
 
