@@ -2,6 +2,10 @@ import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useSetAtom } from "jotai";
 import { openReviewModalAtom } from "@/features/review/atoms/review-atom";
 import type { ReviewAnchorStatus } from "@manadocs/editor-ext";
+import {
+  REVIEW_ANCHOR_ICON,
+  REVIEW_STATUS_EMOJI,
+} from "@/features/review/types/review.types";
 
 const STATUS_COLORS: Record<ReviewAnchorStatus, { bg: string; fg: string }> = {
   open: { bg: "var(--mantine-color-violet-1)", fg: "var(--mantine-color-violet-8)" },
@@ -11,7 +15,7 @@ const STATUS_COLORS: Record<ReviewAnchorStatus, { bg: string; fg: string }> = {
 
 export default function ReviewAnchorView(props: NodeViewProps) {
   const { node } = props;
-  const { reviewId, reviewSequenceId, status } = node.attrs as {
+  const { reviewId, reviewSequenceId, sequenceId, status } = node.attrs as {
     anchorId: string;
     reviewId: string;
     sequenceId: number;
@@ -21,6 +25,7 @@ export default function ReviewAnchorView(props: NodeViewProps) {
   const setOpenReviewModal = useSetAtom(openReviewModalAtom);
 
   const colors = STATUS_COLORS[status] ?? STATUS_COLORS.open;
+  const statusEmoji = REVIEW_STATUS_EMOJI[status] ?? REVIEW_STATUS_EMOJI.open;
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -42,7 +47,7 @@ export default function ReviewAnchorView(props: NodeViewProps) {
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 2,
+          gap: 4,
           padding: "0 6px",
           margin: "0 1px",
           borderRadius: 10,
@@ -56,8 +61,9 @@ export default function ReviewAnchorView(props: NodeViewProps) {
           whiteSpace: "nowrap",
         }}
       >
-        <span aria-hidden>⚓</span>
-        <span>#RE_{reviewSequenceId}</span>
+        <span aria-hidden>{REVIEW_ANCHOR_ICON}</span>
+        <span>RE_{reviewSequenceId}-A_{sequenceId}</span>
+        <span aria-hidden>{statusEmoji}</span>
       </span>
     </NodeViewWrapper>
   );

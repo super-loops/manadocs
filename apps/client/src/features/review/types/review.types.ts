@@ -3,6 +3,14 @@ import { QueryParams } from "@/lib/types.ts";
 
 export type ReviewStatus = "open" | "progress" | "resolved";
 
+export const REVIEW_STATUS_EMOJI: Record<ReviewStatus, string> = {
+  open: "⏳",
+  progress: "🔧",
+  resolved: "✅",
+};
+
+export const REVIEW_ANCHOR_ICON = "💬";
+
 export interface IReviewCreator {
   id: string;
   name: string;

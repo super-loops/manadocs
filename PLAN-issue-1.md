@@ -1,6 +1,6 @@
 ---
 status: in-progress
-current_phase: 2
+current_phase: 3
 issue: 1
 slug: review-visual-improvement
 last_updated: 2026-04-25
@@ -111,36 +111,12 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **2-1. ReviewStatusBadge 새 형식** (FF-4)
-  - 출력: 뱃지가 `<status icon> RE_5-A_3 <status emoji>` 형식으로 표시. 앵커가 여러 개일 때의 표기는 다음 에이전트 판단 (예: 첫 앵커만 표기, 또는 `RE_5-A_3 외 N`)
-  - 파일 경계: `apps/client/src/features/review/components/review-status-badge.tsx` (또는 동일 위치의 신/구 컴포넌트)
-  - 완료 기준: Storybook 또는 페이지 상에서 세 가지 상태(open/progress/resolved) 각각 식별자 + 이모지가 보임
-
-- [ ] **2-2. 상태 이모지 매핑** (FF-4)
-  - 출력: open / progress / resolved 각각에 직관적 이모지 1개씩 (예: ⏳ / 🔧 / ✅ — 정확한 선정은 다음 에이전트 판단)
-  - 파일 경계: 2-1과 동일 컴포넌트 또는 인접 상수 모듈
-  - 완료 기준: 2-1과 함께 검증
-
-- [ ] **2-3. 상태 셀렉트 옵션 라벨 정정** (FF-5)
-  - 출력: "Resolved." → "Resolved"
-  - 파일 경계: 셀렉트 옵션이 정의된 위치 (review-modal.tsx 또는 별도 enum/labels 파일 — 다음 에이전트가 grep으로 확인)
-  - 완료 기준: UI 상에서 옵션 텍스트 점 제거 확인
-
-- [ ] **2-4. Assignees "없음" 표시** (FF-6)
-  - 출력: assignees 배열이 비어있을 때 "없음" (또는 "Assignees 없음" 등 — 톤은 다음 에이전트 판단) placeholder 노출
-  - 파일 경계: review-modal 내 Assignees 섹션 (~라인 186~225) — Phase 4에서 사이드바 디테일 패널로 옮길 예정이므로 컴포넌트화 권장
-  - 완료 기준: 빈 배열 케이스에서 텍스트 노출
-
-- [ ] **2-5. Add assignees → `+` 펼침 패턴** (FF-7)
-  - 출력: 평소엔 Assignees 우측에 작은 `+` 버튼만 보이고, 클릭 시 사용자 선택 인풋이 펼쳐짐
-  - 파일 경계: 2-4와 동일 섹션
-  - 완료 기준: 기본 상태에서 인풋이 보이지 않고 `+` 클릭 시 펼침 / 선택 후 자동 접힘 (또는 명시적 닫기 버튼)
-
-- [ ] **2-6. History "변경 숨기기" 체크박스** (FF-8)
-  - 출력: History 영역 우측 상단에 체크박스. 기본 체크(=숨김) 상태에서 `type='status_change'` 항목 비표시. 체크 해제 시 모두 표시.
-  - 파일 경계: review-modal 내 History 섹션 (`HistoryEntry` 함수 ~라인 304~348)
-  - 의존: 없음 (체크박스 상태는 로컬 useState 또는 atom — 다음 에이전트 판단)
-  - 완료 기준: 토글 시 status_change 행이 즉시 숨김/노출
+- [x] **2-1. 페이지 뱃지 새 형식** — `💬 RE_{seq}-A_{seq} <emoji>` (review-anchor-view.tsx)
+- [x] **2-2. 상태 이모지 매핑** — `REVIEW_STATUS_EMOJI` 공통 상수 (open ⏳ / progress 🔧 / resolved ✅)
+- [x] **2-3. "Resolved." 오타 정정** — en-US 로케일 점 제거
+- [x] **2-4. Assignees "없음" 표시** — 빈 배열일 때 dimmed text
+- [x] **2-5. Add assignees `+` 펼침 패턴** — `assigneePickerOpen` state로 토글
+- [x] **2-6. History "변경 숨기기" 체크박스** — `hideStatusChanges` 기본 true, `type==='status'` 필터링
 
 **Phase 2 완료 기준:** 모달을 열었을 때 위 6개 변경이 모두 보이고, 콘솔 에러 없음. 모달은 아직 그대로지만 모든 작은 디테일이 정돈됨.
 

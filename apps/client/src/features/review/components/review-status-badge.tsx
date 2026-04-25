@@ -1,6 +1,9 @@
 import { Badge, BadgeProps } from "@mantine/core";
 import { useTranslation } from "react-i18next";
-import { ReviewStatus } from "@/features/review/types/review.types";
+import {
+  REVIEW_STATUS_EMOJI,
+  ReviewStatus,
+} from "@/features/review/types/review.types";
 
 interface ReviewStatusBadgeProps extends Omit<BadgeProps, "color" | "children"> {
   status: ReviewStatus;
@@ -32,7 +35,7 @@ export default function ReviewStatusBadge({
       size={size}
       {...rest}
     >
-      {t(STATUS_LABEL[status])}
+      {REVIEW_STATUS_EMOJI[status]} {t(STATUS_LABEL[status])}
     </Badge>
   );
 }

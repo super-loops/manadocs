@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  Checkbox,
   Divider,
   Group,
   Modal,
@@ -11,7 +12,7 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { IconArrowUp, IconBookmark, IconX } from "@tabler/icons-react";
+import { IconArrowUp, IconBookmark, IconPlus, IconX } from "@tabler/icons-react";
 import { useAtom, useSetAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -74,6 +75,8 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
   const changeStatusMutation = useChangeReviewStatusMutation();
   const updateAssigneesMutation = useUpdateReviewAssigneesMutation();
   const addCommentMutation = useAddReviewCommentMutation();
+  const [assigneePickerOpen, setAssigneePickerOpen] = useState(false);
+  const [hideStatusChanges, setHideStatusChanges] = useState(true);
 
   const statusOptions = useMemo(
     () =>
@@ -110,6 +113,7 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
         assigneeUserIds: merged,
         assigneeGroupIds: existingGroupIds,
       });
+      setAssigneePickerOpen(false);
     },
     [review, updateAssigneesMutation],
   );
@@ -146,10 +150,13 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
 
   const assignees = review.assignees ?? [];
   const anchors = review.anchors ?? [];
-  const histories = [...(review.histories ?? [])].sort(
+  const allHistories = [...(review.histories ?? [])].sort(
     (a, b) =>
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
+  const histories = hideStatusChanges
+    ? allHistories.filter((h) => h.type !== "status")
+    : allHistories;
 
   return (
     <Stack gap="md">
@@ -184,10 +191,22 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
       <Divider />
 
       <Stack gap="xs">
-        <Text size="sm" fw={600}>
-          {t("Assignees")}
-        </Text>
-        {assignees.length > 0 && (
+        <Group justify="space-between" wrap="nowrap">
+          <Text size="sm" fw={600}>
+            {t("Assignees")}
+          </Text>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            onClick={() => setAssigneePickerOpen((v) => !v)}
+            aria-label={t("Add assignees")}
+            aria-expanded={assigneePickerOpen}
+          >
+            <IconPlus size={14} />
+          </ActionIcon>
+        </Group>
+        {assignees.length > 0 ? (
           <Group gap="xs">
             {assignees.map((a) => (
               <Badge
@@ -217,11 +236,17 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
               </Badge>
             ))}
           </Group>
+        ) : (
+          <Text size="xs" c="dimmed">
+            {t("None")}
+          </Text>
         )}
-        <MultiUserSelect
-          label={t("Add assignees")}
-          onChange={handleAddAssignees}
-        />
+        {assigneePickerOpen && (
+          <MultiUserSelect
+            label={t("Add assignees")}
+            onChange={handleAddAssignees}
+          />
+        )}
       </Stack>
 
       <Divider />
@@ -272,9 +297,17 @@ function ReviewModalContent({ reviewId }: ReviewModalContentProps) {
       <Divider />
 
       <Stack gap="xs">
-        <Text size="sm" fw={600}>
-          {t("History")}
-        </Text>
+        <Group justify="space-between" wrap="nowrap">
+          <Text size="sm" fw={600}>
+            {t("History")}
+          </Text>
+          <Checkbox
+            size="xs"
+            label={t("Hide status changes")}
+            checked={hideStatusChanges}
+            onChange={(e) => setHideStatusChanges(e.currentTarget.checked)}
+          />
+        </Group>
         {histories.length === 0 ? (
           <Text size="xs" c="dimmed">
             {t("No history yet")}
