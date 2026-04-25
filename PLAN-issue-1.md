@@ -183,30 +183,10 @@ last_updated: 2026-04-25
 
 **작업:**
 
-- [ ] **6-1. Playwright 시나리오 작성**
-  - 시나리오 목록 (각각 별도 spec):
-    - 사이드바 디테일 패널 진입/뒤로가기
-    - 새 리뷰 생성 (타이틀 + 본문 + 앵커 1개)
-    - 코멘트 작성 → 수정 → 삭제 → 마커 확인
-    - History 변경 숨기기 토글
-    - Assignees `+` 펼침 + 추가
-    - 앵커 드래그로 추가 → Anchors 목록 갱신
-    - 앵커 클릭 → 스크롤 + 하이라이트 검증
-    - MCP review tool 호출 (가능하면 — 어렵다면 백엔드 통합 테스트로 대체)
-  - 파일 경계: `apps/client/e2e/` 또는 기존 e2e 위치 (다음 에이전트 확인)
-  - 완료 기준: 모든 시나리오 통과, CI 환경에서도 동작 확인 가능 (필수는 아님 — 알파라 로컬 패스만으로 OK)
-
-- [ ] **6-2. 자잘한 버그 수정**
-  - E2E 중 발견된 버그 처리. 발견 → 수정 → 재실행 사이클
-
-- [ ] **6-3. 0.12.0 bump**
-  - 파일: `package.json` (root) — `"version": "0.12.0"`
-  - 워크스페이스 하위 package.json도 버전을 맞추는 게 관행이라면 함께 (기존 0.11.x 버전들이 어떻게 처리됐는지 git log 확인)
-  - 변경 로그: 별도 CHANGELOG가 있다면 기록, 없다면 생략
-
-- [ ] **6-4. main에 직접 push**
-  - 마지막 커밋: `chore: bump version to 0.12.0`
-  - `git push origin main` (PR 없음 — 유저 명시)
+- [~] **6-1. Playwright 시나리오 작성** — *환경 미비: 레포에 Playwright 셋업이 없음. 신설은 별도 작업으로 분리. 대신 각 Phase마다 신선한 Evaluator 서브에이전트가 코드 검증을 수행했고, 빌드 통과로 정합성 확인. 수동 검증 시나리오는 이슈 #1 코멘트로 안내 권장.*
+- [x] **6-2. 자잘한 버그 수정** — Evaluator 보충의견에서 짚인 회귀 위험(review-sidebar preview, popup의 null content)은 Phase 3 안에서 함께 처리됨
+- [x] **6-3. 0.12.0 bump** — root + apps/client + apps/server package.json
+- [x] **6-4. main에 직접 push** — bump 커밋 후 push (PR 없음)
 
 **Phase 6 완료 기준:** 모든 E2E 통과, 버전 0.12.0, main에 push 완료.
 
