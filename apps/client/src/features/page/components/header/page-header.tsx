@@ -2,6 +2,7 @@ import classes from "./page-header.module.css";
 import PageHeaderMenu from "@/features/page/components/header/page-header-menu.tsx";
 import { Group } from "@mantine/core";
 import Breadcrumb from "@/features/page/components/breadcrumbs/breadcrumb.tsx";
+import ShareModal from "@/features/share/components/share-modal.tsx";
 
 interface Props {
   readOnly?: boolean;
@@ -13,6 +14,7 @@ export default function PageHeader({ readOnly }: Props) {
         <Breadcrumb />
 
         <Group justify="flex-end" h="100%" px="md" wrap="nowrap" gap="var(--mantine-spacing-xs)">
+          <ShareModal readOnly={!!readOnly} />
           <PageHeaderMenu readOnly={readOnly} />
         </Group>
       </Group>
