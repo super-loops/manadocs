@@ -40,6 +40,7 @@ import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom";
 import { SimpleTree } from "react-arborist";
 import { SpaceTreeNode } from "@/features/page/tree/types";
 import { useQueryEmit } from "@/features/websocket/use-query-emit";
+import { markOptimisticPageCreation } from "@/features/page/tree/optimistic-tracker";
 
 export function usePageQuery(
   pageInput: Partial<IPageInput>,
@@ -175,6 +176,7 @@ export function useRestorePageMutation() {
 
       // Check if the page already exists in the tree (it shouldn't)
       if (!treeApi.find(restoredPage.id)) {
+        markOptimisticPageCreation(restoredPage.id);
         // Create the tree node data with hasChildren from backend
         const nodeData: SpaceTreeNode = {
           id: restoredPage.id,

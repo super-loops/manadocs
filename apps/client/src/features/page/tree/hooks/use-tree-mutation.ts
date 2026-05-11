@@ -23,6 +23,7 @@ import { SpaceTreeNode } from "@/features/page/tree/types.ts";
 import { buildPageUrl } from "@/features/page/page.utils.ts";
 import { getSpaceUrl } from "@/lib/config.ts";
 import { useQueryEmit } from "@/features/websocket/use-query-emit.ts";
+import { markOptimisticPageCreation } from "@/features/page/tree/optimistic-tracker.ts";
 
 export function useTreeMutation<T>(spaceId: string) {
   const [data, setData] = useAtom(treeDataAtom);
@@ -51,6 +52,8 @@ export function useTreeMutation<T>(spaceId: string) {
       throw new Error("Failed to create page");
     }
 
+    markOptimisticPageCreation(createdPage.id);
+
     const data = {
       id: createdPage.id,
       slugId: createdPage.slugId,
@@ -61,17 +64,20 @@ export function useTreeMutation<T>(spaceId: string) {
       children: [],
     } as any;
 
-    let lastIndex: number;
-    if (parentId === null) {
-      lastIndex = tree.data.length;
-    } else {
-      lastIndex = tree.find(parentId).children.length;
-    }
-    // to place the newly created node at the bottom
-    index = lastIndex;
-
-    tree.create({ parentId, index, data });
-    setData(tree.data);
+    // race-safe insert: read latest atom state, dedup, splice
+    let insertedIndex = 0;
+    setData((prev) => {
+      const t = new SimpleTree<SpaceTreeNode>(prev);
+      if (t.find(createdPage.id)) return prev; // already inserted (e.g., by WS echo)
+      const last =
+        parentId === null
+          ? t.data.length
+          : (t.find(parentId)?.children?.length ?? 0);
+      insertedIndex = last;
+      t.create({ parentId, index: last, data });
+      return [...t.data];
+    });
+    index = insertedIndex;
 
     setTimeout(() => {
       emit({

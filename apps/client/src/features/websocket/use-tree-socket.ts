@@ -7,6 +7,7 @@ import { SpaceTreeNode } from "@/features/page/tree/types.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { SimpleTree } from "react-arborist";
 import localEmitter from "@/lib/local-emitter.ts";
+import { optimisticallyCreatedPageIds } from "@/features/page/tree/optimistic-tracker.ts";
 
 export const useTreeSocket = () => {
   const [socket] = useAtom(socketAtom);
@@ -67,28 +68,34 @@ export const useTreeSocket = () => {
             }
           }
           break;
-        case "addTreeNode":
-          if (treeApi.find(event.payload.data.id)) return;
-
-          // Update parent's hasChildren flag
-          if (event.payload.parentId) {
-            const parentNode = treeApi.find(event.payload.parentId);
-            if (parentNode && !parentNode.data.hasChildren) {
-              treeApi.update({
-                id: event.payload.parentId,
-                changes: { hasChildren: true },
-              });
-            }
+        case "addTreeNode": {
+          const incomingId = event.payload.data.id;
+          if (optimisticallyCreatedPageIds.has(incomingId)) {
+            optimisticallyCreatedPageIds.delete(incomingId);
+            return;
           }
-
-          treeApi.create({
-            parentId: event.payload.parentId,
-            index: event.payload.index,
-            data: event.payload.data,
+          // race-safe insert: read latest atom state inside updater, dedup, splice
+          setTreeData((prev) => {
+            const t = new SimpleTree<SpaceTreeNode>(prev);
+            if (t.find(incomingId)) return prev;
+            if (event.payload.parentId) {
+              const parentNode = t.find(event.payload.parentId);
+              if (parentNode && !parentNode.data.hasChildren) {
+                t.update({
+                  id: event.payload.parentId,
+                  changes: { hasChildren: true },
+                });
+              }
+            }
+            t.create({
+              parentId: event.payload.parentId,
+              index: event.payload.index,
+              data: event.payload.data,
+            });
+            return [...t.data];
           });
-          setTreeData(treeApi.data);
-
           break;
+        }
         case "moveTreeNode":
           // move node
           if (treeApi.find(event.payload.id)) {

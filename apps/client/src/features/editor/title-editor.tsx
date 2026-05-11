@@ -150,7 +150,10 @@ export function TitleEditor({
   const debounceUpdate = useDebouncedCallback(saveTitle, 500);
 
   useEffect(() => {
-    if (titleEditor && title !== titleEditor.getText()) {
+    if (!titleEditor) return;
+    // skip while user is actively editing — incoming syncs must not clobber typed input
+    if (titleEditor.isFocused) return;
+    if (title !== titleEditor.getText()) {
       titleEditor.commands.setContent(title);
     }
   }, [pageId, title, titleEditor]);
