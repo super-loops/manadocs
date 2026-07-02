@@ -33,7 +33,9 @@ import {
   htmlToJson,
   jsonToNode,
   jsonToText,
+  pageDocumentName,
 } from 'src/collaboration/collaboration.util';
+import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import {
   CopyPageMapEntry,
   ICopyPageAttachment,
@@ -57,6 +59,7 @@ export class PageService {
   constructor(
     private pageRepo: PageRepo,
     private pagePermissionRepo: PagePermissionRepo,
+    private pageVersionRepo: PageVersionRepo,
     private attachmentRepo: AttachmentRepo,
     @InjectKysely() private readonly db: KyselyDB,
     private readonly storageService: StorageService,
@@ -138,6 +141,19 @@ export class PageService {
       textContent,
       ydoc,
     });
+
+    // 형상관리 스캐폴드 — Primary 작업문서 + 버전 0(생성 마커).
+    // 첫 문서확정 전까지는 확정본이 없다(공유 불가·Reader 플레이스홀더).
+    try {
+      await this.pageVersionRepo.createPageScaffold(
+        { ...page, content, ydoc, textContent } as Page,
+        userId,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to scaffold versioning for page ${page.id}: ${err?.['message']}`,
+      );
+    }
 
     this.generalQueue
       .add(QueueJob.ADD_PAGE_WATCHERS, {
@@ -302,7 +318,10 @@ export class PageService {
   ): Promise<void> {
     const prosemirrorJson = await this.parseProsemirrorContent(content, format);
 
-    const documentName = `page.${pageId}`;
+    // Primary 작업문서의 명시 room 으로 접속 (클라이언트와 동일 문서 보장)
+    const workingDocId =
+      await this.pageVersionRepo.resolvePrimaryWorkingDocId(pageId);
+    const documentName = pageDocumentName(pageId, workingDocId);
     await this.collaborationGateway.handleYjsEvent(
       'updatePageContent',
       documentName,
@@ -669,6 +688,20 @@ export class PageService {
     );
 
     await this.db.insertInto('pages').values(insertablePages).execute();
+
+    // 형상관리 스캐폴드 — 복제본은 버전 체인을 승계하지 않고 버전 0 부터 시작
+    for (const insertablePage of insertablePages) {
+      try {
+        await this.pageVersionRepo.createPageScaffold(
+          insertablePage as unknown as Page,
+          authUser.id,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Failed to scaffold versioning for duplicated page ${insertablePage.id}: ${err?.['message']}`,
+        );
+      }
+    }
 
     const insertedPageIds = insertablePages.map((page) => page.id);
     this.eventEmitter.emit(EventName.PAGE_CREATED, {

@@ -1,8 +1,14 @@
 import { useParams, useLocation } from "react-router-dom";
+import { useAtomValue } from "jotai";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { FullEditor } from "@/features/editor/full-editor";
-import HistoryModal from "@/features/page-history/components/history-modal";
+import ReadonlyPageEditor from "@/features/editor/readonly-page-editor";
 import ReviewSidebar from "@/features/review/components/review-sidebar";
+import FooterPill from "@/features/page-version/components/footer-pill";
+import CommitDialog from "@/features/page-version/components/commit-dialog";
+import PreviewModal from "@/features/page-version/components/preview-modal";
+import DiffModal from "@/features/page-version/components/diff-modal";
+import { activeWorkingDocAtom } from "@/features/page-version/atoms/page-version-atoms";
 import ReviewAnchorDropZone from "@/features/editor/components/review/review-anchor-drop-zone";
 import ReviewAnchorSync from "@/features/editor/components/review/review-anchor-sync";
 import { scrollToReviewAnchorWithRetry } from "@/features/review/utils/review-anchor-scroll";
@@ -20,7 +26,6 @@ import { Link } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 const MemoizedFullEditor = React.memo(FullEditor);
 const MemoizedPageHeader = React.memo(PageHeader);
-const MemoizedHistoryModal = React.memo(HistoryModal);
 
 export default function Page() {
   const { t } = useTranslation();
@@ -60,6 +65,13 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
 
   const canEdit = page?.permissions?.canEdit ?? false;
   const deleteAnchorMutation = useDeleteReviewAnchorMutation(page?.id);
+  const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
+
+  // 현재 편집 대상 작업문서 — 선택이 없으면 Primary 작업문서
+  const workingDocId =
+    page && activeWorkingDoc?.pageId === page.id
+      ? activeWorkingDoc.workingDocId
+      : (page?.primaryWorkingDocId ?? null);
 
   useEffect(() => {
     if (!page) return;
@@ -109,6 +121,41 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
     return <></>;
   }
 
+  // D6 — 읽기 전용 사용자는 협업 room 에 접속하지 않고
+  // 서버가 내려준 Primary 확정본(committed)만 정적으로 렌더한다.
+  if (!canEdit) {
+    const hasCommitted = page.versionContext?.hasCommitted ?? !!page.content;
+    return (
+      <div>
+        <Helmet>
+          <title>{`${page?.icon || ""}  ${page?.title || t("untitled")}`}</title>
+        </Helmet>
+
+        <MemoizedPageHeader readOnly />
+
+        {hasCommitted ? (
+          <ReadonlyPageEditor
+            key={page.id}
+            pageId={page.id}
+            title={page.title}
+            content={page.content}
+          />
+        ) : (
+          <EmptyState
+            icon={IconFileOff}
+            title={t("아직 확정된 버전이 없습니다")}
+            description={t(
+              "이 페이지는 작성 중입니다. 문서확정이 이루어지면 열람할 수 있습니다.",
+            )}
+          />
+        )}
+        <ReviewSidebar />
+        <PreviewModal />
+        <DiffModal />
+      </div>
+    );
+  }
+
   return (
     page && (
       <div>
@@ -119,15 +166,19 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         <MemoizedPageHeader readOnly={!canEdit} />
 
         <MemoizedFullEditor
-          key={page.id}
+          key={`${page.id}:${workingDocId ?? "primary"}`}
           pageId={page.id}
           title={page.title}
           content={page.content}
           slugId={page.slugId}
           spaceSlug={page?.space?.slug}
           editable={canEdit}
+          workingDocId={workingDocId}
         />
-        <MemoizedHistoryModal pageId={page.id} />
+        <FooterPill page={page} />
+        <CommitDialog pageId={page.id} />
+        <PreviewModal />
+        <DiffModal />
         <ReviewSidebar />
         {canEdit && <ReviewAnchorDropZone />}
         {canEdit && <ReviewAnchorSync />}

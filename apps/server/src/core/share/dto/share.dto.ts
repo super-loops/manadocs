@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -18,6 +19,20 @@ export class CreateShareDto {
   @IsOptional()
   @IsBoolean()
   searchIndexing: boolean;
+
+  // 공유타입 — 최신 Primary 추종 vs 특정 버전 고정
+  @IsOptional()
+  @IsIn(['primary', 'fixed'])
+  versionMode?: 'primary' | 'fixed';
+
+  @IsOptional()
+  @IsUUID()
+  fixedVersionId?: string;
+
+  // 고정 버전 폐기 시 동작 (D3)
+  @IsOptional()
+  @IsIn(['fallback', '404'])
+  onDiscard?: 'fallback' | '404';
 }
 
 export class UpdateShareDto extends CreateShareDto {

@@ -416,13 +416,7 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
         <div onClick={handleEmojiIconClick} style={{ marginRight: "4px" }}>
           <EmojiPicker
             onEmojiSelect={handleEmojiSelect}
-            icon={
-              node.data.icon ? (
-                node.data.icon
-              ) : (
-                <IconFileDescription size="18" />
-              )
-            }
+            icon={node.data.icon ? node.data.icon : "📄"}
             readOnly={
               tree.props.disableEdit === true || node.data.canEdit === false
             }

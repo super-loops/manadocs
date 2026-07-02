@@ -1,0 +1,8 @@
+.pill {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  background-color: var(--mantine-color-body);
+}

@@ -28,6 +28,9 @@ export class ShareRepo {
     'pageId',
     'includeSubPages',
     'searchIndexing',
+    'versionMode',
+    'fixedVersionId',
+    'onDiscard',
     'creatorId',
     'spaceId',
     'workspaceId',
@@ -93,6 +96,23 @@ export class ShareRepo {
       query = query.forUpdate();
     }
     return query.executeTakeFirst();
+  }
+
+  /** 페이지의 모든 공유 링크 (다중 링크 — 버전 모드별) */
+  async findAllByPageId(
+    pageId: string,
+    opts?: { includeCreator?: boolean },
+  ): Promise<Share[]> {
+    let query = this.db
+      .selectFrom('shares')
+      .select(this.baseFields)
+      .where('pageId', '=', pageId)
+      .orderBy('createdAt', 'desc');
+
+    if (opts?.includeCreator) {
+      query = query.select((eb) => this.withCreator(eb));
+    }
+    return query.execute();
   }
 
   async updateShare(

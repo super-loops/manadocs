@@ -13,10 +13,8 @@ import { CollabWsAdapter } from './adapter/collab-ws.adapter';
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 import { TokenModule } from '../core/auth/token.module';
-import { HistoryProcessor } from './processors/history.processor';
 import { LoggerExtension } from './extensions/logger.extension';
 import { CollaborationHandler } from './collaboration.handler';
-import { CollabHistoryService } from './services/collab-history.service';
 import { WatcherModule } from '../core/watcher/watcher.module';
 
 @Module({
@@ -25,8 +23,6 @@ import { WatcherModule } from '../core/watcher/watcher.module';
     AuthenticationExtension,
     PersistenceExtension,
     LoggerExtension,
-    HistoryProcessor,
-    CollabHistoryService,
     CollaborationHandler,
   ],
   exports: [CollaborationGateway],

@@ -128,6 +128,24 @@ export class ShareController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('/for-page-all')
+  async getSharesForPage(
+    @Body() dto: SharePageIdDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const page = await this.pageRepo.findById(dto.pageId);
+    if (!page || page.workspaceId !== workspace.id) {
+      throw new NotFoundException('Page not found');
+    }
+
+    // 링크 관리(목록·발급·삭제)는 편집 권한자 전용
+    await this.pageAccessService.validateCanEdit(page, user);
+
+    return this.shareService.listSharesForPage(page.id);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('create')
   async create(
     @Body() createShareDto: CreateShareDto,

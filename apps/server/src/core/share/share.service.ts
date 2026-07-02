@@ -19,6 +19,7 @@ import {
 import { Node } from '@tiptap/pm/model';
 import { ShareRepo } from '@manadocs/db/repos/share/share.repo';
 import { PagePermissionRepo } from '@manadocs/db/repos/page/page-permission.repo';
+import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { updateAttachmentAttr } from './share.util';
 import { Page } from '@manadocs/db/types/entity.types';
 import { validate as isValidUUID } from 'uuid';
@@ -32,6 +33,7 @@ export class ShareService {
     private readonly shareRepo: ShareRepo,
     private readonly pageRepo: PageRepo,
     private readonly pagePermissionRepo: PagePermissionRepo,
+    private readonly pageVersionRepo: PageVersionRepo,
     @InjectKysely() private readonly db: KyselyDB,
     private readonly tokenService: TokenService,
   ) {}
@@ -69,17 +71,39 @@ export class ShareService {
   }) {
     const { authUserId, workspaceId, page, createShareDto } = opts;
 
-    try {
-      const shares = await this.shareRepo.findByPageId(page.id);
-      if (shares) {
-        return shares;
-      }
+    // D2 — 확정 버전이 없는 페이지는 외부 공유 불가
+    if (!page.primaryVersionId) {
+      throw new BadRequestException(
+        'This page has no committed version yet. Commit the page before sharing.',
+      );
+    }
 
+    const versionMode = createShareDto.versionMode ?? 'primary';
+    let fixedVersionId: string | null = null;
+
+    if (versionMode === 'fixed') {
+      fixedVersionId = createShareDto.fixedVersionId ?? page.primaryVersionId;
+      const version = await this.pageVersionRepo.findById(fixedVersionId);
+      if (!version || version.pageId !== page.id) {
+        throw new BadRequestException('Fixed version not found for this page');
+      }
+      if (version.version === 0) {
+        throw new BadRequestException('Cannot pin the creation marker');
+      }
+      if (version.discardedAt) {
+        throw new BadRequestException('Cannot pin a discarded version');
+      }
+    }
+
+    try {
       return await this.shareRepo.insertShare({
         key: nanoIdGen().toLowerCase(),
         pageId: page.id,
         includeSubPages: createShareDto.includeSubPages ?? false,
         searchIndexing: createShareDto.searchIndexing ?? false,
+        versionMode,
+        fixedVersionId,
+        onDiscard: createShareDto.onDiscard ?? 'fallback',
         creatorId: authUserId,
         spaceId: page.spaceId,
         workspaceId,
@@ -90,12 +114,19 @@ export class ShareService {
     }
   }
 
+  async listSharesForPage(pageId: string) {
+    return this.shareRepo.findAllByPageId(pageId, { includeCreator: true });
+  }
+
   async updateShare(shareId: string, updateShareDto: UpdateShareDto) {
     try {
       return this.shareRepo.updateShare(
         {
           includeSubPages: updateShareDto.includeSubPages,
           searchIndexing: updateShareDto.searchIndexing,
+          ...(updateShareDto.onDiscard
+            ? { onDiscard: updateShareDto.onDiscard }
+            : {}),
         },
         shareId,
       );
@@ -106,19 +137,45 @@ export class ShareService {
   }
 
   async getSharedPage(dto: ShareInfoDto, workspaceId: string) {
-    const share = await this.getShareForPage(dto.pageId, workspaceId);
+    // shareId(key)가 오면 그 링크의 버전 모드로, 아니면 페이지를 덮는
+    // 공유를 CTE 로 탐색(레거시 경로)해 해석한다.
+    let share: any = null;
+
+    if (dto.shareId) {
+      const shareRow = await this.shareRepo.findById(dto.shareId);
+      if (!shareRow || shareRow.workspaceId !== workspaceId) {
+        throw new NotFoundException('Shared page not found');
+      }
+      share = shareRow;
+    } else {
+      share = await this.getShareForPage(dto.pageId, workspaceId);
+    }
 
     if (!share) {
       throw new NotFoundException('Shared page not found');
     }
 
-    const page = await this.pageRepo.findById(dto.pageId, {
+    const targetPageId = dto.pageId ?? share.pageId;
+
+    const page = await this.pageRepo.findById(targetPageId, {
       includeContent: true,
       includeCreator: true,
     });
 
     if (!page || page.deletedAt) {
       throw new NotFoundException('Shared page not found');
+    }
+
+    // 명시 share 로 온 경우 커버리지 검증 — 공유 페이지 본인 또는
+    // includeSubPages 일 때 그 하위 페이지만 허용
+    if (dto.shareId && page.id !== share.pageId) {
+      if (!share.includeSubPages) {
+        throw new NotFoundException('Shared page not found');
+      }
+      const isDescendant = await this.isDescendantOf(page.id, share.pageId);
+      if (!isDescendant) {
+        throw new NotFoundException('Shared page not found');
+      }
     }
 
     // Block access to restricted pages
@@ -128,9 +185,119 @@ export class ShareService {
       throw new NotFoundException('Shared page not found');
     }
 
+    // ── 버전 해석 — 공유는 항상 확정본(committed)만 서빙 ──────────
+    const resolved = await this.resolveSharedVersion(share, page);
+
+    page.content = resolved.content;
     page.content = await this.updatePublicAttachments(page);
 
-    return { page, share };
+    return { page, share, versionInfo: resolved.versionInfo };
+  }
+
+  /**
+   * 공유 링크의 버전 모드에 따라 서빙할 확정본을 고른다.
+   * - primary: 페이지의 현재 Primary 버전 (없으면 404)
+   * - fixed: 고정 버전. 폐기 시 onDiscard 정책(D3):
+   *   fallback → 가장 가까운 비폐기 버전 + 안내 플래그, 404 → 명시적 차단
+   * 공유 대상의 하위 페이지(includeSubPages)는 항상 자기 Primary 버전.
+   */
+  private async resolveSharedVersion(share: any, page: Page) {
+    const isPinnedPage = share.pageId === page.id;
+
+    if (
+      isPinnedPage &&
+      share.versionMode === 'fixed' &&
+      share.fixedVersionId
+    ) {
+      const fixed = await this.pageVersionRepo.findById(share.fixedVersionId, {
+        includeContent: true,
+      });
+
+      if (fixed && fixed.pageId === page.id && !fixed.discardedAt) {
+        return {
+          content: fixed.content,
+          versionInfo: {
+            mode: 'fixed',
+            version: fixed.version,
+            versionId: fixed.id,
+            fallback: false,
+          },
+        };
+      }
+
+      // 고정 버전이 폐기(또는 소실)됨 — onDiscard 정책 분기
+      if (share.onDiscard === '404') {
+        throw new NotFoundException('Shared page not found');
+      }
+
+      const fallback = await this.pageVersionRepo.findNearestActiveVersion(
+        page.id,
+        fixed?.version ?? 0,
+        { includeContent: true },
+      );
+
+      if (!fallback) {
+        throw new NotFoundException('Shared page not found');
+      }
+
+      return {
+        content: fallback.content,
+        versionInfo: {
+          mode: 'fixed',
+          version: fallback.version,
+          versionId: fallback.id,
+          fallback: true,
+        },
+      };
+    }
+
+    // primary 모드 (및 하위 페이지)
+    if (!page.primaryVersionId) {
+      throw new NotFoundException('Shared page not found');
+    }
+
+    const primary = await this.pageVersionRepo.findById(page.primaryVersionId, {
+      includeContent: true,
+    });
+
+    if (!primary) {
+      throw new NotFoundException('Shared page not found');
+    }
+
+    return {
+      content: primary.content,
+      versionInfo: {
+        mode: 'primary',
+        version: primary.version,
+        versionId: primary.id,
+        fallback: false,
+      },
+    };
+  }
+
+  private async isDescendantOf(
+    pageId: string,
+    ancestorPageId: string,
+  ): Promise<boolean> {
+    const result = await this.db
+      .withRecursive('ancestors', (cte) =>
+        cte
+          .selectFrom('pages')
+          .select(['id', 'parentPageId'])
+          .where('id', '=', pageId)
+          .unionAll((union) =>
+            union
+              .selectFrom('pages as p')
+              .innerJoin('ancestors as a', 'a.parentPageId', 'p.id')
+              .select(['p.id', 'p.parentPageId']),
+          ),
+      )
+      .selectFrom('ancestors')
+      .select('id')
+      .where('id', '=', ancestorPageId)
+      .executeTakeFirst();
+
+    return !!result;
   }
 
   async getShareForPage(pageId: string, workspaceId: string) {

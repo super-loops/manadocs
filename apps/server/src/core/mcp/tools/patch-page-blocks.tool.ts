@@ -5,9 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { UserRepo } from '@manadocs/db/repos/user/user.repo';
 import { CollaborationGateway } from '../../../collaboration/collaboration.gateway';
-import { htmlToJson } from '../../../collaboration/collaboration.util';
+import {
+  htmlToJson,
+  pageDocumentName,
+} from '../../../collaboration/collaboration.util';
 import { markdownToHtml } from '@manadocs/editor-ext';
 import { McpCallContext, McpTool } from '../mcp.types';
 import {
@@ -34,6 +38,7 @@ type PatchOp = {
 export class PatchPageBlocksTool {
   constructor(
     private readonly pageRepo: PageRepo,
+    private readonly pageVersionRepo: PageVersionRepo,
     private readonly userRepo: UserRepo,
     private readonly collaborationGateway: CollaborationGateway,
   ) {}
@@ -156,9 +161,12 @@ export class PatchPageBlocksTool {
       resolved.push({ ...base, nodes });
     }
 
+    // Primary 작업문서의 명시 room 으로 접속 (클라이언트와 동일 문서 보장)
+    const workingDocId =
+      await this.pageVersionRepo.resolvePrimaryWorkingDocId(page.id);
     await this.collaborationGateway.handleYjsEvent(
       'patchPageBlocks' as any,
-      `page.${page.id}`,
+      pageDocumentName(page.id, workingDocId),
       { operations: resolved, user } as any,
     );
 

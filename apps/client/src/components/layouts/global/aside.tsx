@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { TableOfContents } from "@/features/editor/components/table-of-contents/table-of-contents.tsx";
 import { useAtomValue } from "jotai";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms.ts";
+import VersionPanel from "@/features/page-version/components/version-panel.tsx";
+import WorkingDocPanel from "@/features/page-version/components/working-doc-panel.tsx";
 
 export default function Aside() {
   const [{ tab }] = useAtom(asideStateAtom);
@@ -19,6 +21,14 @@ export default function Aside() {
     case "toc":
       component = <TableOfContents editor={pageEditor} />;
       title = "Table of contents";
+      break;
+    case "versions":
+      component = <VersionPanel />;
+      title = "버전";
+      break;
+    case "working-docs":
+      component = <WorkingDocPanel />;
+      title = "작업문서";
       break;
     default:
       component = null;

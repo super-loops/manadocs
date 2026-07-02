@@ -19,6 +19,11 @@ import { UpdateReviewTool } from './tools/update-review.tool';
 import { AddReviewCommentTool } from './tools/add-review-comment.tool';
 import { UpdateReviewCommentTool } from './tools/update-review-comment.tool';
 import { DeleteReviewCommentTool } from './tools/delete-review-comment.tool';
+import {
+  CommitPageVersionTool,
+  GetPageVersionTool,
+  ListPageVersionsTool,
+} from './tools/page-versions.tool';
 
 @Injectable()
 export class McpToolRegistry {
@@ -44,6 +49,9 @@ export class McpToolRegistry {
     addReviewComment: AddReviewCommentTool,
     updateReviewComment: UpdateReviewCommentTool,
     deleteReviewComment: DeleteReviewCommentTool,
+    listPageVersions: ListPageVersionsTool,
+    getPageVersion: GetPageVersionTool,
+    commitPageVersion: CommitPageVersionTool,
   ) {
     const tools: McpTool[] = [
       workspaceInfo.asTool(),
@@ -65,6 +73,9 @@ export class McpToolRegistry {
       addReviewComment.asTool(),
       updateReviewComment.asTool(),
       deleteReviewComment.asTool(),
+      listPageVersions.asTool(),
+      getPageVersion.asTool(),
+      commitPageVersion.asTool(),
     ];
     this.toolsByName = new Map(tools.map((t) => [t.name, t]));
   }

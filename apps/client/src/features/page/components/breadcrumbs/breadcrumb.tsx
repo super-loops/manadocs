@@ -21,10 +21,8 @@ import { extractPageSlugId } from "@/lib";
 import { useMediaQuery } from "@mantine/hooks";
 
 function getTitle(name: string, icon: string) {
-  if (icon) {
-    return `${icon} ${name}`;
-  }
-  return name;
+  // 이모지 1급 — 미지정 시 기본 문서 이모지(📄)
+  return `${icon || "📄"} ${name}`;
 }
 
 export default function Breadcrumb() {

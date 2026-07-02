@@ -68,12 +68,14 @@ interface PageEditorProps {
   pageId: string;
   editable: boolean;
   content: any;
+  workingDocId?: string | null;
 }
 
 export default function PageEditor({
   pageId,
   editable,
   content,
+  workingDocId,
 }: PageEditorProps) {
   const collaborationURL = useCollaborationUrl();
   const isComponentMounted = useRef(false);
@@ -114,7 +116,11 @@ export default function PageEditor({
 
   useEffect(() => {
     if (!providersRef.current) {
-      const documentName = `page.${pageId}`;
+      // 작업문서별 명시 room — 서버가 해당 작업문서 row 에 저장한다.
+      // workingDocId 미지정(레거시)은 Primary 작업문서로 해석됨.
+      const documentName = workingDocId
+        ? `page.${pageId}.${workingDocId}`
+        : `page.${pageId}`;
       const ydoc = new Y.Doc();
       const local = new IndexeddbPersistence(documentName, ydoc);
       const socket = new HocuspocusProviderWebsocket({
@@ -168,7 +174,7 @@ export default function PageEditor({
       providersRef.current?.local.destroy();
       providersRef.current = null;
     };
-  }, [pageId]);
+  }, [pageId, workingDocId]);
 
   // Only connect/disconnect on tab/idle, not destroy
   useEffect(() => {

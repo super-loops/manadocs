@@ -23,6 +23,12 @@ export class SearchDTO {
   @IsString()
   creatorId?: string;
 
+  // D10 검색 이원화 — 기본은 확정본 인덱스. true 면 편집 가능한
+  // 스페이스에 한해 작업문서(수정중) 내용도 함께 검색.
+  @IsOptional()
+  @IsBoolean()
+  includeWorking?: boolean;
+
   @IsOptional()
   @IsNumber()
   limit?: number;

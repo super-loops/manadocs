@@ -34,6 +34,7 @@ import {
 } from '../casl/interfaces/space-ability.type';
 import SpaceAbilityFactory from '../casl/abilities/space-ability.factory';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
@@ -55,6 +56,7 @@ export class PageController {
   constructor(
     private readonly pageService: PageService,
     private readonly pageRepo: PageRepo,
+    private readonly pageVersionRepo: PageVersionRepo,
     private readonly pageHistoryService: PageHistoryService,
     private readonly spaceAbility: SpaceAbilityFactory,
     private readonly pageAccessService: PageAccessService,
@@ -81,6 +83,34 @@ export class PageController {
       await this.pageAccessService.validateCanViewWithPermissions(page, user);
 
     const permissions = { canEdit, hasRestriction };
+
+    // D6 — 읽기 전용 사용자는 작업문서가 아니라 Primary 확정본을 본다.
+    // 확정본이 없으면 콘텐츠 없이 플레이스홀더 신호만 내려준다.
+    if (!canEdit) {
+      const primaryVersion = page.primaryVersionId
+        ? await this.pageVersionRepo.findById(page.primaryVersionId, {
+            includeContent: true,
+          })
+        : null;
+
+      const committedContent = primaryVersion?.content ?? null;
+      const versionContext = {
+        mode: 'committed' as const,
+        hasCommitted: !!primaryVersion,
+        version: primaryVersion?.version ?? null,
+        versionId: primaryVersion?.id ?? null,
+      };
+
+      if (dto.format && dto.format !== 'json' && committedContent) {
+        const contentOutput =
+          dto.format === 'markdown'
+            ? jsonToMarkdown(committedContent)
+            : jsonToHtml(committedContent);
+        return { ...page, content: contentOutput, permissions, versionContext };
+      }
+
+      return { ...page, content: committedContent, permissions, versionContext };
+    }
 
     if (dto.format && dto.format !== 'json' && page.content) {
       const contentOutput =

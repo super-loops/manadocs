@@ -36,6 +36,17 @@ export class SearchService {
     }
     const searchQuery = tsquery(query.trim() + '*');
 
+    // D10 — 기본은 확정본(committed) 인덱스만. includeWorking 이면 인증
+    // 사용자의 편집 가능 스페이스에 한해 작업문서 인덱스를 OR 로 합친다.
+    // 공유(share) 검색은 항상 확정본만.
+    const includeWorking =
+      Boolean(searchParams.includeWorking) &&
+      Boolean(opts.userId) &&
+      !searchParams.shareId;
+
+    const editableSpaceIds = () =>
+      this.getUserEditableSpaceIdsQuery(opts.userId);
+
     let queryResults = this.db
       .selectFrom('pages')
       .select([
@@ -47,17 +58,56 @@ export class SearchService {
         'creatorId',
         'createdAt',
         'updatedAt',
-        sql<number>`ts_rank(tsv, to_tsquery('english', f_unaccent(${searchQuery})))`.as(
-          'rank',
-        ),
-        sql<string>`ts_headline('english', text_content, to_tsquery('english', f_unaccent(${searchQuery})),'MinWords=9, MaxWords=10, MaxFragments=3')`.as(
-          'highlight',
-        ),
       ])
-      .where(
-        'tsv',
-        '@@',
-        sql<string>`to_tsquery('english', f_unaccent(${searchQuery}))`,
+      .$if(!includeWorking, (qb) =>
+        qb.select([
+          sql<number>`ts_rank(committed_tsv, to_tsquery('english', f_unaccent(${searchQuery})))`.as(
+            'rank',
+          ),
+          sql<string>`ts_headline('english', committed_text_content, to_tsquery('english', f_unaccent(${searchQuery})),'MinWords=9, MaxWords=10, MaxFragments=3')`.as(
+            'highlight',
+          ),
+        ]),
+      )
+      .$if(includeWorking, (qb) =>
+        qb.select([
+          sql<number>`greatest(
+            coalesce(ts_rank(committed_tsv, to_tsquery('english', f_unaccent(${searchQuery}))), 0),
+            CASE WHEN space_id IN (${editableSpaceIds()})
+              THEN coalesce(ts_rank(tsv, to_tsquery('english', f_unaccent(${searchQuery}))), 0)
+              ELSE 0 END
+          )`.as('rank'),
+          sql<string>`CASE WHEN space_id IN (${editableSpaceIds()})
+            THEN ts_headline('english', text_content, to_tsquery('english', f_unaccent(${searchQuery})),'MinWords=9, MaxWords=10, MaxFragments=3')
+            ELSE ts_headline('english', committed_text_content, to_tsquery('english', f_unaccent(${searchQuery})),'MinWords=9, MaxWords=10, MaxFragments=3')
+            END`.as('highlight'),
+        ]),
+      )
+      .$if(!includeWorking, (qb) =>
+        qb.where(
+          'committedTsv',
+          '@@',
+          sql<string>`to_tsquery('english', f_unaccent(${searchQuery}))`,
+        ),
+      )
+      .$if(includeWorking, (qb) =>
+        qb.where((eb) =>
+          eb.or([
+            eb(
+              'committedTsv',
+              '@@',
+              sql<string>`to_tsquery('english', f_unaccent(${searchQuery}))`,
+            ),
+            eb.and([
+              eb('spaceId', 'in', editableSpaceIds()),
+              eb(
+                'tsv',
+                '@@',
+                sql<string>`to_tsquery('english', f_unaccent(${searchQuery}))`,
+              ),
+            ]),
+          ]),
+        ),
       )
       .$if(Boolean(searchParams.creatorId), (qb) =>
         qb.where('creatorId', '=', searchParams.creatorId),
@@ -149,6 +199,27 @@ export class SearchService {
     });
 
     return { items: searchResults };
+  }
+
+  /** 사용자가 편집 권한(admin/writer)을 가진 스페이스 id 서브쿼리 */
+  private getUserEditableSpaceIdsQuery(userId: string) {
+    return this.db
+      .selectFrom('spaceMembers')
+      .select('spaceId')
+      .where('role', 'in', ['admin', 'writer'])
+      .where((eb) =>
+        eb.or([
+          eb('userId', '=', userId),
+          eb(
+            'groupId',
+            'in',
+            this.db
+              .selectFrom('groupUsers')
+              .select('groupId')
+              .where('userId', '=', userId),
+          ),
+        ]),
+      );
   }
 
   async searchSuggestions(

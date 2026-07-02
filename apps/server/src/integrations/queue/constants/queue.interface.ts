@@ -17,10 +17,6 @@ export interface IStripeSeatsSyncJob {
   workspaceId: string;
 }
 
-export interface IPageHistoryJob {
-  pageId: string;
-}
-
 export interface INotificationCreateJob {
   userId: string;
   workspaceId: string;

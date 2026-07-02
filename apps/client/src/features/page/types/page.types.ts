@@ -27,6 +27,15 @@ export interface IPage {
     canEdit: boolean;
     hasRestriction: boolean;
   };
+  // 문서 형상관리
+  primaryVersionId?: string | null;
+  primaryWorkingDocId?: string | null;
+  versionContext?: {
+    mode: "committed";
+    hasCommitted: boolean;
+    version: number | null;
+    versionId: string | null;
+  };
 }
 
 interface ICreator {

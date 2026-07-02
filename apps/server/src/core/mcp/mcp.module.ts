@@ -29,6 +29,11 @@ import { UpdateReviewTool } from './tools/update-review.tool';
 import { AddReviewCommentTool } from './tools/add-review-comment.tool';
 import { UpdateReviewCommentTool } from './tools/update-review-comment.tool';
 import { DeleteReviewCommentTool } from './tools/delete-review-comment.tool';
+import {
+  CommitPageVersionTool,
+  GetPageVersionTool,
+  ListPageVersionsTool,
+} from './tools/page-versions.tool';
 
 @Module({
   imports: [
@@ -64,6 +69,9 @@ import { DeleteReviewCommentTool } from './tools/delete-review-comment.tool';
     AddReviewCommentTool,
     UpdateReviewCommentTool,
     DeleteReviewCommentTool,
+    ListPageVersionsTool,
+    GetPageVersionTool,
+    CommitPageVersionTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })

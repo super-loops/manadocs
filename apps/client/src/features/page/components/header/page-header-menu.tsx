@@ -6,11 +6,9 @@ import {
   IconEye,
   IconEyeOff,
   IconFileExport,
-  IconHistory,
   IconLink,
   IconList,
   IconMarkdown,
-  IconMessageCircle,
   IconPrinter,
   IconTrash,
   IconWifiOff,
@@ -18,8 +16,6 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import useToggleAside from "@/hooks/use-toggle-aside.tsx";
 import { useAtom, useAtomValue } from "jotai";
-import { historyAtoms } from "@/features/page-history/atoms/history-atoms.ts";
-import { reviewSidebarOpenAtom } from "@/features/review/atoms/review-atom";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useParams } from "react-router-dom";
@@ -39,7 +35,6 @@ import {
   yjsConnectionStatusAtom,
 } from "@/features/editor/atoms/editor-atoms.ts";
 import { formattedDate } from "@/lib/time.ts";
-import { PageStateSegmentedControl } from "@/features/user/components/page-state-pref.tsx";
 import MovePageModal from "@/features/page/components/move-page-modal.tsx";
 import { useTimeAgo } from "@/hooks/use-time-ago.tsx";
 import {
@@ -54,7 +49,6 @@ interface PageHeaderMenuProps {
 export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
   const { t } = useTranslation();
   const toggleAside = useToggleAside();
-  const [, setReviewSidebarOpen] = useAtom(reviewSidebarOpenAtom);
 
   useHotkeys(
     [
@@ -81,18 +75,6 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
     <>
       <ConnectionWarning />
 
-      {!readOnly && <PageStateSegmentedControl size="xs" />}
-
-      <Tooltip label={t("Reviews")} openDelay={250} withArrow>
-        <ActionIcon
-          variant="subtle"
-          color="dark"
-          onClick={() => setReviewSidebarOpen((v) => !v)}
-        >
-          <IconMessageCircle size={20} stroke={2} />
-        </ActionIcon>
-      </Tooltip>
-
       <Tooltip label={t("Table of contents")} openDelay={250} withArrow>
         <ActionIcon
           variant="subtle"
@@ -113,7 +95,6 @@ interface PageActionMenuProps {
 }
 function PageActionMenu({ readOnly }: PageActionMenuProps) {
   const { t } = useTranslation();
-  const [, setHistoryModalOpen] = useAtom(historyAtoms);
   const clipboard = useClipboard({ timeout: 500 });
   const { pageSlug, spaceSlug } = useParams();
   const { data: page, isLoading } = usePageQuery({
@@ -154,10 +135,6 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
     setTimeout(() => {
       window.print();
     }, 250);
-  };
-
-  const openHistoryModal = () => {
-    setHistoryModalOpen(true);
   };
 
   const handleDeletePage = () => {
@@ -217,13 +194,6 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
             <Group wrap="nowrap">
               <PageWidthToggle label={t("Full width")} />
             </Group>
-          </Menu.Item>
-
-          <Menu.Item
-            leftSection={<IconHistory size={16} />}
-            onClick={openHistoryModal}
-          >
-            {t("Page history")}
           </Menu.Item>
 
           <Menu.Divider />

@@ -42,6 +42,8 @@ export class PageRepo {
     'updatedAt',
     'deletedAt',
     'contributorIds',
+    'primaryVersionId',
+    'primaryWorkingDocId',
   ];
 
   async findById(

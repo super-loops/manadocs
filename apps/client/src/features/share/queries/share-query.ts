@@ -22,6 +22,7 @@ import {
   deleteShare,
   getSharedPageTree,
   getShareForPage,
+  getSharesForPage,
   getShareInfo,
   getSharePageInfo,
   getShares,
@@ -77,6 +78,18 @@ export function useShareForPageQuery(
   return query;
 }
 
+export function useSharesForPageQuery(
+  pageId: string,
+  enabled = true,
+): UseQueryResult<IShare[], Error> {
+  return useQuery({
+    queryKey: ["shares-for-page", pageId],
+    queryFn: () => getSharesForPage(pageId),
+    enabled: !!pageId && enabled,
+    retry: false,
+  });
+}
+
 export function useCreateShareMutation() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -86,7 +99,7 @@ export function useCreateShareMutation() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         predicate: (item) =>
-          ["share-for-page", "share-list"].includes(item.queryKey[0] as string),
+          ["share-for-page", "shares-for-page", "share-list"].includes(item.queryKey[0] as string),
       });
     },
     onError: (error) => {
@@ -107,7 +120,7 @@ export function useUpdateShareMutation() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         predicate: (item) =>
-          ["share-for-page", "share-list"].includes(item.queryKey[0] as string),
+          ["share-for-page", "shares-for-page", "share-list"].includes(item.queryKey[0] as string),
       });
     },
     onError: (error, params) => {
@@ -146,7 +159,7 @@ export function useDeleteShareMutation() {
 
       queryClient.invalidateQueries({
         predicate: (item) =>
-          ["share-list"].includes(item.queryKey[0] as string),
+          ["share-list", "shares-for-page"].includes(item.queryKey[0] as string),
       });
 
       notifications.show({ message: t("Share deleted successfully") });

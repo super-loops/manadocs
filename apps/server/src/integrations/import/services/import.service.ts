@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
+import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { MultipartFile } from '@fastify/multipart';
 import { sanitize } from 'sanitize-filename-ts';
 import * as path from 'path';
@@ -36,6 +37,7 @@ export class ImportService {
 
   constructor(
     private readonly pageRepo: PageRepo,
+    private readonly pageVersionRepo: PageVersionRepo,
     private readonly storageService: StorageService,
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.FILE_TASK_QUEUE)
@@ -111,6 +113,19 @@ export class ImportService {
           workspaceId: workspaceId,
           lastUpdatedById: userId,
         });
+
+        // 형상관리 스캐폴드 — 가져온 문서는 완결 문서로 보고 버전 1 자동 확정
+        // (D2: 확정본 없으면 공유·Reader 열람 불가 → 대량 가져오기 즉시 열람 보장)
+        try {
+          await this.pageVersionRepo.createPageScaffold(createdPage, userId, {
+            autoCommitVersion1: true,
+            commitMessage: '가져오기 자동 확정',
+          });
+        } catch (err) {
+          this.logger.error(
+            `Failed to scaffold versioning for imported page ${createdPage.id}: ${err?.['message']}`,
+          );
+        }
 
         this.logger.debug(
           `Successfully imported "${title}${fileExtension}. ID: ${createdPage.id} - SlugId: ${createdPage.slugId}"`,

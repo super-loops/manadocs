@@ -13,8 +13,9 @@ import { PagePermissionRepo } from '@manadocs/db/repos/page/page-permission.repo
 import { findHighestUserSpaceRole } from '@manadocs/db/repos/space/utils';
 import { SpaceRole } from '../../common/helpers/types/permission';
 import { isUserDisabled } from '../../common/helpers';
-import { getPageId } from '../collaboration.util';
+import { getPageId, getWorkingDocId } from '../collaboration.util';
 import { JwtCollabPayload, JwtType } from '../../core/auth/dto/jwt-payload';
+import { PageWorkingDocRepo } from '@manadocs/db/repos/page/page-working-doc.repo';
 
 @Injectable()
 export class AuthenticationExtension implements Extension {
@@ -26,11 +27,13 @@ export class AuthenticationExtension implements Extension {
     private pageRepo: PageRepo,
     private readonly spaceMemberRepo: SpaceMemberRepo,
     private readonly pagePermissionRepo: PagePermissionRepo,
+    private readonly pageWorkingDocRepo: PageWorkingDocRepo,
   ) {}
 
   async onAuthenticate(data: onAuthenticatePayload) {
     const { documentName, token } = data;
     const pageId = getPageId(documentName);
+    const workingDocId = getWorkingDocId(documentName);
 
     let jwtPayload: JwtCollabPayload;
 
@@ -71,10 +74,23 @@ export class AuthenticationExtension implements Extension {
       throw new UnauthorizedException();
     }
 
+    // 작업문서 room 유효성 — 명시된 작업문서가 이 페이지 소속인지 확인
+    if (workingDocId) {
+      const workingDoc = await this.pageWorkingDocRepo.findById(workingDocId);
+      if (!workingDoc || workingDoc.pageId !== page.id) {
+        this.logger.warn(
+          `Working doc ${workingDocId} not found for page: ${pageId}`,
+        );
+        throw new NotFoundException('Working doc not found');
+      }
+    }
+
     // Check page-level permissions
     const { hasAnyRestriction, canAccess, canEdit } =
       await this.pagePermissionRepo.canUserEditPage(user.id, page.id);
 
+    // D6 — 작업문서는 편집 권한자 전용. 읽기 전용 사용자는 협업 room 에
+    // 접속할 수 없고, REST 로 확정본(Primary 버전)만 열람한다.
     if (hasAnyRestriction) {
       if (!canAccess) {
         this.logger.warn(
@@ -84,16 +100,18 @@ export class AuthenticationExtension implements Extension {
       }
 
       if (!canEdit) {
-        data.connectionConfig.readOnly = true;
         this.logger.debug(
-          `User ${user.id} granted readonly access to restricted page: ${pageId}`,
+          `User ${user.id} denied working-doc access (no edit) to restricted page: ${pageId}`,
         );
+        throw new UnauthorizedException();
       }
     } else {
       // No restrictions - use space-level permissions
       if (userSpaceRole === SpaceRole.READER) {
-        data.connectionConfig.readOnly = true;
-        this.logger.debug(`User granted readonly access to page: ${pageId}`);
+        this.logger.debug(
+          `Reader denied working-doc access to page: ${pageId}`,
+        );
+        throw new UnauthorizedException();
       }
     }
 

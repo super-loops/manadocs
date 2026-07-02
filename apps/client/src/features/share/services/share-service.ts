@@ -40,6 +40,12 @@ export async function getShareForPage(pageId: string): Promise<IShareForPage> {
   return req.data;
 }
 
+/** 페이지의 모든 공유 링크 (다중 링크·버전 모드별) — 편집 권한자 전용 */
+export async function getSharesForPage(pageId: string): Promise<IShare[]> {
+  const req = await api.post<IShare[]>("/shares/for-page-all", { pageId });
+  return req.data;
+}
+
 export async function getSharePageInfo(
   shareInput: Partial<IShareInfoInput>,
 ): Promise<ISharedPage> {

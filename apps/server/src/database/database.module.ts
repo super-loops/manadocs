@@ -11,6 +11,8 @@ import { SpaceMemberRepo } from '@manadocs/db/repos/space/space-member.repo';
 import { PageRepo } from './repos/page/page.repo';
 import { PagePermissionRepo } from './repos/page/page-permission.repo';
 import { PageHistoryRepo } from './repos/page/page-history.repo';
+import { PageVersionRepo } from './repos/page/page-version.repo';
+import { PageWorkingDocRepo } from './repos/page/page-working-doc.repo';
 import { AttachmentRepo } from './repos/attachment/attachment.repo';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
 import * as process from 'node:process';
@@ -78,6 +80,8 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     PageRepo,
     PagePermissionRepo,
     PageHistoryRepo,
+    PageVersionRepo,
+    PageWorkingDocRepo,
     AttachmentRepo,
     UserTokenRepo,
     UserSessionRepo,
@@ -102,6 +106,8 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     PageRepo,
     PagePermissionRepo,
     PageHistoryRepo,
+    PageVersionRepo,
+    PageWorkingDocRepo,
     AttachmentRepo,
     UserTokenRepo,
     UserSessionRepo,

@@ -139,6 +139,19 @@ export function getPageId(documentName: string) {
   return documentName.split('.')[1];
 }
 
+/**
+ * 작업문서 room 이름. 레거시 `page.<pageId>` 는 Primary 작업문서로 해석되고,
+ * 명시 형식은 `page.<pageId>.<workingDocId>`.
+ */
+export function pageDocumentName(pageId: string, workingDocId?: string | null) {
+  return workingDocId ? `page.${pageId}.${workingDocId}` : `page.${pageId}`;
+}
+
+export function getWorkingDocId(documentName: string): string | null {
+  const parts = documentName.split('.');
+  return parts.length > 2 ? parts[2] : null;
+}
+
 function stripUnknownNodes(
   json: JSONContent,
   schema: Schema,

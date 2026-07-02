@@ -234,6 +234,8 @@ export interface PageHistory {
 }
 
 export interface Pages {
+  committedTextContent: string | null;
+  committedTsv: string | null;
   content: Json | null;
   contributorIds: Generated<string[] | null>;
   coverPhoto: string | null;
@@ -247,6 +249,8 @@ export interface Pages {
   lastUpdatedById: string | null;
   parentPageId: string | null;
   position: string | null;
+  primaryVersionId: string | null;
+  primaryWorkingDocId: string | null;
   slugId: string;
   spaceId: string;
   textContent: string | null;
@@ -257,17 +261,56 @@ export interface Pages {
   ydoc: Buffer | null;
 }
 
+export interface PageVersions {
+  content: Json | null;
+  contributorIds: Generated<string[] | null>;
+  coverPhoto: string | null;
+  createdAt: Generated<Timestamp>;
+  creatorId: string | null;
+  discardedAt: Timestamp | null;
+  discardedById: string | null;
+  icon: string | null;
+  id: Generated<string>;
+  message: string | null;
+  pageId: string;
+  spaceId: string;
+  title: string | null;
+  updatedAt: Generated<Timestamp>;
+  version: number;
+  workingDocId: string | null;
+  workspaceId: string;
+}
+
+export interface PageWorkingDocs {
+  baseVersionId: string | null;
+  content: Json | null;
+  contributorIds: Generated<string[] | null>;
+  createdAt: Generated<Timestamp>;
+  creatorId: string | null;
+  id: Generated<string>;
+  name: string | null;
+  pageId: string;
+  spaceId: string;
+  textContent: string | null;
+  updatedAt: Generated<Timestamp>;
+  workspaceId: string;
+  ydoc: Buffer | null;
+}
+
 export interface Shares {
   createdAt: Generated<Timestamp>;
   creatorId: string | null;
   deletedAt: Timestamp | null;
+  fixedVersionId: string | null;
   id: Generated<string>;
   includeSubPages: Generated<boolean | null>;
   key: string;
+  onDiscard: Generated<string>;
   pageId: string | null;
   searchIndexing: Generated<boolean | null>;
   spaceId: string;
   updatedAt: Generated<Timestamp>;
+  versionMode: Generated<string>;
   workspaceId: string;
 }
 
@@ -462,6 +505,7 @@ export interface Reviews {
   workspaceId: string;
   resolvedAt: Timestamp | null;
   resolvedById: string | null;
+  versionId: string | null;
   createdAt: Generated<Timestamp>;
   updatedAt: Generated<Timestamp>;
   deletedAt: Timestamp | null;
@@ -525,6 +569,8 @@ export interface DB {
   pagePermissions: PagePermissions;
   pageHistory: PageHistory;
   pages: Pages;
+  pageVersions: PageVersions;
+  pageWorkingDocs: PageWorkingDocs;
   shares: Shares;
   spaceMembers: SpaceMembers;
   spaces: Spaces;

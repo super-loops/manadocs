@@ -61,6 +61,13 @@ export class ReviewService {
   ) {
     const { page, workspaceId, user } = opts;
 
+    // 리뷰는 확정 버전(committed)에만 귀속된다 — 확정본 없으면 리뷰 불가
+    if (!page.primaryVersionId) {
+      throw new BadRequestException(
+        'Reviews require a committed version. Commit the page first.',
+      );
+    }
+
     const sequenceId = await this.sequenceRepo.nextVal(
       workspaceId,
       'review',
@@ -75,6 +82,7 @@ export class ReviewService {
       content,
       creatorId: user.id,
       pageId: page.id,
+      versionId: page.primaryVersionId,
       spaceId: page.spaceId,
       workspaceId,
     });

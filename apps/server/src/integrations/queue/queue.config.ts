@@ -9,7 +9,6 @@ export const QUEUE_CONCURRENCY: Record<string, number> = {
   [QueueName.NOTIFICATION_QUEUE]: 5,
   [QueueName.GENERAL_QUEUE]: 3,
   [QueueName.ATTACHMENT_QUEUE]: 2,
-  [QueueName.HISTORY_QUEUE]: 2,
   [QueueName.FILE_TASK_QUEUE]: 1,
   [QueueName.BILLING_QUEUE]: 2,
   [QueueName.SEARCH_QUEUE]: 3,

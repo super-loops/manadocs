@@ -2,7 +2,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useSharePageQuery } from "@/features/share/queries/share-query.ts";
-import { Container } from "@mantine/core";
+import { Alert, Container } from "@mantine/core";
+import { IconInfoCircle } from "@tabler/icons-react";
 import React, { useEffect } from "react";
 import ReadonlyPageEditor from "@/features/editor/readonly-page-editor.tsx";
 import { extractPageSlugId } from "@/lib";
@@ -18,8 +19,10 @@ export default function SharedPage() {
   const { shareId } = useParams();
   const navigate = useNavigate();
 
+  // shareId(key)를 함께 보내야 링크별 버전 모드(최신 추종/버전 고정)로 서빙된다
   const { data, isLoading, isError, error } = useSharePageQuery({
     pageId: extractPageSlugId(pageSlug),
+    shareId,
   });
 
   const sharedTreeData = useAtomValue(sharedTreeDataAtom);
@@ -60,8 +63,21 @@ export default function SharedPage() {
       </Helmet>
 
       <Container size={900} p={0}>
+        {data.versionInfo?.fallback && (
+          <Alert
+            variant="light"
+            color="yellow"
+            icon={<IconInfoCircle size={16} />}
+            mt="md"
+          >
+            {t(
+              "이 링크가 가리키던 버전이 폐기되어 가장 가까운 버전 {{n}}(으)로 안내되었습니다.",
+              { n: data.versionInfo.version },
+            )}
+          </Alert>
+        )}
         <ReadonlyPageEditor
-          key={data.page.id}
+          key={`${data.page.id}:${data.versionInfo?.versionId ?? ""}`}
           title={data.page.title}
           content={data.page.content}
           pageId={data.page.id}

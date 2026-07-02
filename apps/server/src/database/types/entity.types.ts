@@ -6,6 +6,8 @@ import {
   PageAccess as _PageAccess,
   PagePermissions as _PagePermissions,
   Pages,
+  PageVersions,
+  PageWorkingDocs,
   Spaces,
   Users,
   Workspaces,
@@ -82,6 +84,16 @@ export type UpdatablePage = Updateable<Omit<Pages, 'id'>>;
 export type PageHistory = Selectable<History>;
 export type InsertablePageHistory = Insertable<History>;
 export type UpdatablePageHistory = Updateable<Omit<History, 'id'>>;
+
+// PageVersion
+export type PageVersion = Selectable<PageVersions>;
+export type InsertablePageVersion = Insertable<PageVersions>;
+export type UpdatablePageVersion = Updateable<Omit<PageVersions, 'id'>>;
+
+// PageWorkingDoc
+export type PageWorkingDoc = Selectable<PageWorkingDocs>;
+export type InsertablePageWorkingDoc = Insertable<PageWorkingDocs>;
+export type UpdatablePageWorkingDoc = Updateable<Omit<PageWorkingDocs, 'id'>>;
 
 // Attachment
 export type Attachment = Selectable<Attachments>;
