@@ -14,9 +14,11 @@ import {
   MantineProvider,
 } from "@mantine/core";
 import { IconPlus, IconAnchor } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { useTranslation } from "react-i18next";
 import type { Editor, Range } from "@tiptap/core";
 import { queryClient } from "@/main";
+import { resolveBlockAtPos } from "@/features/editor/components/review/review-anchor-util";
 import {
   useCreateReviewAnchorMutation,
   useCreateReviewMutation,
@@ -58,37 +60,56 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
     });
   }, [data, search]);
 
-  const insertAnchor = (review: IReview, anchor: { id: string; sequenceId: number | string }) => {
-    editor
-      .chain()
-      .focus()
-      .deleteRange(range)
-      .insertReviewAnchor({
-        anchorId: anchor.id,
-        reviewId: review.id,
-        sequenceId: Number(anchor.sequenceId),
-        reviewSequenceId: Number(review.sequenceId),
-        status: review.status,
-      })
-      .run();
-    onClose();
+  // 슬래시 트리거 텍스트(range)는 지우되, 앵커는 노드로 심지 않고
+  // 그 위치의 블록(unique-id)에 귀속시킨다.
+  const anchorPayload = () => {
+    const from = range.from;
+    // 트리거 텍스트 제거
+    editor.chain().focus().deleteRange(range).run();
+    const block = resolveBlockAtPos(editor, Math.max(1, from - 1));
+    return block;
   };
 
   const handleSelectExisting = async (review: IReview) => {
-    const anchor = await createAnchor.mutateAsync({ reviewId: review.id, pageId });
-    insertAnchor(review, anchor);
+    const block = anchorPayload();
+    if (!block) {
+      notifications.show({
+        message: "이 위치에는 리뷰를 달 수 없어요. 문단이나 제목 위에서 시도해주세요.",
+        color: "yellow",
+      });
+      onClose();
+      return;
+    }
+    await createAnchor.mutateAsync({
+      reviewId: review.id,
+      pageId,
+      blockId: block.blockId,
+      selectedText: block.text,
+    });
+    onClose();
   };
 
   const handleCreateConfirm = async () => {
+    const block = anchorPayload();
+    if (!block) {
+      notifications.show({
+        message: "이 위치에는 리뷰를 달 수 없어요. 문단이나 제목 위에서 시도해주세요.",
+        color: "yellow",
+      });
+      onClose();
+      return;
+    }
     const review = await createReview.mutateAsync({
       pageId,
       title: newTitle.trim() || undefined,
     });
-    const anchor = await createAnchor.mutateAsync({
+    await createAnchor.mutateAsync({
       reviewId: review.id,
       pageId,
+      blockId: block.blockId,
+      selectedText: block.text,
     });
-    insertAnchor(review, anchor);
+    onClose();
   };
 
   const busy = createReview.isPending || createAnchor.isPending;

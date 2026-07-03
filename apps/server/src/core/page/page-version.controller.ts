@@ -10,9 +10,10 @@ import {
 import { PageVersionService } from './services/page-version.service';
 import { PageAccessService } from './page-access/page-access.service';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
+import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PaginationOptions } from '@manadocs/db/pagination/pagination-options';
-import { User } from '@manadocs/db/types/entity.types';
+import { User, Workspace } from '@manadocs/db/types/entity.types';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
 import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { PageWorkingDocRepo } from '@manadocs/db/repos/page/page-working-doc.repo';
@@ -100,6 +101,24 @@ export class PageVersionController {
     await this.pageAccessService.validateCanEdit(page, user);
     await this.pageVersionService.setPrimary(version);
     return { success: true };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('versions/duplicate-page')
+  async duplicatePage(
+    @Body() dto: VersionIdDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const version = await this.getVersionOrThrow(dto.versionId);
+    const page = await this.getPageOrThrow(version.pageId);
+    // 원본을 볼 수 있으면 복제 가능 (새 페이지 생성 권한은 create 경로가 검증)
+    await this.pageAccessService.validateCanView(page, user);
+    return this.pageVersionService.duplicateVersionAsPage(
+      version,
+      user,
+      workspace.id,
+    );
   }
 
   // ── 작업문서 (D6: 편집 권한자 전용) ─────────────────────────────

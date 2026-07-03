@@ -12,6 +12,7 @@ import { executeTx } from '@manadocs/db/utils';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
 import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { PageWorkingDocRepo } from '@manadocs/db/repos/page/page-working-doc.repo';
+import { PageService } from './page.service';
 import {
   Page,
   PageVersion,
@@ -37,6 +38,7 @@ export class PageVersionService {
     private readonly pageVersionRepo: PageVersionRepo,
     private readonly pageWorkingDocRepo: PageWorkingDocRepo,
     private readonly collaborationGateway: CollaborationGateway,
+    private readonly pageService: PageService,
     @InjectKysely() private readonly db: KyselyDB,
   ) {}
 
@@ -165,6 +167,37 @@ export class PageVersionService {
     });
 
     return version;
+  }
+
+  /**
+   * 문서 Duplicate — 버전 스냅샷을 베이스로 새 페이지 생성.
+   * IDEA: 트리 dependency(부모/스페이스)만 carry, 버전 체인은 승계하지 않음
+   * → 새 페이지는 자기 버전 0에서 시작(create 경로가 스캐폴드).
+   */
+  async duplicateVersionAsPage(
+    version: PageVersion,
+    user: User,
+    workspaceId: string,
+  ): Promise<Page> {
+    const sourcePage = await this.pageRepo.findById(version.pageId);
+    if (!sourcePage) {
+      throw new NotFoundException('Source page not found');
+    }
+
+    const full = await this.pageVersionRepo.findById(version.id, {
+      includeContent: true,
+    });
+
+    return this.pageService.create(user.id, workspaceId, {
+      title: version.title
+        ? `${version.title} (버전 ${version.version})`
+        : undefined,
+      icon: version.icon ?? undefined,
+      spaceId: sourcePage.spaceId,
+      parentPageId: sourcePage.parentPageId ?? undefined,
+      content: full.content ?? EMPTY_DOC,
+      format: 'json',
+    } as any);
   }
 
   async listVersions(pageId: string, pagination: PaginationOptions) {

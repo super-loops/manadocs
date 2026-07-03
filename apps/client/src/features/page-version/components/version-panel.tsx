@@ -9,10 +9,14 @@ import {
   Text,
 } from "@mantine/core";
 import {
+  IconCopy,
   IconCrown,
   IconDots,
+  IconDownload,
   IconEye,
+  IconFileText,
   IconGitCompare,
+  IconJson,
   IconRestore,
   IconTrashX,
 } from "@tabler/icons-react";
@@ -23,9 +27,15 @@ import { timeAgo } from "@/lib/time";
 import {
   usePageVersionsQuery,
   useDiscardVersionMutation,
+  useDuplicateVersionMutation,
   useSetPrimaryVersionMutation,
   useUndiscardVersionMutation,
 } from "@/features/page-version/queries/page-version-query";
+import { getPageVersionInfo } from "@/features/page-version/services/page-version-service";
+import {
+  downloadVersionJson,
+  downloadVersionMarkdown,
+} from "@/features/page-version/utils/download-version";
 import { IPageVersion } from "@/features/page-version/types/page-version.types";
 import {
   diffSelectionAtom,
@@ -101,11 +111,19 @@ function VersionCard({
   const setPrimaryMutation = useSetPrimaryVersionMutation(pageId);
   const discardMutation = useDiscardVersionMutation(pageId);
   const undiscardMutation = useUndiscardVersionMutation(pageId);
+  const duplicateMutation = useDuplicateVersionMutation();
   const setPreviewVersionId = useSetAtom(previewVersionIdAtom);
   const [, setDiffSelection] = useAtom(diffSelectionAtom);
 
   const isDiscarded = !!version.discardedAt;
   const isMarker = version.version === 0;
+
+  // 다운로드는 content 가 필요 — 카드는 경량이라 클릭 시 상세 fetch
+  const handleDownload = async (format: "json" | "md") => {
+    const full = await getPageVersionInfo(version.id);
+    if (format === "json") downloadVersionJson(full);
+    else downloadVersionMarkdown(full);
+  };
 
   return (
     <Card
@@ -176,6 +194,33 @@ function VersionCard({
                 >
                   {t("비교(DIFF)")}
                 </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconCopy size={14} />}
+                  onClick={() => duplicateMutation.mutate(version.id)}
+                >
+                  {t("이 버전으로 새 페이지")}
+                </Menu.Item>
+                <Menu.Sub>
+                  <Menu.Sub.Target>
+                    <Menu.Sub.Item leftSection={<IconDownload size={14} />}>
+                      {t("다운로드")}
+                    </Menu.Sub.Item>
+                  </Menu.Sub.Target>
+                  <Menu.Sub.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() => handleDownload("md")}
+                    >
+                      Markdown (.md)
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconJson size={14} />}
+                      onClick={() => handleDownload("json")}
+                    >
+                      JSON (.json)
+                    </Menu.Item>
+                  </Menu.Sub.Dropdown>
+                </Menu.Sub>
                 {!isDiscarded ? (
                   <Menu.Item
                     color="red"

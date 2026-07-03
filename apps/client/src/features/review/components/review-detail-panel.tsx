@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { notifications } from "@mantine/notifications";
 import {
   ActionIcon,
   Badge,
@@ -566,18 +567,20 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
                     !!currentPage?.id && currentPage.id === anchor.pageId;
                   const handleAnchorClick = () => {
                     if (isCurrentPage) {
-                      // 같은 페이지: 즉시 시도, 못 찾으면 orphan 정리
+                      // 같은 페이지: 스크롤 시도. 못 찾아도 삭제하지 않는다
+                      // (다른 버전/작업문서를 보는 중이라 미렌더일 수 있음).
                       if (scrollToReviewAnchor(anchor.id)) return;
-                      deleteAnchorMutation.mutate({ anchorId: anchor.id });
+                      notifications.show({
+                        message:
+                          "현재 보고 있는 버전에는 이 앵커 위치가 없어요.",
+                        color: "yellow",
+                      });
                       return;
                     }
-                    // 다른 페이지: 이동 후 page.tsx의 useEffect가 cleanup 처리
+                    // 다른 페이지: 이동 후 page.tsx의 useEffect가 스크롤
                     if (to)
                       navigate(to, {
-                        state: {
-                          anchorId: anchor.id,
-                          autoCleanup: true,
-                        },
+                        state: { anchorId: anchor.id },
                       });
                   };
                   return (
@@ -585,19 +588,36 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
                       key={anchor.id}
                       gap="xs"
                       wrap="nowrap"
-                      onClick={handleAnchorClick}
-                      style={{ cursor: to ? "pointer" : "default" }}
                     >
-                      <IconBookmark size={14} stroke={1.5} />
-                      <Badge variant="light" size="sm" color="gray">
-                        {reviewAnchorLabel(
-                          review.sequenceId,
-                          anchor.sequenceId,
-                        )}
-                      </Badge>
-                      <Text size="sm" lineClamp={1}>
-                        {page?.title || t("untitled")}
-                      </Text>
+                      <Group
+                        gap="xs"
+                        wrap="nowrap"
+                        style={{ flex: 1, cursor: to ? "pointer" : "default" }}
+                        onClick={handleAnchorClick}
+                      >
+                        <IconBookmark size={14} stroke={1.5} />
+                        <Badge variant="light" size="sm" color="gray">
+                          {reviewAnchorLabel(
+                            review.sequenceId,
+                            anchor.sequenceId,
+                          )}
+                        </Badge>
+                        <Text size="sm" lineClamp={1}>
+                          {anchor.selectedText || page?.title || t("untitled")}
+                        </Text>
+                      </Group>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteAnchorMutation.mutate({ anchorId: anchor.id });
+                        }}
+                        title={t("앵커 삭제")}
+                      >
+                        <IconX size={14} />
+                      </ActionIcon>
                     </Group>
                   );
                 })}

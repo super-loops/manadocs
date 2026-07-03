@@ -14,6 +14,7 @@ import {
   createWorkingDoc,
   deleteWorkingDoc,
   discardVersion,
+  duplicateVersionAsPage,
   getPageVersionInfo,
   getPageVersions,
   getWorkingDocs,
@@ -126,6 +127,24 @@ export function useSetPrimaryVersionMutation(pageId: string) {
       notifications.show({
         message:
           error?.response?.data?.message ?? "Primary 변경에 실패했습니다",
+        color: "red",
+      });
+    },
+  });
+}
+
+export function useDuplicateVersionMutation() {
+  return useMutation({
+    mutationFn: (versionId: string) => duplicateVersionAsPage(versionId),
+    onSuccess: (page) => {
+      notifications.show({
+        message: `'${page.title || "새 페이지"}'(으)로 복제되었습니다`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["pages"] });
+    },
+    onError: (error: any) => {
+      notifications.show({
+        message: error?.response?.data?.message ?? "복제에 실패했습니다",
         color: "red",
       });
     },

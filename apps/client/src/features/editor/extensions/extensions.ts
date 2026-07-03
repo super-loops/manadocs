@@ -49,6 +49,7 @@ import {
   Column,
   Status,
   ReviewAnchor,
+  ReviewAnchorDecoration,
 } from "@manadocs/editor-ext";
 import {
   randomElement,
@@ -303,6 +304,16 @@ export const mainExtensions = [
   }),
   ReviewAnchor.configure({
     view: ReviewAnchorView,
+  }),
+  ReviewAnchorDecoration.configure({
+    // pill 클릭 → 전역 이벤트. React 리스너가 리뷰 모달을 연다.
+    onAnchorClick: (reviewId: string) => {
+      window.dispatchEvent(
+        new CustomEvent("manadocs:review-anchor-click", {
+          detail: { reviewId },
+        }),
+      );
+    },
   }),
   MarkdownClipboard.configure({
     transformPastedText: true,

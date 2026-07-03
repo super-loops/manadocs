@@ -19,6 +19,7 @@ export function SearchSpotlight({ spaceId }: SearchSpotlightProps) {
   const [filters, setFilters] = useState<{
     spaceId?: string | null;
     contentType?: string;
+    includeWorking?: boolean;
   }>({
     contentType: "page",
   });
@@ -32,6 +33,10 @@ export function SearchSpotlight({ spaceId }: SearchSpotlightProps) {
 
     if (filters.spaceId) {
       params.spaceId = filters.spaceId;
+    }
+
+    if (filters.includeWorking) {
+      params.includeWorking = true;
     }
 
     return params;

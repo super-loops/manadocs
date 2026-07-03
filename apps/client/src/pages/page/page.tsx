@@ -10,9 +10,10 @@ import PreviewModal from "@/features/page-version/components/preview-modal";
 import DiffModal from "@/features/page-version/components/diff-modal";
 import { activeWorkingDocAtom } from "@/features/page-version/atoms/page-version-atoms";
 import ReviewAnchorDropZone from "@/features/editor/components/review/review-anchor-drop-zone";
-import ReviewAnchorSync from "@/features/editor/components/review/review-anchor-sync";
+import ReviewAnchorClickListener from "@/features/editor/components/review/review-anchor-click-listener";
+import { useReviewAnchorDecorations } from "@/features/editor/components/review/use-review-anchor-decorations";
+import { pageEditorAtom, readOnlyEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { scrollToReviewAnchorWithRetry } from "@/features/review/utils/review-anchor-scroll";
-import { useDeleteReviewAnchorMutation } from "@/features/review/queries/review-query";
 import { Helmet } from "react-helmet-async";
 import PageHeader from "@/features/page/components/header/page-header.tsx";
 import { extractPageSlugId } from "@/lib";
@@ -64,8 +65,13 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
   const { data: space } = useGetSpaceBySlugQuery(page?.space?.slug);
 
   const canEdit = page?.permissions?.canEdit ?? false;
-  const deleteAnchorMutation = useDeleteReviewAnchorMutation(page?.id);
   const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
+
+  // 앵커 decoration 주입 — 라이브(편집)와 읽기전용(확정본) 에디터 양쪽.
+  // 앵커는 DB 레지스트리 기반이라 어느 에디터든 blockId 로 오버레이된다.
+  const liveEditor = useAtomValue(pageEditorAtom);
+  const readonlyEditor = useAtomValue(readOnlyEditorAtom);
+  useReviewAnchorDecorations(canEdit ? liveEditor : readonlyEditor, page?.id);
 
   // 현재 편집 대상 작업문서 — 선택이 없으면 Primary 작업문서
   const workingDocId =
@@ -75,17 +81,12 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
 
   useEffect(() => {
     if (!page) return;
-    const state = location.state as
-      | { anchorId?: string; autoCleanup?: boolean }
-      | null;
+    const state = location.state as { anchorId?: string } | null;
     const anchorId = state?.anchorId;
     if (!anchorId) return;
-    scrollToReviewAnchorWithRetry(anchorId, 6, 150, () => {
-      // 모든 retry 후에도 노드를 찾지 못함 → orphan
-      if (state?.autoCleanup) {
-        deleteAnchorMutation.mutate({ anchorId });
-      }
-    });
+    // 못 찾아도 삭제하지 않는다 — 앵커는 레지스트리에 남고, 다른 버전/작업문서를
+    // 보는 중이라 렌더되지 않았을 수 있다(파괴적 orphan 정리 제거).
+    scrollToReviewAnchorWithRetry(anchorId, 8, 150);
   }, [page?.id, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
@@ -150,6 +151,7 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
           />
         )}
         <ReviewSidebar />
+        <ReviewAnchorClickListener />
         <PreviewModal />
         <DiffModal />
       </div>
@@ -180,8 +182,8 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         <PreviewModal />
         <DiffModal />
         <ReviewSidebar />
+        <ReviewAnchorClickListener />
         {canEdit && <ReviewAnchorDropZone />}
-        {canEdit && <ReviewAnchorSync />}
       </div>
     )
   );

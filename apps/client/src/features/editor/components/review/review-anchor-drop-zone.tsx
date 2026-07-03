@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
 import { useParams } from "react-router-dom";
+import { notifications } from "@mantine/notifications";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { extractPageSlugId } from "@/lib";
 import { useCreateReviewAnchorMutation } from "@/features/review/queries/review-query";
+import { resolveBlockAtPos } from "@/features/editor/components/review/review-anchor-util";
 
 export const REVIEW_DRAG_MIME = "application/x-manadocs-review-id";
 
@@ -73,24 +75,24 @@ export default function ReviewAnchorDropZone() {
         return;
       }
 
+      // 드롭 위치의 블록을 해석 — 앵커는 콘텐츠가 아닌 이 blockId 에 귀속된다.
+      const block = resolveBlockAtPos(editor, pos);
+      if (!block) {
+        notifications.show({
+          message: "이 위치에는 리뷰를 달 수 없어요. 문단이나 제목 위에 놓아주세요.",
+          color: "yellow",
+        });
+        return;
+      }
+
       try {
-        const anchor = await createAnchorRef.current.mutateAsync({
+        // 노드 삽입 없이 레지스트리에만 저장 → decoration 이 blockId 로 오버레이
+        await createAnchorRef.current.mutateAsync({
           reviewId,
           pageId,
+          blockId: block.blockId,
+          selectedText: block.text,
         });
-        if (editor.isDestroyed) return;
-        editor
-          .chain()
-          .focus()
-          .setTextSelection(pos)
-          .insertReviewAnchor({
-            anchorId: anchor.id,
-            reviewId,
-            sequenceId: Number(anchor.sequenceId),
-            reviewSequenceId: Number((anchor as any).reviewSequenceId ?? 0),
-            status: ((anchor as any).reviewStatus ?? "open") as any,
-          })
-          .run();
       } catch {
         // notification은 mutation hook이 처리
       }

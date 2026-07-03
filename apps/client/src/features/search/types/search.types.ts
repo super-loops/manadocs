@@ -36,6 +36,8 @@ export interface IPageSearchParams {
   query: string;
   spaceId?: string;
   shareId?: string;
+  // 기본은 확정본 검색. true 면 편집 가능한 스페이스의 작업문서(수정중) 내용도 포함.
+  includeWorking?: boolean;
 }
 
 export interface IAttachmentSearch {

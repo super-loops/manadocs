@@ -1,9 +1,11 @@
 import { Badge, Group, Modal, Text } from "@mantine/core";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
 import ReadonlyPageEditor from "@/features/editor/readonly-page-editor";
 import { previewVersionIdAtom } from "@/features/page-version/atoms/page-version-atoms";
 import { usePageVersionQuery } from "@/features/page-version/queries/page-version-query";
+import { readOnlyEditorAtom } from "@/features/editor/atoms/editor-atoms";
+import { useReviewAnchorDecorations } from "@/features/editor/components/review/use-review-anchor-decorations";
 
 /**
  * 미리보기 모달 — 임의 버전을 reader 시점(정적 렌더)으로 본다.
@@ -12,6 +14,13 @@ export default function PreviewModal() {
   const { t } = useTranslation();
   const [previewVersionId, setPreviewVersionId] = useAtom(previewVersionIdAtom);
   const { data: version } = usePageVersionQuery(previewVersionId);
+  const readonlyEditor = useAtomValue(readOnlyEditorAtom);
+  // 확정본 위 리뷰 앵커 오버레이 (이 버전에 존재하는 블록에만)
+  useReviewAnchorDecorations(
+    readonlyEditor,
+    version?.pageId,
+    !!previewVersionId,
+  );
 
   return (
     <Modal.Root

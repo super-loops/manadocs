@@ -42,6 +42,7 @@ export function SearchSpotlightFilters({
   const [spaceSearchQuery, setSpaceSearchQuery] = useState("");
   const [debouncedSpaceQuery] = useDebouncedValue(spaceSearchQuery, 300);
   const [contentType, setContentType] = useState<string | null>("page");
+  const [includeWorking, setIncludeWorking] = useState(false);
   const [workspace] = useAtom(workspaceAtom);
 
   const { data: spacesData } = useGetSpacesQuery({
@@ -71,6 +72,7 @@ export function SearchSpotlightFilters({
       onFiltersChange({
         spaceId: selectedSpaceId,
         contentType,
+        includeWorking,
       });
     }
   }, []);
@@ -91,6 +93,18 @@ export function SearchSpotlightFilters({
       onFiltersChange({
         spaceId: spaceId,
         contentType,
+        includeWorking,
+      });
+    }
+  };
+
+  const handleIncludeWorkingChange = (value: boolean) => {
+    setIncludeWorking(value);
+    if (onFiltersChange) {
+      onFiltersChange({
+        spaceId: selectedSpaceId,
+        contentType,
+        includeWorking: value,
       });
     }
   };
@@ -114,6 +128,7 @@ export function SearchSpotlightFilters({
       onFiltersChange({
         spaceId: newSelectedSpaceId,
         contentType: newContentType,
+        includeWorking,
       });
     }
   };
@@ -249,6 +264,15 @@ export function SearchSpotlightFilters({
           ))}
         </Menu.Dropdown>
       </Menu>
+
+      <Switch
+        size="sm"
+        label={t("작업문서 포함")}
+        description={t("확정 전 수정중 내용까지 검색")}
+        checked={includeWorking}
+        onChange={(e) => handleIncludeWorkingChange(e.currentTarget.checked)}
+        className={classes.filterButton}
+      />
     </div>
   );
 }

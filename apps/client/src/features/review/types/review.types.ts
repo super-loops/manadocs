@@ -93,11 +93,17 @@ export interface IReviewAnchor {
   sequenceId: number | string;
   reviewId: string;
   pageId: string;
+  versionId?: string | null;
+  blockId?: string | null;
+  selectedText?: string | null;
   workspaceId: string;
   creatorId: string | null;
   createdAt: Date;
   updatedAt: Date;
   page?: IReviewAnchorPage | null;
+  // 조회 시 편의 필드 (서버 emit / 조인)
+  reviewSequenceId?: number;
+  reviewStatus?: ReviewStatus;
 }
 
 export interface IReviewHistory {
@@ -160,6 +166,9 @@ export interface IAddReviewComment {
 export interface ICreateReviewAnchor {
   reviewId: string;
   pageId: string;
+  blockId?: string;
+  selectedText?: string;
+  versionId?: string;
 }
 
 export interface IDeleteReviewAnchor {

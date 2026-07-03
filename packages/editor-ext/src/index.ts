@@ -27,6 +27,7 @@ export * from "./lib/recreate-transform";
 export * from "./lib/columns";
 export * from "./lib/status";
 export * from "./lib/review-anchor/review-anchor";
+export * from "./lib/review-anchor/review-anchor-decoration";
 export * from "./lib/pdf";
 export * from "./lib/resizable-nodeview";
 

@@ -531,6 +531,9 @@ export interface ReviewAnchors {
   sequenceId: Int8;
   reviewId: string;
   pageId: string;
+  versionId: string | null;
+  blockId: string | null;
+  selectedText: string | null;
   workspaceId: string;
   creatorId: string | null;
   createdAt: Generated<Timestamp>;

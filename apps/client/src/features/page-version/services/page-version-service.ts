@@ -43,6 +43,13 @@ export async function setPrimaryVersion(versionId: string): Promise<void> {
   await api.post("/pages/versions/set-primary", { versionId });
 }
 
+export async function duplicateVersionAsPage(
+  versionId: string,
+): Promise<{ id: string; slugId: string; title: string }> {
+  const req = await api.post("/pages/versions/duplicate-page", { versionId });
+  return req.data;
+}
+
 export async function getWorkingDocs(
   pageId: string,
 ): Promise<IPageWorkingDoc[]> {

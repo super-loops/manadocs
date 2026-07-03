@@ -382,6 +382,9 @@ export class ReviewService {
       sequenceId,
       reviewId: review.id,
       pageId: dto.pageId,
+      versionId: dto.versionId ?? (review as any).versionId ?? null,
+      blockId: dto.blockId ?? null,
+      selectedText: dto.selectedText ?? null,
       workspaceId: review.workspaceId,
       creatorId: user.id,
     });
