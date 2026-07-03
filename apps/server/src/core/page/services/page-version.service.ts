@@ -390,15 +390,24 @@ export class PageVersionService {
     });
   }
 
-  /** 수정취소 — 작업문서를 base 버전 내용으로 리셋 (라이브 협업 문서에 반영) */
+  /**
+   * 수정취소(전체) — 작업문서를 **Primary 버전** 내용으로 리셋.
+   * 문서확정(commit)이 Primary 와 비교해 새 버전을 만들므로, 되돌림 기준도
+   * Primary 로 통일한다(footer 변경감지·DIFF·reset 한 기준). Primary 가 없으면
+   * (미확정 페이지) 작업문서의 base 버전으로 폴백.
+   */
   async resetWorkingDoc(workingDoc: PageWorkingDoc, user: User): Promise<void> {
+    const page = await this.pageRepo.findById(workingDoc.pageId);
+    const targetVersionId =
+      page?.primaryVersionId ?? workingDoc.baseVersionId ?? null;
+
     let content: any = EMPTY_DOC;
-    if (workingDoc.baseVersionId) {
-      const baseVersion = await this.pageVersionRepo.findById(
-        workingDoc.baseVersionId,
+    if (targetVersionId) {
+      const targetVersion = await this.pageVersionRepo.findById(
+        targetVersionId,
         { includeContent: true },
       );
-      content = baseVersion?.content ?? EMPTY_DOC;
+      content = targetVersion?.content ?? EMPTY_DOC;
     }
 
     const documentName = pageDocumentName(workingDoc.pageId, workingDoc.id);
