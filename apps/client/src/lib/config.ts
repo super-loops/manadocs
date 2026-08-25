@@ -97,7 +97,24 @@ export function getPostHogKey() {
 }
 
 export function getDefaultLang(): string {
-  return getConfigValue("DEFAULT_LANG", "en-US");
+  // 운영: 서버가 index.html 에 window.CONFIG 를 주입한다.
+  const injected = window?.CONFIG?.DEFAULT_LANG;
+  if (injected) return injected;
+
+  // dev: window.CONFIG 경로가 없어 vite define 으로 받는다. getConfigValue 의
+  // dev 분기는 `process?.env` 로 읽는데 vite 의 define 은 옵셔널 체이닝 형태를
+  // 치환하지 않아 항상 undefined 다 — 치환되는 비-옵셔널 형태로 직접 읽되,
+  // 치환이 없는 환경에서는 process 가 아예 없으므로 ReferenceError 를 삼킨다.
+  if (import.meta.env.DEV) {
+    try {
+      const fromBuild = process.env.DEFAULT_LANG;
+      if (fromBuild) return fromBuild;
+    } catch {
+      // define 치환 없음 — 기본값으로
+    }
+  }
+
+  return "en-US";
 }
 
 function getConfigValue(key: string, defaultValue: string = undefined): string {
