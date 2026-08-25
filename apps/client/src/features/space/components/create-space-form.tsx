@@ -28,8 +28,8 @@ export function CreateSpaceForm() {
         name: z
           .string()
           .trim()
-          .min(2, t("스페이스 이름은 2자 이상 입력해주세요."))
-          .max(100, t("스페이스 이름은 100자까지 쓸 수 있어요.")),
+          .min(2, t("Space 이름은 2자 이상 입력해주세요."))
+          .max(100, t("Space 이름은 100자까지 쓸 수 있어요.")),
         slug: z
           .string()
           .trim()
@@ -41,7 +41,7 @@ export function CreateSpaceForm() {
           ),
         description: z
           .string()
-          .max(500, t("스페이스 설명은 500자까지 쓸 수 있어요.")),
+          .max(500, t("Space 설명은 500자까지 쓸 수 있어요.")),
       }),
     [t],
   );

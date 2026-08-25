@@ -167,13 +167,14 @@ export function useMovePageMutation() {
 }
 
 export function useRestorePageMutation() {
+  const { t } = useTranslation();
   const [treeData, setTreeData] = useAtom(treeDataAtom);
   const emit = useQueryEmit();
 
   return useMutation({
     mutationFn: (pageId: string) => restorePage(pageId),
     onSuccess: async (restoredPage) => {
-      notifications.show({ message: "Page restored successfully" });
+      notifications.show({ message: t("Page restored successfully") });
 
       // Add the restored page back to the tree
       const treeApi = new SimpleTree<SpaceTreeNode>(treeData);

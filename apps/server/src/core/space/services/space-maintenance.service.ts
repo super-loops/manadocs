@@ -166,7 +166,11 @@ export class SpaceMaintenanceService {
             .selectFrom('pageVersions')
             .select('pageVersions.id')
             .whereRef('pageVersions.pageId', '=', 'pages.id')
-            .where('pageVersions.discardedAt', 'is', null),
+            .where('pageVersions.discardedAt', 'is', null)
+            // version 0 은 페이지 생성 마커라 미확정 페이지에도 항상 달려 있다.
+            // 이걸 세면 정상 미확정이 전부 "데이터 이상"으로 잡히고
+            // "장기 미확정" 카테고리와 역할도 겹친다. 실제 확정본만 본다.
+            .where('pageVersions.version', '>', 0),
         ),
       )
       .limit(MAX_ITEMS_PER_GROUP)
