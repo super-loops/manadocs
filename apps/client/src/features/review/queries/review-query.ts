@@ -164,9 +164,10 @@ export function useCreateReviewMutation() {
       invalidatePageReviews(queryClient, review.pageId);
       notifications.show({ message: t("Review created successfully") });
     },
-    onError: () => {
+    onError: (error: any) => {
+      // 서버가 사유를 주면 그대로 노출한다 (예: 확정 버전 없음)
       notifications.show({
-        message: t("Error creating review"),
+        message: error?.response?.data?.message ?? t("Error creating review"),
         color: "red",
       });
     },
@@ -226,9 +227,10 @@ export function useCreateReviewAnchorMutation() {
       });
       queryClient.invalidateQueries({ queryKey: RQ_REVIEW(anchor.reviewId) });
     },
-    onError: () => {
+    onError: (error: any) => {
       notifications.show({
-        message: t("Failed to create review anchor"),
+        message:
+          error?.response?.data?.message ?? t("Failed to create review anchor"),
         color: "red",
       });
     },
