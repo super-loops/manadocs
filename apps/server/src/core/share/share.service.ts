@@ -358,12 +358,14 @@ export class ShareService {
       .limit(1)
       .executeTakeFirst();
 
+    // undefined 를 그대로 돌려주면 HTTP 응답 body 에서 data 키가 사라져
+    // 클라 TanStack Query 가 "Query data cannot be undefined" 로 터진다.
     if (!share || share.workspaceId !== workspaceId) {
-      return undefined;
+      return null;
     }
 
     if ((share.level as number) > 0 && !share.includeSubPages) {
-      return undefined;
+      return null;
     }
 
     return {

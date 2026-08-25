@@ -231,10 +231,12 @@ export function useGetInvitationQuery(
 
 export function useAppVersion(
   isEnabled: boolean,
-): UseQueryResult<IVersion, Error> {
+): UseQueryResult<IVersion | null, Error> {
   return useQuery({
     queryKey: ["version"],
-    queryFn: () => getAppVersion(),
+    // 서버가 body 를 비워 보내면 undefined 가 되어 TanStack Query 가
+    // "Query data cannot be undefined" 로 터진다 — null 로 정규화한다.
+    queryFn: async () => (await getAppVersion()) ?? null,
     staleTime: 60 * 60 * 1000, // 1 hr
     enabled: isEnabled,
     refetchOnMount: true,
