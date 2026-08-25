@@ -1,0 +1,11 @@
+/* 본문 + 우측 목차 레일. 레일이 없으면(좁은 화면·리뷰 열림) 본문이 전 폭을 쓴다. */
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-md);
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+}

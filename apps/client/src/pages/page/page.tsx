@@ -25,6 +25,8 @@ import { IconAlertTriangle, IconFileOff } from "@tabler/icons-react";
 import { Button } from "@mantine/core";
 import { Link } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
+import TocRail from "@/features/editor/components/table-of-contents/toc-rail";
+import classes from "./page.module.css";
 const MemoizedFullEditor = React.memo(FullEditor);
 const MemoizedPageHeader = React.memo(PageHeader);
 
@@ -135,12 +137,17 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
         <MemoizedPageHeader readOnly />
 
         {hasCommitted ? (
-          <ReadonlyPageEditor
-            key={page.id}
-            pageId={page.id}
-            title={page.title}
-            content={page.content}
-          />
+          <div className={classes.body}>
+            <div className={classes.main}>
+              <ReadonlyPageEditor
+                key={page.id}
+                pageId={page.id}
+                title={page.title}
+                content={page.content}
+              />
+            </div>
+            <TocRail />
+          </div>
         ) : (
           <EmptyState
             icon={IconFileOff}
@@ -167,16 +174,21 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
 
         <MemoizedPageHeader readOnly={!canEdit} />
 
-        <MemoizedFullEditor
-          key={`${page.id}:${workingDocId ?? "primary"}`}
-          pageId={page.id}
-          title={page.title}
-          content={page.content}
-          slugId={page.slugId}
-          spaceSlug={page?.space?.slug}
-          editable={canEdit}
-          workingDocId={workingDocId}
-        />
+        <div className={classes.body}>
+          <div className={classes.main}>
+            <MemoizedFullEditor
+              key={`${page.id}:${workingDocId ?? "primary"}`}
+              pageId={page.id}
+              title={page.title}
+              content={page.content}
+              slugId={page.slugId}
+              spaceSlug={page?.space?.slug}
+              editable={canEdit}
+              workingDocId={workingDocId}
+            />
+          </div>
+          <TocRail />
+        </div>
         <FooterPill page={page} />
         <CommitDialog pageId={page.id} />
         <PreviewModal />

@@ -73,7 +73,15 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
   };
 
   const handleUpdate = () => {
-    const result = recalculateLinks(props.editor?.$nodes("heading"));
+    // 레일은 에디터보다 먼저 마운트될 수 있다 — 준비 전에는 조용히 비운다
+    const headings = props.editor?.$nodes("heading");
+    if (!headings) {
+      setLinks([]);
+      setHeadingDOMNodes([]);
+      return;
+    }
+
+    const result = recalculateLinks(headings);
 
     setLinks(result.links);
     setHeadingDOMNodes(result.nodes);
@@ -87,12 +95,12 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
     };
   }, [props.editor]);
 
-  useEffect(
-    () => {
-      handleUpdate();
-    },
-    props.isShare ? [props.editor] : [],
-  );
+  // 에디터가 준비되는 시점에 다시 계산해야 한다. 예전엔 앱 내부 경로가 빈
+  // deps 라 "버튼으로 열 때(=에디터 준비 후) 마운트된다"는 가정에 기대고
+  // 있었는데, 상시 표시되는 레일은 에디터보다 먼저 마운트된다.
+  useEffect(() => {
+    handleUpdate();
+  }, [props.editor]);
 
   useEffect(() => {
     try {

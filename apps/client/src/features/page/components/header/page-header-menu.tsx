@@ -16,7 +16,7 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import useToggleAside from "@/hooks/use-toggle-aside.tsx";
 import { useAtom, useAtomValue } from "jotai";
-import { useDisclosure, useHotkeys } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, useMediaQuery } from "@mantine/hooks";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useParams } from "react-router-dom";
 import { usePageQuery } from "@/features/page/queries/page-query.ts";
@@ -29,6 +29,7 @@ import { useDeletePageModal } from "@/features/page/hooks/use-delete-page-modal.
 import { PageWidthToggle } from "@/features/user/components/page-width-pref.tsx";
 import { Trans, useTranslation } from "react-i18next";
 import ExportModal from "@/components/common/export-modal";
+import { TOC_RAIL_BREAKPOINT } from "@/features/editor/components/table-of-contents/toc-rail";
 import { htmlToMarkdown } from "@manadocs/editor-ext";
 import {
   pageEditorAtom,
@@ -49,6 +50,7 @@ interface PageHeaderMenuProps {
 export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
   const { t } = useTranslation();
   const toggleAside = useToggleAside();
+  const hasTocRail = useMediaQuery(TOC_RAIL_BREAKPOINT);
 
   useHotkeys(
     [
@@ -75,15 +77,19 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
     <>
       <ConnectionWarning />
 
-      <Tooltip label={t("Table of contents")} openDelay={250} withArrow>
-        <ActionIcon
-          variant="subtle"
-          color="dark"
-          onClick={() => toggleAside("toc")}
-        >
-          <IconList size={20} stroke={2} />
-        </ActionIcon>
-      </Tooltip>
+      {/* 넓은 화면에는 본문 우측에 목차 레일이 상시 떠 있다 — 버튼은 레일이
+          숨는 좁은 화면에서만 진입점으로 남긴다. */}
+      {!hasTocRail && (
+        <Tooltip label={t("Table of contents")} openDelay={250} withArrow>
+          <ActionIcon
+            variant="subtle"
+            color="dark"
+            onClick={() => toggleAside("toc")}
+          >
+            <IconList size={20} stroke={2} />
+          </ActionIcon>
+        </Tooltip>
+      )}
 
       <PageActionMenu readOnly={readOnly} />
     </>

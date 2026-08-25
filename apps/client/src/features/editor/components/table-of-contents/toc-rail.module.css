@@ -1,0 +1,15 @@
+/* 본문과 나란히 놓이는 우측 레일 — absolute 가 아니라 flex 형제라
+   "전체 페이지 너비" 설정에서도 본문을 덮지 않고 폭만 나눠 갖는다. */
+.rail {
+  flex: 0 0 240px;
+  width: 240px;
+  align-self: flex-start;
+  position: sticky;
+  /* 헤더(45px) 아래로 붙는다 */
+  top: 61px;
+  margin-top: 48px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding-right: var(--mantine-spacing-xs);
+  scrollbar-width: thin;
+}
