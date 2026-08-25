@@ -22,7 +22,7 @@ import { useAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
-import { timeAgo } from "@/lib/time";
+import { useTimeAgo } from "@/hooks/use-time-ago";
 import {
   useCreateWorkingDocMutation,
   useDeleteWorkingDocMutation,
@@ -94,6 +94,8 @@ function WorkingDocCard({
   const setPrimaryMutation = useSetPrimaryWorkingDocMutation(pageId);
   const deleteMutation = useDeleteWorkingDocMutation(pageId);
   const resetMutation = useResetWorkingDocMutation(pageId);
+  // 공용 틱 훅 — 버전 카드와 같은 기준 시점으로 상대시간을 갱신한다
+  const updatedAtAgo = useTimeAgo(workingDoc.updatedAt);
 
   const isActive =
     activeWorkingDoc?.pageId === pageId
@@ -240,7 +242,7 @@ function WorkingDocCard({
           )}
         </Group>
         <Text size="xs" c="dimmed">
-          {timeAgo(new Date(workingDoc.updatedAt))}
+          {updatedAtAgo}
         </Text>
       </Group>
     </Card>

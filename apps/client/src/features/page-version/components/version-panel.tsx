@@ -23,7 +23,7 @@ import {
 import { useAtom, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
-import { timeAgo } from "@/lib/time";
+import { useTimeAgo } from "@/hooks/use-time-ago";
 import {
   usePageVersionsQuery,
   useDiscardVersionMutation,
@@ -117,6 +117,8 @@ function VersionCard({
 
   const isDiscarded = !!version.discardedAt;
   const isMarker = version.version === 0;
+  // 공용 틱 훅 — 카드마다 상대시간이 함께 갱신돼 기준 시점이 어긋나지 않는다
+  const createdAtAgo = useTimeAgo(version.createdAt);
 
   // 다운로드는 content 가 필요 — 카드는 경량이라 클릭 시 상세 fetch
   const handleDownload = async (format: "json" | "md") => {
@@ -261,8 +263,7 @@ function VersionCard({
               name={version.creator.name}
             />
             <Text size="xs" c="dimmed">
-              {version.creator.name} ·{" "}
-              {timeAgo(new Date(version.createdAt))}
+              {version.creator.name} · {createdAtAgo}
             </Text>
           </>
         )}
