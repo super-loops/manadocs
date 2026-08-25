@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { notifications } from "@mantine/notifications";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { usePageQuery } from "@/features/page/queries/page-query";
@@ -19,6 +20,7 @@ export const REVIEW_DRAG_MIME = "application/x-manadocs-review-id";
  * - 드롭 위치를 ProseMirror 좌표로 변환해 createReviewAnchor 호출 후 노드 삽입
  */
 export default function ReviewAnchorDropZone() {
+  const { t } = useTranslation();
   const editor = useAtomValue(pageEditorAtom);
   const { pageSlug } = useParams();
   const { data: page } = usePageQuery({ pageId: extractPageSlugId(pageSlug) });
@@ -30,6 +32,9 @@ export default function ReviewAnchorDropZone() {
   createAnchorRef.current = createAnchor;
   const pageIdRef = useRef(page?.id);
   pageIdRef.current = page?.id;
+  // effect 는 editor 에만 의존하므로 t 도 ref 로 최신값만 들고 간다
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
@@ -83,7 +88,7 @@ export default function ReviewAnchorDropZone() {
       const block = resolveBlockAtPos(editor, pos);
       if (!block) {
         notifications.show({
-          message: REVIEW_ANCHOR_TARGET_HINT,
+          message: tRef.current(REVIEW_ANCHOR_TARGET_HINT),
           color: "yellow",
         });
         return;
