@@ -3,6 +3,7 @@ import { IPagination } from "@/lib/types.ts";
 import {
   ICommitVersionInput,
   ICreateWorkingDocInput,
+  IDuplicatedPage,
   IPageVersion,
   IPageWorkingDoc,
 } from "@/features/page-version/types/page-version.types";
@@ -45,7 +46,7 @@ export async function setPrimaryVersion(versionId: string): Promise<void> {
 
 export async function duplicateVersionAsPage(
   versionId: string,
-): Promise<{ id: string; slugId: string; title: string }> {
+): Promise<IDuplicatedPage> {
   const req = await api.post("/pages/versions/duplicate-page", { versionId });
   return req.data;
 }

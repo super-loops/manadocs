@@ -26,9 +26,46 @@ import {
 import {
   ICommitVersionInput,
   ICreateWorkingDocInput,
+  IDuplicatedPage,
   IPageVersion,
   IPageWorkingDoc,
 } from "@/features/page-version/types/page-version.types";
+import { useAtom } from "jotai";
+import { SimpleTree } from "react-arborist";
+import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom.ts";
+import { SpaceTreeNode } from "@/features/page/tree/types.ts";
+import { markOptimisticPageCreation } from "@/features/page/tree/optimistic-tracker.ts";
+
+/** 새로 만들어진 페이지를 현재 스페이스 트리에 끼워넣는다(중복은 무시). */
+function insertPageIntoTree(
+  treeData: SpaceTreeNode[],
+  setTreeData: (value: SpaceTreeNode[]) => void,
+  page: IDuplicatedPage,
+) {
+  const treeApi = new SimpleTree<SpaceTreeNode>(treeData);
+  if (treeApi.find(page.id)) return;
+
+  const parentId = page.parentPageId || null;
+  if (parentId && !treeApi.find(parentId)) return; // 다른 스페이스/미로드 구간
+
+  markOptimisticPageCreation(page.id);
+  treeApi.create({
+    parentId,
+    index: 0,
+    data: {
+      id: page.id,
+      slugId: page.slugId,
+      name: page.title || "",
+      icon: page.icon,
+      position: page.position,
+      spaceId: page.spaceId,
+      parentPageId: page.parentPageId,
+      hasChildren: false,
+      children: [],
+    } as SpaceTreeNode,
+  });
+  setTreeData([...treeApi.data]);
+}
 
 function invalidateVersionQueries(pageId: string) {
   queryClient.invalidateQueries({ queryKey: ["page-versions", pageId] });
@@ -134,6 +171,8 @@ export function useSetPrimaryVersionMutation(pageId: string) {
 }
 
 export function useDuplicateVersionMutation() {
+  const [treeData, setTreeData] = useAtom(treeDataAtom);
+
   return useMutation({
     mutationFn: (versionId: string) => duplicateVersionAsPage(versionId),
     onSuccess: (page) => {
@@ -141,6 +180,10 @@ export function useDuplicateVersionMutation() {
         message: `'${page.title || "새 페이지"}'(으)로 복제되었습니다`,
       });
       queryClient.invalidateQueries({ queryKey: ["pages"] });
+      // 사이드바 트리 즉시 반영 — 서버도 addTreeNode 를 브로드캐스트하지만
+      // 소켓 왕복을 기다리지 않도록 복제한 본인 화면에는 낙관적으로 꽂는다
+      // (WS 핸들러가 id 로 중복을 걸러낸다).
+      insertPageIntoTree(treeData, setTreeData, page);
     },
     onError: (error: any) => {
       notifications.show({

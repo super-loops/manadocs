@@ -588,10 +588,18 @@ export class PageService {
 
     const attachmentMap = new Map<string, ICopyPageAttachment>();
 
+    // 확정 버전이 있던 원본만 복제본에서도 v1 자동 확정 — 미확정 문서를
+    // 복제했다고 확정 상태로 승격시키지는 않는다.
+    const autoCommitPageIds = new Set<string>();
+
     const insertablePages: InsertablePage[] = await Promise.all(
       pages.map(async (page) => {
         const pageContent = getProsemirrorContent(page.content);
         const pageFromMap = pageMap.get(page.id);
+
+        if ((page as any).primaryVersionId) {
+          autoCommitPageIds.add(pageFromMap.newPageId);
+        }
 
         const prosemirrorDoc = jsonToNode(pageContent);
 
@@ -689,12 +697,17 @@ export class PageService {
 
     await this.db.insertInto('pages').values(insertablePages).execute();
 
-    // 형상관리 스캐폴드 — 복제본은 버전 체인을 승계하지 않고 버전 0 부터 시작
+    // 형상관리 스캐폴드 — 버전 히스토리는 승계하지 않는다. 다만 원본이
+    // 확정 상태였다면 복제 시점 본문을 v1 으로 자동 확정해 복제본도 곧바로
+    // 공유·미리보기·크로스문서 DIFF 가 가능하게 한다("이 버전으로 새 페이지"와 동일 정책).
     for (const insertablePage of insertablePages) {
       try {
         await this.pageVersionRepo.createPageScaffold(
           insertablePage as unknown as Page,
           authUser.id,
+          autoCommitPageIds.has(insertablePage.id)
+            ? { autoCommitVersion1: true, commitMessage: '복제됨' }
+            : undefined,
         );
       } catch (err) {
         this.logger.error(

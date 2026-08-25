@@ -170,9 +170,13 @@ export class PageVersionService {
   }
 
   /**
-   * 문서 Duplicate — 버전 스냅샷을 베이스로 새 페이지 생성.
-   * IDEA: 트리 dependency(부모/스페이스)만 carry, 버전 체인은 승계하지 않음
-   * → 새 페이지는 자기 버전 0에서 시작(create 경로가 스캐폴드).
+   * 문서 Duplicate — "이 버전으로 새 페이지".
+   * 유저 정책(0.14.3): 선택 버전과 지금까지의 수정사항 **둘만** 복사한다.
+   *  ① 선택 버전 내용을 새 페이지의 v1 로 자동 확정(Primary)
+   *     → 복제본도 곧바로 공유·미리보기·크로스문서 DIFF 가능
+   *  ② 작업문서는 원본의 Primary 작업문서(라이브) 내용을 승계
+   *     → 미확정 수정사항 보존. 선택 버전과 같으면 자연히 v1 == 작업문서
+   * 나머지 버전 히스토리는 승계하지 않는다.
    */
   async duplicateVersionAsPage(
     version: PageVersion,
@@ -187,17 +191,103 @@ export class PageVersionService {
     const full = await this.pageVersionRepo.findById(version.id, {
       includeContent: true,
     });
+    const versionContent = full?.content ?? EMPTY_DOC;
 
-    return this.pageService.create(user.id, workspaceId, {
+    // ② 원본 Primary 작업문서 승계 — 라이브 협업 문서를 우선 읽고(디바운스
+    //    저장 지연 회피) 실패 시 DB 스냅샷으로 폴백.
+    const sourceWorkingDocId = await this.ensureScaffold(sourcePage);
+    const sourceWorkingDoc = await this.pageWorkingDocRepo.findById(
+      sourceWorkingDocId,
+      { includeContent: true },
+    );
+    const liveContent = await this.snapshotWorkingDoc(
+      sourcePage.id,
+      sourceWorkingDocId,
+    );
+    const workingContent =
+      liveContent ?? sourceWorkingDoc?.content ?? versionContent;
+
+    const newPage = await this.pageService.create(user.id, workspaceId, {
       title: version.title
         ? `${version.title} (버전 ${version.version})`
         : undefined,
       icon: version.icon ?? undefined,
       spaceId: sourcePage.spaceId,
       parentPageId: sourcePage.parentPageId ?? undefined,
-      content: full.content ?? EMPTY_DOC,
+      content: workingContent,
       format: 'json',
     } as any);
+
+    // ① 선택 버전을 v1 으로 자동 확정
+    await this.autoCommitDuplicatedVersion(
+      newPage,
+      versionContent,
+      `버전 ${version.version}에서 복제됨`,
+      user.id,
+    );
+
+    return this.pageRepo.findById(newPage.id);
+  }
+
+  /**
+   * 복제본 v1 자동 확정 — 스캐폴드(버전 0 + 작업문서)가 이미 만들어진
+   * 페이지에 확정 버전 하나를 얹는다. 작업문서 내용은 건드리지 않으므로
+   * 확정 내용과 작업문서가 다르면 그대로 "미확정 수정사항"으로 남는다.
+   */
+  private async autoCommitDuplicatedVersion(
+    page: Page,
+    content: any,
+    message: string,
+    creatorId: string,
+  ): Promise<void> {
+    const workingDocId = await this.ensureScaffold(page);
+    const textContent = this.safeJsonToText(content);
+
+    await executeTx(this.db, async (trx) => {
+      const lockedPage = await this.pageRepo.findById(page.id, {
+        withLock: true,
+        trx,
+      });
+      if (!lockedPage) {
+        throw new NotFoundException('Page not found');
+      }
+
+      const nextVersion =
+        ((await this.pageVersionRepo.maxVersion(page.id, trx)) ?? -1) + 1;
+
+      const created = await this.pageVersionRepo.insertVersion(
+        {
+          pageId: page.id,
+          version: nextVersion,
+          title: lockedPage.title,
+          icon: lockedPage.icon,
+          coverPhoto: lockedPage.coverPhoto,
+          content,
+          message,
+          creatorId,
+          contributorIds: [],
+          workingDocId,
+          spaceId: page.spaceId,
+          workspaceId: page.workspaceId,
+        },
+        trx,
+      );
+
+      await this.pageRepo.updatePage(
+        {
+          primaryVersionId: created.id,
+          committedTextContent: textContent,
+        },
+        page.id,
+        trx,
+      );
+
+      await this.pageWorkingDocRepo.updateWorkingDoc(
+        { baseVersionId: created.id },
+        workingDocId,
+        trx,
+      );
+    });
   }
 
   async listVersions(pageId: string, pagination: PaginationOptions) {

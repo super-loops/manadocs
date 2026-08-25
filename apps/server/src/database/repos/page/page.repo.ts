@@ -456,6 +456,7 @@ export class PageRepo {
             'parentPageId',
             'spaceId',
             'workspaceId',
+            'primaryVersionId',
             'createdAt',
             'updatedAt',
           ])
@@ -474,6 +475,7 @@ export class PageRepo {
                 'p.parentPageId',
                 'p.spaceId',
                 'p.workspaceId',
+                'p.primaryVersionId',
                 'p.createdAt',
                 'p.updatedAt',
               ])

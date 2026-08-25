@@ -61,3 +61,14 @@ export interface ICreateWorkingDocInput {
   baseVersionId?: string;
   name?: string;
 }
+
+/** "이 버전으로 새 페이지" 응답 — 사이드바 트리에 꽂는 데 필요한 만큼 */
+export interface IDuplicatedPage {
+  id: string;
+  slugId: string;
+  title: string | null;
+  icon: string | null;
+  position: string;
+  spaceId: string;
+  parentPageId: string | null;
+}
