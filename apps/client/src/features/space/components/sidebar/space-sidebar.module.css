@@ -62,6 +62,46 @@
     color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
 }
 
+/* 하위메뉴 — 부모 아이콘 중심에 맞춘 세로 가이드선 아래로 붙는다 */
+.subMenu {
+    margin-left: calc(var(--mantine-spacing-xs) + rem(9px));
+    padding-left: var(--mantine-spacing-xs);
+    padding-top: rem(2px);
+    padding-bottom: rem(2px);
+    border-left: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.subMenuItem {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    font-size: var(--mantine-font-size-xs);
+    padding: rem(3px) var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-sm);
+    font-weight: 500;
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-1));
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+        color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+    }
+}
+
+.menuCurrent {
+    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-dark-0));
+    font-weight: 600;
+}
+
+.subMenuItemActive {
+    background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+}
+
+.subMenuIcon {
+    margin-right: rem(8px);
+    color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+}
+
 .pages {
     padding-left: calc(var(--mantine-spacing-md) - rem(6px));
     padding-right: calc(var(--mantine-spacing-md) - rem(6px));

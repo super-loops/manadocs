@@ -9,6 +9,7 @@ import {
   SpaceCaslAction,
   SpaceCaslSubject,
 } from "@/features/space/permissions/permissions.type.ts";
+import SpaceOverviewStats from "@/features/space/components/overview/space-overview-stats.tsx";
 
 export default function SpaceHomeTabs() {
   const { t } = useTranslation();
@@ -22,6 +23,10 @@ export default function SpaceHomeTabs() {
 
   return (
     <>
+      {space?.id && (
+        <SpaceOverviewStats spaceId={space.id} spaceSlug={space.slug} />
+      )}
+
       {canEdit && space?.authoringRules && (
         <Paper withBorder p="md" mb="md" radius="sm">
           <Text size="sm" fw={600} mb={4}>

@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Collapse,
   Group,
   Menu,
   Text,
@@ -10,11 +11,15 @@ import {
   IconArrowDown,
   IconDots,
   IconFileExport,
+  IconFolders,
   IconHome,
   IconPlus,
   IconSearch,
   IconSettings,
+  IconStethoscope,
   IconTrash,
+  IconUsers,
+  type TablerIcon,
 } from "@tabler/icons-react";
 import classes from "./space-sidebar.module.css";
 import React from "react";
@@ -23,7 +28,6 @@ import { treeApiAtom } from "@/features/page/tree/atoms/tree-api-atom.ts";
 import { Link, useLocation, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { useDisclosure } from "@mantine/hooks";
-import SpaceSettingsModal from "@/features/space/components/settings-modal.tsx";
 import { useGetSpaceBySlugQuery } from "@/features/space/queries/space-query.ts";
 import { getSpaceUrl } from "@/lib/config.ts";
 import SpaceTree from "@/features/page/tree/components/space-tree.tsx";
@@ -40,13 +44,96 @@ import ExportModal from "@/components/common/export-modal";
 import { mobileSidebarAtom } from "@/components/layouts/global/hooks/atoms/sidebar-atom.ts";
 import { useToggleSidebar } from "@/components/layouts/global/hooks/hooks/use-toggle-sidebar.ts";
 import { searchSpotlight } from "@/features/search/constants";
+import {
+  getSpaceAssetsUrl,
+  getSpaceSettingsUrl,
+} from "@/features/space/space.utils.ts";
+
+interface SubMenuItem {
+  label: string;
+  to: string;
+  icon: TablerIcon;
+  /** 정확히 이 경로일 때만 활성 (부모 경로가 자식까지 먹지 않게) */
+  exact?: boolean;
+}
+
+interface NavGroupProps {
+  label: string;
+  icon: TablerIcon;
+  to: string;
+  items: SubMenuItem[];
+  onNavigate?: () => void;
+}
+
+/**
+ * 하위메뉴를 가진 사이드바 메뉴. 포커스/호버 시 펼치고,
+ * 현재 경로가 이 그룹 안이면 계속 펼쳐 둔다.
+ */
+function NavGroup({ label, icon: Icon, to, items, onNavigate }: NavGroupProps) {
+  const location = useLocation();
+  const [hovered, setHovered] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
+
+  const path = location.pathname.toLowerCase();
+  const isInside = items.some((item) =>
+    item.exact ? path === item.to.toLowerCase() : path.startsWith(item.to.toLowerCase()),
+  );
+  const expanded = hovered || focused || isInside;
+
+  const isActive = (item: SubMenuItem) =>
+    item.exact ? path === item.to.toLowerCase() : path.startsWith(item.to.toLowerCase());
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setFocused(false);
+        }
+      }}
+    >
+      {/* 부모는 배경 강조를 하지 않는다 — 펼쳐진 하위메뉴의 활성 항목이 위치를 말해주고,
+          둘 다 칠하면 어디에 있는지 오히려 흐려진다. 현재 섹션은 글자 굵기로만 표시. */}
+      <UnstyledButton
+        component={Link}
+        to={to}
+        onClick={onNavigate}
+        className={clsx(classes.menu, isInside ? classes.menuCurrent : "")}
+      >
+        <div className={classes.menuItemInner}>
+          <Icon size={18} className={classes.menuItemIcon} stroke={2} />
+          <span>{label}</span>
+        </div>
+      </UnstyledButton>
+
+      <Collapse in={expanded}>
+        <div className={classes.subMenu}>
+          {items.map((item) => (
+            <UnstyledButton
+              key={item.to}
+              component={Link}
+              to={item.to}
+              onClick={onNavigate}
+              className={clsx(
+                classes.subMenuItem,
+                isActive(item) ? classes.subMenuItemActive : "",
+              )}
+            >
+              <item.icon size={15} className={classes.subMenuIcon} stroke={2} />
+              <span>{item.label}</span>
+            </UnstyledButton>
+          ))}
+        </div>
+      </Collapse>
+    </div>
+  );
+}
 
 export function SpaceSidebar() {
   const { t } = useTranslation();
   const [tree] = useAtom(treeApiAtom);
-  const location = useLocation();
-  const [opened, { open: openSettings, close: closeSettings }] =
-    useDisclosure(false);
   const [mobileSidebarOpened] = useAtom(mobileSidebarAtom);
   const toggleMobileSidebar = useToggleSidebar(mobileSidebarAtom);
 
@@ -62,6 +149,39 @@ export function SpaceSidebar() {
 
   function handleCreatePage() {
     tree?.create({ parentId: null, type: "internal", index: 0 });
+  }
+
+  const closeMobileSidebar = () => {
+    if (mobileSidebarOpened) {
+      toggleMobileSidebar();
+    }
+  };
+
+  const canManagePages = spaceAbility.can(
+    SpaceCaslAction.Manage,
+    SpaceCaslSubject.Page,
+  );
+
+  const settingsItems: SubMenuItem[] = [
+    {
+      label: t("Settings"),
+      to: getSpaceSettingsUrl(spaceSlug),
+      icon: IconSettings,
+      exact: true,
+    },
+    {
+      label: t("Members"),
+      to: getSpaceSettingsUrl(spaceSlug, "members"),
+      icon: IconUsers,
+    },
+  ];
+
+  if (canManagePages) {
+    settingsItems.push({
+      label: t("점검"),
+      to: getSpaceSettingsUrl(spaceSlug, "maintenance"),
+      icon: IconStethoscope,
+    });
   }
 
   return (
@@ -84,25 +204,33 @@ export function SpaceSidebar() {
 
         <div className={classes.section}>
           <div className={classes.menuItems}>
-            <UnstyledButton
-              component={Link}
+            <NavGroup
+              label={t("Overview")}
+              icon={IconHome}
               to={getSpaceUrl(spaceSlug)}
-              className={clsx(
-                classes.menu,
-                location.pathname.toLowerCase() === getSpaceUrl(spaceSlug)
-                  ? classes.activeButton
-                  : "",
-              )}
-            >
-              <div className={classes.menuItemInner}>
-                <IconHome
-                  size={18}
-                  className={classes.menuItemIcon}
-                  stroke={2}
-                />
-                <span>{t("Overview")}</span>
-              </div>
-            </UnstyledButton>
+              onNavigate={closeMobileSidebar}
+              items={[
+                {
+                  label: t("Recently updated"),
+                  to: getSpaceUrl(spaceSlug),
+                  icon: IconHome,
+                  exact: true,
+                },
+                {
+                  label: t("에셋 브라우저"),
+                  to: getSpaceAssetsUrl(spaceSlug),
+                  icon: IconFolders,
+                },
+              ]}
+            />
+
+            <NavGroup
+              label={t("Space settings")}
+              icon={IconSettings}
+              to={getSpaceSettingsUrl(spaceSlug)}
+              onNavigate={closeMobileSidebar}
+              items={settingsItems}
+            />
 
             <UnstyledButton
               className={classes.menu}
@@ -118,28 +246,12 @@ export function SpaceSidebar() {
               </div>
             </UnstyledButton>
 
-            <UnstyledButton className={classes.menu} onClick={openSettings}>
-              <div className={classes.menuItemInner}>
-                <IconSettings
-                  size={18}
-                  className={classes.menuItemIcon}
-                  stroke={2}
-                />
-                <span>{t("Space settings")}</span>
-              </div>
-            </UnstyledButton>
-
-            {spaceAbility.can(
-              SpaceCaslAction.Manage,
-              SpaceCaslSubject.Page,
-            ) && (
+            {canManagePages && (
               <UnstyledButton
                 className={classes.menu}
                 onClick={() => {
                   handleCreatePage();
-                  if (mobileSidebarOpened) {
-                    toggleMobileSidebar();
-                  }
+                  closeMobileSidebar();
                 }}
               >
                 <div className={classes.menuItemInner}>
@@ -163,12 +275,9 @@ export function SpaceSidebar() {
               {t("Pages")}
             </Text>
 
-            {spaceAbility.can(
-              SpaceCaslAction.Manage,
-              SpaceCaslSubject.Page,
-            ) && (
+            {canManagePages && (
               <Group gap="xs">
-                <SpaceMenu spaceId={space.id} onSpaceSettings={openSettings} />
+                <SpaceMenu spaceId={space.id} />
 
                 <Tooltip label={t("Create page")} withArrow position="right">
                   <ActionIcon
@@ -195,21 +304,14 @@ export function SpaceSidebar() {
           </div>
         </div>
       </div>
-
-      <SpaceSettingsModal
-        opened={opened}
-        onClose={closeSettings}
-        spaceId={space?.slug}
-      />
     </>
   );
 }
 
 interface SpaceMenuProps {
   spaceId: string;
-  onSpaceSettings: () => void;
 }
-function SpaceMenu({ spaceId, onSpaceSettings }: SpaceMenuProps) {
+function SpaceMenu({ spaceId }: SpaceMenuProps) {
   const { t } = useTranslation();
   const { spaceSlug } = useParams();
   const [importOpened, { open: openImportModal, close: closeImportModal }] =
@@ -254,7 +356,8 @@ function SpaceMenu({ spaceId, onSpaceSettings }: SpaceMenuProps) {
           <Menu.Divider />
 
           <Menu.Item
-            onClick={onSpaceSettings}
+            component={Link}
+            to={getSpaceSettingsUrl(spaceSlug)}
             leftSection={<IconSettings size={16} />}
           >
             {t("Space settings")}

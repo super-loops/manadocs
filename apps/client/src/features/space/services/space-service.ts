@@ -8,6 +8,17 @@ import {
   ISpaceMember,
 } from "@/features/space/types/space.types";
 import { IPagination, QueryParams } from "@/lib/types.ts";
+import {
+  IOffsetPagination,
+  ISpaceAsset,
+  ISpaceAssetsParams,
+  ISpaceAssetStats,
+} from "@/features/space/types/space-assets.types.ts";
+import {
+  IPageVersionBadges,
+  ISpaceOverview,
+} from "@/features/space/types/space-overview.types.ts";
+import { ISpaceMaintenanceScan } from "@/features/space/types/space-maintenance.types.ts";
 import { saveAs } from "file-saver";
 
 export async function getSpaces(
@@ -77,4 +88,48 @@ export async function exportSpace(data: IExportSpaceParams): Promise<void> {
   }
 
   saveAs(req.data, decodedFileName);
+}
+
+export async function getSpaceOverview(
+  spaceId: string,
+): Promise<ISpaceOverview> {
+  const req = await api.post<ISpaceOverview>("/spaces/overview", { spaceId });
+  return req.data;
+}
+
+export async function scanSpaceMaintenance(
+  spaceId: string,
+): Promise<ISpaceMaintenanceScan> {
+  const req = await api.post<ISpaceMaintenanceScan>(
+    "/spaces/maintenance/scan",
+    { spaceId },
+  );
+  return req.data;
+}
+
+export async function getSpaceAssets(
+  params: ISpaceAssetsParams,
+): Promise<IOffsetPagination<ISpaceAsset>> {
+  const req = await api.post("/attachments/space-assets", params);
+  return req.data;
+}
+
+export async function getSpaceAssetStats(
+  spaceId: string,
+): Promise<ISpaceAssetStats> {
+  const req = await api.post<ISpaceAssetStats>(
+    "/attachments/space-assets/stats",
+    { spaceId },
+  );
+  return req.data;
+}
+
+export async function getSpacePageVersionBadges(
+  spaceId: string,
+): Promise<IPageVersionBadges> {
+  const req = await api.post<IPageVersionBadges>(
+    "/spaces/page-version-badges",
+    { spaceId },
+  );
+  return req.data;
 }

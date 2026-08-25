@@ -1,8 +1,8 @@
 import { Group, Table, Text } from "@mantine/core";
-import React, { useState } from "react";
+import React from "react";
 import { useGetSpacesQuery } from "@/features/space/queries/space-query.ts";
-import SpaceSettingsModal from "@/features/space/components/settings-modal.tsx";
-import { useDisclosure } from "@mantine/hooks";
+import { useNavigate } from "react-router-dom";
+import { getSpaceSettingsUrl } from "@/features/space/space.utils.ts";
 import { formatMemberCount } from "@/lib";
 import { useTranslation } from "react-i18next";
 import Paginate from "@/components/common/paginate.tsx";
@@ -17,12 +17,11 @@ export default function SpaceList() {
   const { t } = useTranslation();
   const { search, cursor, goNext, goPrev, handleSearch } = usePaginateAndSearch();
   const { data, isLoading } = useGetSpacesQuery({ cursor, query: search });
-  const [opened, { open, close }] = useDisclosure(false);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(null);
+  const navigate = useNavigate();
 
-  const handleClick = (spaceId: string) => {
-    setSelectedSpaceId(spaceId);
-    open();
+  // Space 설정은 모달이 아니라 전용 페이지다
+  const handleClick = (spaceSlug: string) => {
+    navigate(getSpaceSettingsUrl(spaceSlug));
   };
 
   return (
@@ -43,7 +42,7 @@ export default function SpaceList() {
               <Table.Tr
                 key={index}
                 style={{ cursor: "pointer" }}
-                onClick={() => handleClick(space.id)}
+                onClick={() => handleClick(space.slug)}
               >
                 <Table.Td>
                   <Group gap="sm" wrap="nowrap">
@@ -84,14 +83,6 @@ export default function SpaceList() {
           hasNextPage={data?.meta?.hasNextPage}
           onNext={() => goNext(data?.meta?.nextCursor)}
           onPrev={goPrev}
-        />
-      )}
-
-      {selectedSpaceId && (
-        <SpaceSettingsModal
-          opened={opened}
-          onClose={close}
-          spaceId={selectedSpaceId}
         />
       )}
     </>

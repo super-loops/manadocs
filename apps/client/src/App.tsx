@@ -16,6 +16,7 @@ import AuditsPage from "@/pages/settings/workspace/audits.tsx";
 import EnvironmentPage from "@/pages/settings/application/environment.tsx";
 import SpaceHome from "@/pages/space/space-home.tsx";
 import PageRedirect from "@/pages/page/page-redirect.tsx";
+import PageVersionView from "@/pages/page/page-version-view.tsx";
 import Layout from "@/components/layouts/global/layout.tsx";
 import InviteSignup from "@/pages/auth/invite-signup.tsx";
 import ForgotPassword from "@/pages/auth/forgot-password.tsx";
@@ -29,6 +30,8 @@ import ShareRedirect from "@/pages/share/share-redirect.tsx";
 // import { useTrackOrigin } from "@/hooks/use-track-origin";
 import SpacesPage from "@/pages/spaces/spaces.tsx";
 import SpaceTrash from "@/pages/space/space-trash.tsx";
+import SpaceAssets from "@/pages/space/space-assets.tsx";
+import SpaceSettings from "@/pages/space/space-settings.tsx";
 
 export default function App() {
   // const { t } = useTranslation();
@@ -71,11 +74,31 @@ export default function App() {
         <Route path={"/share/:shareId"} element={<ShareRedirect />} />
         <Route path={"/p/:pageSlug"} element={<PageRedirect />} />
 
+        {/* 확정 버전 읽기 전용 화면 — 앱 셸 밖(헤더·사이드바 없음)이지만
+            공개 공유가 아니다. 로그인 안 돼 있으면 API 401 → 로그인으로 보낸다. */}
+        <Route
+          path={"/s/:spaceSlug/p/:pageSlug/v/:versionNumber"}
+          element={<PageVersionView />}
+        />
+
         <Route element={<Layout />}>
           <Route path={"/home"} element={<Home />} />
           <Route path={"/spaces"} element={<SpacesPage />} />
           <Route path={"/s/:spaceSlug"} element={<SpaceHome />} />
           <Route path={"/s/:spaceSlug/trash"} element={<SpaceTrash />} />
+          <Route path={"/s/:spaceSlug/assets"} element={<SpaceAssets />} />
+          <Route
+            path={"/s/:spaceSlug/settings"}
+            element={<SpaceSettings tab="general" />}
+          />
+          <Route
+            path={"/s/:spaceSlug/settings/members"}
+            element={<SpaceSettings tab="members" />}
+          />
+          <Route
+            path={"/s/:spaceSlug/settings/maintenance"}
+            element={<SpaceSettings tab="maintenance" />}
+          />
           <Route
             path={"/s/:spaceSlug/p/:pageSlug"}
             element={<Page />}

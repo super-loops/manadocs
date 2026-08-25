@@ -16,7 +16,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import classes from "@/features/page/tree/styles/tree.module.css";
-import { ActionIcon, Box, Menu, rem, Text } from "@mantine/core";
+import { ActionIcon, Box, Menu, rem, Text, Tooltip } from "@mantine/core";
 import {
   IconArrowRight,
   IconChevronDown,
@@ -69,6 +69,8 @@ import { mobileSidebarAtom } from "@/components/layouts/global/hooks/atoms/sideb
 import { useToggleSidebar } from "@/components/layouts/global/hooks/hooks/use-toggle-sidebar.ts";
 import CopyPageModal from "../../components/copy-page-modal.tsx";
 import { duplicatePage } from "../../services/page-service.ts";
+import { usePageVersionBadgeMap } from "@/features/space/queries/space-insight-query.ts";
+import { formatVersionSummary, getBranchCode } from "@/lib/branch-code.ts";
 
 interface SpaceTreeProps {
   spaceId: string;
@@ -292,6 +294,8 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
   const timerRef = useRef(null);
   const [mobileSidebarOpened] = useAtom(mobileSidebarAtom);
   const toggleMobileSidebar = useToggleSidebar(mobileSidebarAtom);
+  // 스페이스당 한 번 받아 캐싱되는 맵 — 노드마다 훅을 불러도 요청은 1회
+  const versionBadges = usePageVersionBadgeMap(node.data.spaceId);
 
   const prefetchPage = () => {
     timerRef.current = setTimeout(async () => {
@@ -394,6 +398,17 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
 
   const pageUrl = buildPageUrl(spaceSlug, node.data.slugId, node.data.name);
 
+  const badge = versionBadges.get(node.data.id);
+  const versionSummary = badge
+    ? formatVersionSummary(t, {
+        version: badge.version,
+        branchCode: getBranchCode(badge.workingDocId),
+        baseVersion: badge.baseVersion,
+      })
+    : null;
+
+  const title = node.data.name || t("untitled");
+
   return (
     <>
       <Box
@@ -424,7 +439,18 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
           />
         </div>
 
-        <span className={classes.text}>{node.data.name || t("untitled")}</span>
+        {versionSummary ? (
+          <Tooltip
+            label={versionSummary}
+            position="right"
+            withArrow
+            openDelay={400}
+          >
+            <span className={classes.text}>{title}</span>
+          </Tooltip>
+        ) : (
+          <span className={classes.text}>{title}</span>
+        )}
 
         <div className={classes.actions}>
           <NodeMenu node={node} treeApi={tree} spaceId={node.data.spaceId} />

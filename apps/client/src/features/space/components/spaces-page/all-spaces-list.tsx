@@ -11,15 +11,14 @@ import {
 import { IconDots, IconSettings } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import React, { useState } from "react";
-import { useDisclosure } from "@mantine/hooks";
+import React from "react";
 import { formatMemberCount } from "@/lib";
 import { getSpaceUrl } from "@/lib/config";
 import { prefetchSpace } from "@/features/space/queries/space-query";
 import { SearchInput } from "@/components/common/search-input";
 import Paginate from "@/components/common/paginate";
 import NoTableResults from "@/components/common/no-table-results";
-import SpaceSettingsModal from "@/features/space/components/settings-modal";
+import { getSpaceSettingsUrl } from "@/features/space/space.utils.ts";
 import classes from "./all-spaces-list.module.css";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
 import { AvatarIconType } from "@/features/attachments/types/attachment.types.ts";
@@ -43,14 +42,6 @@ export default function AllSpacesList({
   onPrev,
 }: AllSpacesListProps) {
   const { t } = useTranslation();
-  const [settingsOpened, { open: openSettings, close: closeSettings }] =
-    useDisclosure(false);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-
-  const handleOpenSettings = (spaceId: string) => {
-    setSelectedSpaceId(spaceId);
-    openSettings();
-  };
 
   return (
     <Box>
@@ -125,8 +116,9 @@ export default function AllSpacesList({
                         </Menu.Target>
                         <Menu.Dropdown>
                           <Menu.Item
+                            component={Link}
+                            to={getSpaceSettingsUrl(space.slug)}
                             leftSection={<IconSettings size={16} />}
-                            onClick={() => handleOpenSettings(space.id)}
                           >
                             {t("Space settings")}
                           </Menu.Item>
@@ -149,14 +141,6 @@ export default function AllSpacesList({
           hasNextPage={hasNextPage}
           onNext={onNext}
           onPrev={onPrev}
-        />
-      )}
-
-      {selectedSpaceId && (
-        <SpaceSettingsModal
-          spaceId={selectedSpaceId}
-          opened={settingsOpened}
-          onClose={closeSettings}
         />
       )}
     </Box>
