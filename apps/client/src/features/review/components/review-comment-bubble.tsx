@@ -8,6 +8,7 @@ import {
   Text,
   Textarea,
 } from "@mantine/core";
+import { modals } from "@mantine/modals";
 import { IconEdit, IconTrash } from "@tabler/icons-react";
 import { useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
@@ -80,9 +81,17 @@ export default function ReviewCommentBubble({
     setIsEditing(false);
   }, [draft, history.id, updateMutation]);
 
+  // 네이티브 confirm() 은 앱 표준(Mantine 확인 모달)과 다르고,
+  // 브라우저 모달 다이얼로그라 자동화 세션까지 멈춰버린다.
   const handleDelete = useCallback(() => {
-    if (!confirm(t("Delete this comment?"))) return;
-    deleteMutation.mutate({ historyId: history.id });
+    modals.openConfirmModal({
+      title: t("코멘트 삭제"),
+      children: <Text size="sm">{t("이 코멘트를 삭제할까요?")}</Text>,
+      centered: true,
+      labels: { confirm: t("삭제"), cancel: t("취소") },
+      confirmProps: { color: "red" },
+      onConfirm: () => deleteMutation.mutate({ historyId: history.id }),
+    });
   }, [deleteMutation, history.id, t]);
 
   return (
