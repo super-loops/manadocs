@@ -31,6 +31,7 @@ import {
   IPageWorkingDoc,
 } from "@/features/page-version/types/page-version.types";
 import { useAtom } from "jotai";
+import { useTranslation } from "react-i18next";
 import { SimpleTree } from "react-arborist";
 import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom.ts";
 import { SpaceTreeNode } from "@/features/page/tree/types.ts";
@@ -109,18 +110,20 @@ export function useWorkingDocsQuery(
 }
 
 export function useCommitVersionMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (data: ICommitVersionInput) => commitVersion(data),
     onSuccess: (version) => {
       notifications.show({
-        message: `문서버전 ${version.version} 확정됨`,
+        message: t("문서버전 {{n}} 확정됨", { n: version.version }),
       });
       invalidateVersionQueries(pageId);
     },
     onError: (error: any) => {
       notifications.show({
         message:
-          error?.response?.data?.message ?? "문서확정에 실패했습니다",
+          error?.response?.data?.message ?? t("문서확정에 실패했습니다"),
         color: "red",
       });
     },
@@ -128,15 +131,17 @@ export function useCommitVersionMutation(pageId: string) {
 }
 
 export function useDiscardVersionMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (versionId: string) => discardVersion(versionId),
     onSuccess: () => {
-      notifications.show({ message: "버전이 폐기되었습니다" });
+      notifications.show({ message: t("버전이 폐기되었습니다") });
       invalidateVersionQueries(pageId);
     },
     onError: (error: any) => {
       notifications.show({
-        message: error?.response?.data?.message ?? "폐기에 실패했습니다",
+        message: error?.response?.data?.message ?? t("폐기에 실패했습니다"),
         color: "red",
       });
     },
@@ -144,26 +149,30 @@ export function useDiscardVersionMutation(pageId: string) {
 }
 
 export function useUndiscardVersionMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (versionId: string) => undiscardVersion(versionId),
     onSuccess: () => {
-      notifications.show({ message: "폐기가 해제되었습니다" });
+      notifications.show({ message: t("폐기가 해제되었습니다") });
       invalidateVersionQueries(pageId);
     },
   });
 }
 
 export function useSetPrimaryVersionMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (versionId: string) => setPrimaryVersion(versionId),
     onSuccess: () => {
-      notifications.show({ message: "Primary 버전이 변경되었습니다" });
+      notifications.show({ message: t("Primary 버전이 변경되었습니다") });
       invalidateVersionQueries(pageId);
     },
     onError: (error: any) => {
       notifications.show({
         message:
-          error?.response?.data?.message ?? "Primary 변경에 실패했습니다",
+          error?.response?.data?.message ?? t("Primary 변경에 실패했습니다"),
         color: "red",
       });
     },
@@ -171,13 +180,17 @@ export function useSetPrimaryVersionMutation(pageId: string) {
 }
 
 export function useDuplicateVersionMutation() {
+  const { t } = useTranslation();
   const [treeData, setTreeData] = useAtom(treeDataAtom);
 
   return useMutation({
     mutationFn: (versionId: string) => duplicateVersionAsPage(versionId),
     onSuccess: (page) => {
       notifications.show({
-        message: `'${page.title || "새 페이지"}'(으)로 복제되었습니다`,
+        // 조사(으)로 표기를 피해 조사 없이 읽히는 문장으로
+        message: t("'{{title}}' 페이지를 만들었습니다", {
+          title: page.title || t("untitled"),
+        }),
       });
       queryClient.invalidateQueries({ queryKey: ["pages"] });
       // 사이드바 트리 즉시 반영 — 서버도 addTreeNode 를 브로드캐스트하지만
@@ -187,7 +200,7 @@ export function useDuplicateVersionMutation() {
     },
     onError: (error: any) => {
       notifications.show({
-        message: error?.response?.data?.message ?? "복제에 실패했습니다",
+        message: error?.response?.data?.message ?? t("복제에 실패했습니다"),
         color: "red",
       });
     },
@@ -195,26 +208,30 @@ export function useDuplicateVersionMutation() {
 }
 
 export function useCreateWorkingDocMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (data: ICreateWorkingDocInput) => createWorkingDoc(data),
     onSuccess: () => {
-      notifications.show({ message: "작업문서가 생성되었습니다" });
+      notifications.show({ message: t("작업문서가 생성되었습니다") });
       invalidateVersionQueries(pageId);
     },
   });
 }
 
 export function useDeleteWorkingDocMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (workingDocId: string) => deleteWorkingDoc(workingDocId),
     onSuccess: () => {
-      notifications.show({ message: "작업문서가 삭제되었습니다" });
+      notifications.show({ message: t("작업문서가 삭제되었습니다") });
       invalidateVersionQueries(pageId);
     },
     onError: (error: any) => {
       notifications.show({
         message:
-          error?.response?.data?.message ?? "작업문서 삭제에 실패했습니다",
+          error?.response?.data?.message ?? t("작업문서 삭제에 실패했습니다"),
         color: "red",
       });
     },
@@ -222,20 +239,24 @@ export function useDeleteWorkingDocMutation(pageId: string) {
 }
 
 export function useSetPrimaryWorkingDocMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (workingDocId: string) => setPrimaryWorkingDoc(workingDocId),
     onSuccess: () => {
-      notifications.show({ message: "Primary 작업문서가 변경되었습니다" });
+      notifications.show({ message: t("Primary 작업문서가 변경되었습니다") });
       invalidateVersionQueries(pageId);
     },
   });
 }
 
 export function useResetWorkingDocMutation(pageId: string) {
+  const { t } = useTranslation();
+
   return useMutation({
     mutationFn: (workingDocId: string) => resetWorkingDoc(workingDocId),
     onSuccess: () => {
-      notifications.show({ message: "수정사항이 취소되었습니다" });
+      notifications.show({ message: t("수정사항이 취소되었습니다") });
       invalidateVersionQueries(pageId);
     },
   });

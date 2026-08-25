@@ -97,7 +97,7 @@ const CommandList = ({
         {Object.entries(items).map(([category, categoryItems]) => (
           <div key={category}>
             <Text c="dimmed" mb={4} fw={500} tt="capitalize">
-              {category}
+              {t(category)}
             </Text>
             {categoryItems.map((item: SlashMenuItemType, index: number) => (
               <UnstyledButton

@@ -265,7 +265,7 @@ function DiffModalBody() {
       setRevertTick((n) => n + 1);
     } else {
       notifications.show({
-        message: "이 블럭은 되돌릴 수 없어요.",
+        message: t("이 블럭은 되돌릴 수 없어요."),
         color: "yellow",
       });
     }
