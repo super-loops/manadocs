@@ -62,6 +62,8 @@ export interface ISharedPage extends IShare {
   };
   versionInfo?: IShareVersionInfo;
   features?: string[];
+  /** 공개 공유 페이지의 표시 언어 — 워크스페이스 설정 → 서버 기본 언어 */
+  locale?: string;
 }
 
 export interface IShareForPage extends IShare {

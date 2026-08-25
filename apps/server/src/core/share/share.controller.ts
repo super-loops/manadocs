@@ -29,6 +29,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ShareRepo } from '@manadocs/db/repos/share/share.repo';
 import { PaginationOptions } from '@manadocs/db/pagination/pagination-options';
 import { LicenseCheckService } from '../../integrations/environment/license-check.service';
+import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { AuditEvent, AuditResource } from '../../common/events/audit-events';
 import {
   AUDIT_SERVICE,
@@ -45,8 +46,18 @@ export class ShareController {
     private readonly pagePermissionRepo: PagePermissionRepo,
     private readonly pageAccessService: PageAccessService,
     private readonly licenseCheckService: LicenseCheckService,
+    private readonly environmentService: EnvironmentService,
     @Inject(AUDIT_SERVICE) private readonly auditService: IAuditService,
   ) {}
+
+  /**
+   * 공개 공유 페이지의 표시 언어 — 방문자는 로그인 유저가 아니라서
+   * 유저 locale 을 쓸 수 없다. 워크스페이스 설정 → 서버 기본 언어 순.
+   */
+  private resolveShareLocale(workspace: Workspace): string {
+    const configured = (workspace?.settings as any)?.locale;
+    return configured ?? this.environmentService.getDefaultLang() ?? 'en-US';
+  }
 
   @HttpCode(HttpStatus.OK)
   @Post('/')
@@ -80,6 +91,7 @@ export class ShareController {
 
     return {
       ...shareData,
+      locale: this.resolveShareLocale(workspace),
       features: this.licenseCheckService.resolveFeatures(
         workspace.licenseKey,
         workspace.plan,

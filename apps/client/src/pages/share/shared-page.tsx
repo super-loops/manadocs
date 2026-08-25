@@ -14,7 +14,7 @@ import { sharedTreeDataAtom } from "@/features/share/atoms/shared-page-atom.ts";
 import { isPageInTree } from "@/features/share/utils.ts";
 
 export default function SharedPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { pageSlug } = useParams();
   const { shareId } = useParams();
   const navigate = useNavigate();
@@ -26,6 +26,19 @@ export default function SharedPage() {
   });
 
   const sharedTreeData = useAtomValue(sharedTreeDataAtom);
+
+  // 공개 공유 페이지에는 로그인 유저가 없어 유저 locale 을 쓸 수 없다 —
+  // 서버가 내려준 워크스페이스 기본 언어를 따른다. 로그인 상태로 공유
+  // 링크를 열었을 때 앱 언어까지 바뀌지 않도록 벗어날 때 원복한다.
+  useEffect(() => {
+    const locale = data?.locale;
+    if (!locale || i18n.language === locale) return;
+    const previous = i18n.language;
+    i18n.changeLanguage(locale);
+    return () => {
+      i18n.changeLanguage(previous);
+    };
+  }, [data?.locale]);
 
   useEffect(() => {
     if (shareId && data) {
@@ -71,7 +84,7 @@ export default function SharedPage() {
             mt="md"
           >
             {t(
-              "이 링크가 가리키던 버전이 폐기되어 가장 가까운 버전 {{n}}(으)로 안내되었습니다.",
+              "이 링크가 가리키던 버전이 폐기되어 가장 가까운 버전 {{n}} 내용을 보여주고 있습니다.",
               { n: data.versionInfo.version },
             )}
           </Alert>
