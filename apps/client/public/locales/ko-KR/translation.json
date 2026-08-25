@@ -365,7 +365,7 @@
   "Math block": "수식 블록",
   "Insert math equation": "수식 삽입",
   "Mermaid diagram": "Mermaid 다이어그램",
-  "Insert mermaid diagram": "Mermaid diagram 삽입",
+  "Insert mermaid diagram": "Mermaid 다이어그램 삽입",
   "Insert current date": "현재 날짜 삽입",
   "Multiple": "복제",
   "Turn into": "변경하기",
@@ -1114,5 +1114,6 @@
   "마지막 수정": "마지막 수정",
   "독자와 공유 링크에 보이는 화면 그대로입니다": "독자와 공유 링크에 보이는 화면 그대로입니다",
   "수정중": "수정중",
-  "제목 없음": "제목 없음"
+  "제목 없음": "제목 없음",
+  "확정할 변경이 없습니다. 이미 최신 내용이 확정되어 있어요.": "확정할 변경이 없습니다. 이미 최신 내용이 확정되어 있어요."
 }

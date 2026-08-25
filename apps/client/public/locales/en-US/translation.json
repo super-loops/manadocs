@@ -994,5 +994,6 @@
   "마지막 수정": "Last edited",
   "독자와 공유 링크에 보이는 화면 그대로입니다": "This is exactly what readers and share links see",
   "수정중": "Editing",
-  "제목 없음": "Untitled"
+  "제목 없음": "Untitled",
+  "확정할 변경이 없습니다. 이미 최신 내용이 확정되어 있어요.": "Nothing to commit — the latest content is already committed."
 }
