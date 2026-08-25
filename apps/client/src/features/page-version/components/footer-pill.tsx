@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Group, Paper, Text } from "@mantine/core";
+import { Button, Divider, Group, Paper, Text, Tooltip } from "@mantine/core";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import {
+  activeWorkingDocAtom,
   commitDialogOpenAtom,
   diffSelectionAtom,
 } from "@/features/page-version/atoms/page-version-atoms";
-import { usePageVersionQuery } from "@/features/page-version/queries/page-version-query";
+import {
+  usePageVersionQuery,
+  useWorkingDocsQuery,
+} from "@/features/page-version/queries/page-version-query";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { IPage } from "@/features/page/types/page.types";
 import { computeDiffStats } from "@/features/page-version/utils/working-diff";
@@ -16,10 +20,15 @@ interface FooterPillProps {
   page: IPage;
 }
 
+/** 미확정 문서의 통계 기준 — 빈 문서 */
+const EMPTY_DOC = { type: "doc", content: [] };
+
 /**
  * 페이지 하단 floating pill.
- * - 현재 작업문서 == Primary 버전 → [이모지 · 문서버전N · DIFF] 만
- * - 다르면 → [이모지 · 문서버전N · +N/−N · DIFF · 문서확정]
+ * - 미확정(확정 버전 0개) → [이모지 · 미확정 · +N · 문서확정]
+ *   비교 기준(Primary)이 없으므로 "문서버전 0" 을 쓰지 않고 DIFF 도 비활성.
+ * - 확정본 있음 → [이모지 · 문서버전N · (+N/−N) · DIFF · (문서확정)]
+ * 작업문서가 둘 이상이면 지금 편집 중인 작업문서 이름도 함께 보여준다.
  * 수정취소는 DIFF 모달로 이관(footer 에서 제거).
  */
 export default function FooterPill({ page }: FooterPillProps) {
@@ -27,11 +36,33 @@ export default function FooterPill({ page }: FooterPillProps) {
   const setCommitDialogOpen = useSetAtom(commitDialogOpenAtom);
   const setDiffSelection = useSetAtom(diffSelectionAtom);
   const editor = useAtomValue(pageEditorAtom);
+  const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
 
   const primaryVersionId = page.primaryVersionId ?? null;
   const { data: primaryVersion } = usePageVersionQuery(primaryVersionId);
   const primaryContent = primaryVersion?.content ?? null;
   const versionLabel = primaryVersion?.version ?? 0;
+  const isDraft = !primaryVersionId;
+
+  // ── 편집 중인 작업문서 (여러 개일 때만 이름 노출) ────────────────
+  const canEdit = page.permissions?.canEdit ?? false;
+  const { data: workingDocs } = useWorkingDocsQuery(page.id, canEdit);
+  const activeWorkingDocId =
+    activeWorkingDoc?.pageId === page.id
+      ? activeWorkingDoc.workingDocId
+      : (page.primaryWorkingDocId ?? null);
+  const currentWorkingDoc = (workingDocs ?? []).find(
+    (doc) => doc.id === activeWorkingDocId,
+  );
+  const workingDocName =
+    (workingDocs?.length ?? 0) > 1 && currentWorkingDoc
+      ? currentWorkingDoc.name ||
+        (currentWorkingDoc.baseVersion
+          ? t("버전 {{n}}에서 시작", {
+              n: currentWorkingDoc.baseVersion.version,
+            })
+          : t("작업문서"))
+      : null;
 
   // 라이브 에디터 ↔ Primary 비교 (편집 시 디바운스 재계산)
   const [changed, setChanged] = useState(false);
@@ -44,10 +75,10 @@ export default function FooterPill({ page }: FooterPillProps) {
         return;
       }
       // 미확정 페이지(Primary 버전 없음) — 첫 문서확정을 허용해야 하므로
-      // 항상 변경으로 취급(비교 기준이 없어 통계는 생략).
+      // 항상 변경으로 취급하고, 통계는 빈 문서 대비로 낸다.
       if (!primaryVersionId) {
         setChanged(true);
-        setStats({ added: 0, deleted: 0 });
+        setStats(computeDiffStats(editor, EMPTY_DOC, editor.getJSON()));
         return;
       }
       if (!primaryContent) return; // Primary 콘텐츠 로딩 중 — 이전 판정 유지
@@ -80,6 +111,8 @@ export default function FooterPill({ page }: FooterPillProps) {
     };
   }, [editor, recompute]);
 
+  const hasStats = stats.added > 0 || stats.deleted > 0;
+
   return (
     <Paper
       className={classes.pill}
@@ -94,37 +127,69 @@ export default function FooterPill({ page }: FooterPillProps) {
           {page.icon || "📄"}
         </Text>
 
-        <div>
-          <Text size="xs" fw={600} lh={1.2}>
-            {t("문서버전 {{n}}", { n: versionLabel })}
-          </Text>
-          {changed && (stats.added > 0 || stats.deleted > 0) && (
-            <Group gap={6} mt={2}>
-              <Text size="xs" c="green.7" fw={600}>
-                {stats.added} +
-              </Text>
-              <Text size="xs" c="red.7" fw={600}>
-                {stats.deleted} −
-              </Text>
-            </Group>
+        <div style={{ minWidth: 0 }}>
+          <Group gap={6} wrap="nowrap">
+            <Text
+              size="xs"
+              fw={600}
+              lh={1.2}
+              c={isDraft ? "orange.7" : undefined}
+            >
+              {isDraft
+                ? t("미확정")
+                : t("문서버전 {{n}}", { n: versionLabel })}
+            </Text>
+            {hasStats && (
+              <>
+                {stats.added > 0 && (
+                  <Text size="xs" c="green.7" fw={600}>
+                    {stats.added} +
+                  </Text>
+                )}
+                {stats.deleted > 0 && (
+                  <Text size="xs" c="red.7" fw={600}>
+                    {stats.deleted} −
+                  </Text>
+                )}
+              </>
+            )}
+          </Group>
+          {workingDocName && (
+            <Text size="xs" c="dimmed" lh={1.2} lineClamp={1} maw={160}>
+              {workingDocName}
+            </Text>
           )}
         </div>
 
         <Divider orientation="vertical" />
 
-        <Button
-          size="compact-sm"
-          variant="default"
-          onClick={() =>
-            setDiffSelection({
-              pageId: page.id,
-              leftVersionId: primaryVersionId, // Primary 기준
-              rightVersionId: null, // null = 현재 작업문서
-            })
-          }
-        >
-          DIFF
-        </Button>
+        {isDraft ? (
+          <Tooltip
+            label={t("확정된 버전이 없어 비교할 대상이 없습니다")}
+            withArrow
+          >
+            {/* disabled 버튼은 포인터 이벤트가 없어 span 으로 감싼다 */}
+            <span>
+              <Button size="compact-sm" variant="default" disabled>
+                DIFF
+              </Button>
+            </span>
+          </Tooltip>
+        ) : (
+          <Button
+            size="compact-sm"
+            variant="default"
+            onClick={() =>
+              setDiffSelection({
+                pageId: page.id,
+                leftVersionId: primaryVersionId, // Primary 기준
+                rightVersionId: null, // null = 현재 작업문서
+              })
+            }
+          >
+            DIFF
+          </Button>
+        )}
 
         {changed && (
           <Button size="compact-sm" onClick={() => setCommitDialogOpen(true)}>
