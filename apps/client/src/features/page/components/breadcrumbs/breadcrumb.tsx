@@ -19,6 +19,7 @@ import { buildPageUrl } from "@/features/page/page.utils.ts";
 import { usePageQuery } from "@/features/page/queries/page-query.ts";
 import { extractPageSlugId } from "@/lib";
 import { useMediaQuery } from "@mantine/hooks";
+import { useTranslation } from "react-i18next";
 
 function getTitle(name: string, icon: string) {
   // 이모지 1급 — 미지정 시 기본 문서 이모지(📄)
@@ -26,7 +27,10 @@ function getTitle(name: string, icon: string) {
 }
 
 export default function Breadcrumb() {
+  const { t } = useTranslation();
   const treeData = useAtomValue(treeDataAtom);
+  /** 빈 제목 표기는 앱 전체에서 "제목 없음"(untitled) 하나로 통일 */
+  const nameOf = (name: string) => name || t("untitled");
   const [breadcrumbNodes, setBreadcrumbNodes] = useState<
     SpaceTreeNode[] | null
   >(null);
@@ -54,7 +58,7 @@ export default function Breadcrumb() {
           style={{ border: "none" }}
         >
           <Text fz={"sm"} className={classes.truncatedText}>
-            {getTitle(node.name, node.icon)}
+            {getTitle(nameOf(node.name), node.icon)}
           </Text>
         </Button>
       </Button.Group>
@@ -71,7 +75,7 @@ export default function Breadcrumb() {
           style={{ border: "none" }}
         >
           <Text fz={"sm"} className={classes.truncatedText}>
-            {getTitle(node.name, node.icon)}
+            {getTitle(nameOf(node.name), node.icon)}
           </Text>
         </Button>
       </Button.Group>
@@ -79,7 +83,7 @@ export default function Breadcrumb() {
 
   const renderAnchor = useCallback(
     (node: SpaceTreeNode) => (
-      <Tooltip label={node.name} key={node.id}>
+      <Tooltip label={nameOf(node.name)} key={node.id}>
         <Anchor
           component={Link}
           to={buildPageUrl(spaceSlug, node.slugId, node.name)}
@@ -88,11 +92,11 @@ export default function Breadcrumb() {
           key={node.id}
           className={classes.truncatedText}
         >
-          {getTitle(node.name, node.icon)}
+          {getTitle(nameOf(node.name), node.icon)}
         </Anchor>
       </Tooltip>
     ),
-    [spaceSlug],
+    [spaceSlug, t],
   );
 
   const getBreadcrumbItems = () => {

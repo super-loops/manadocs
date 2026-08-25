@@ -136,7 +136,7 @@ export function NotificationItem({
                 />
               )}
               <Text size="xs" c="dimmed" lineClamp={1}>
-                {notification.page.title || t("Untitled")}
+                {notification.page.title || t("untitled")}
               </Text>
             </Group>
           )}

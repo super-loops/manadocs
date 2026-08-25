@@ -16,7 +16,7 @@ export default function TrashPageContentModal({
   pageContent,
 }: Props) {
   const { t } = useTranslation();
-  const title = pageTitle || t("Untitled");
+  const title = pageTitle || t("untitled");
 
   return (
     <Modal.Root size={1200} opened={opened} onClose={onClose}>

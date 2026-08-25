@@ -181,7 +181,9 @@ export function useRestorePageMutation() {
         const nodeData: SpaceTreeNode = {
           id: restoredPage.id,
           slugId: restoredPage.slugId,
-          name: restoredPage.title || "Untitled",
+          // 빈 제목은 트리 렌더에서 t("untitled") 로 대체된다 — 여기서
+          // 영어 리터럴을 넣으면 번역을 못 타고 그대로 노출된다.
+          name: restoredPage.title || "",
           icon: restoredPage.icon,
           position: restoredPage.position,
           spaceId: restoredPage.spaceId,

@@ -9,9 +9,11 @@ import {
   buildSharedPageUrl,
 } from "@/features/page/page.utils.ts";
 import { extractPageSlugId } from "@/lib";
+import { useTranslation } from "react-i18next";
 import classes from "./mention.module.css";
 
 export default function MentionView(props: NodeViewProps) {
+  const { t } = useTranslation();
   const { node } = props;
   const { label, entityType, entityId, slugId, anchorId } = node.attrs;
   const isPageMention = entityType === "page";
@@ -106,7 +108,7 @@ export default function MentionView(props: NodeViewProps) {
             <IconFileDescription size={18} />
           </ActionIcon>
           <span className={classes.pageMentionText}>
-            {label}
+            {label || t("untitled")}
           </span>
         </Anchor>
       )}
@@ -134,8 +136,9 @@ export default function MentionView(props: NodeViewProps) {
             </ActionIcon>
           )}
 
+          {/* 문서에 굳어 있는 label 대신 현재 제목 우선 — 빈 제목은 번역 fallback */}
           <span className={classes.pageMentionText}>
-            {page?.title || label}
+            {page?.title || label || t("untitled")}
           </span>
         </Anchor>
       )}

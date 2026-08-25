@@ -42,10 +42,8 @@ export function findBreadcrumbPath(
   path: SpaceTreeNode[] = [],
 ): SpaceTreeNode[] | null {
   for (const node of tree) {
-    if (!node.name || node.name.trim() === "") {
-      node.name = "untitled";
-    }
-
+    // 빈 제목은 렌더 시점에 t("untitled") 로 대체한다 — 여기서 이름을 덮어쓰면
+    // 번역되지 않은 영어가 트리 데이터와 URL 슬러그에 그대로 박힌다.
     if (node.id === pageId) {
       return [...path, node];
     }

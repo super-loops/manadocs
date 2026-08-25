@@ -31,7 +31,9 @@ export const handleInternalLink =
 
         const node = schema.nodes.mention.create({
           id: v7(),
-          label: page.title || "Untitled",
+          // 빈 제목은 mention 렌더에서 t("untitled") 로 대체된다 —
+          // 영어 리터럴을 문서 내용에 굳히지 않는다.
+          label: page.title || "",
           entityType: "page",
           entityId: page.id,
           slugId: page.slugId,

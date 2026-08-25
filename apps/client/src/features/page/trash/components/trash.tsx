@@ -67,7 +67,7 @@ export default function Trash() {
         <Text size="sm">
           {t(
             "Are you sure you want to permanently delete '{{title}}'? This action cannot be undone.",
-            { title: pageTitle || "Untitled" },
+            { title: pageTitle || t("untitled") },
           )}
         </Text>
       ),
@@ -84,7 +84,7 @@ export default function Trash() {
       children: (
         <Text size="sm">
           {t("Restore '{{title}}' and its sub-pages?", {
-            title: pageTitle || "Untitled",
+            title: pageTitle || t("untitled"),
           })}
         </Text>
       ),
@@ -152,7 +152,7 @@ export default function Trash() {
                         )}
                         <div>
                           <Text fw={500} size="sm" lineClamp={1}>
-                            {page.title || t("Untitled")}
+                            {page.title || t("untitled")}
                           </Text>
                         </div>
                       </Group>

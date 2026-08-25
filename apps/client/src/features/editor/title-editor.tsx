@@ -65,7 +65,7 @@ export function TitleEditor({
       }),
       Text,
       Placeholder.configure({
-        placeholder: t("Untitled"),
+        placeholder: t("untitled"),
         showOnlyWhenEditable: false,
       }),
       History.configure({

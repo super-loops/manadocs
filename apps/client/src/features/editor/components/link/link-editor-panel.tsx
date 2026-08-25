@@ -169,7 +169,7 @@ export const LinkEditorPanel = ({
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <AutoTooltipText size="sm" fw={500} truncate lh={1.3}>
-                        {page.title || t("Untitled")}
+                        {page.title || t("untitled")}
                       </AutoTooltipText>
                       {page.space?.name && (
                         <AutoTooltipText size="xs" c="dimmed" truncate lh={1.4}>

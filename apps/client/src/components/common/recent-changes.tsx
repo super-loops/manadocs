@@ -52,7 +52,7 @@ export default function RecentChanges({ spaceId }: Props) {
                     )}
 
                     <Text fw={500} size="md" lineClamp={1}>
-                      {page.title || t("Untitled")}
+                      {page.title || t("untitled")}
                     </Text>
                   </Group>
                 </UnstyledButton>
