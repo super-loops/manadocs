@@ -431,7 +431,8 @@ function DiffModalBody() {
                       variant="light"
                       radius="sm"
                       color={blockStatusColor[entry.status]}
-                      w={56}
+                      // 고정폭이면 언어에 따라 라벨이 잘린다("Modified" → "Modi…")
+                      style={{ flexShrink: 0 }}
                     >
                       {blockStatusLabel[entry.status]}
                     </Badge>

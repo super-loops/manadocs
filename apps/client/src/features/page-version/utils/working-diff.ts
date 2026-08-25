@@ -66,14 +66,39 @@ function blockId(node: any): string | null {
   return node?.attrs?.id ?? null;
 }
 
-function blockText(node: any): string {
+/** 목록·표처럼 자식이 여러 항목인 블럭 — 미리보기에서 항목을 구분해 보여준다 */
+const SEGMENTED_BLOCKS = new Set([
+  "bulletList",
+  "orderedList",
+  "taskList",
+  "table",
+  "tableRow",
+]);
+const SEGMENT_SEPARATOR = " · ";
+
+function plainText(node: any): string {
   const parts: string[] = [];
   const walk = (n: any) => {
     if (typeof n?.text === "string") parts.push(n.text);
     (n?.content ?? []).forEach(walk);
   };
   walk(node);
-  return parts.join("").slice(0, 120);
+  return parts.join("");
+}
+
+function segmentedText(node: any): string {
+  if (SEGMENTED_BLOCKS.has(node?.type) && Array.isArray(node.content)) {
+    return node.content
+      .map(segmentedText)
+      .filter((text: string) => text.length > 0)
+      .join(SEGMENT_SEPARATOR);
+  }
+  return plainText(node);
+}
+
+function blockText(node: any): string {
+  // 항목 사이에 구분자가 없으면 "항목 A항목 B항목 C" 로 붙어 읽을 수 없다
+  return segmentedText(node).slice(0, 120);
 }
 
 // ── 최상위 블럭 정렬 ──────────────────────────────────────────────
