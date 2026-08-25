@@ -6,7 +6,10 @@ import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { extractPageSlugId } from "@/lib";
 import { useCreateReviewAnchorMutation } from "@/features/review/queries/review-query";
-import { resolveBlockAtPos } from "@/features/editor/components/review/review-anchor-util";
+import {
+  REVIEW_ANCHOR_TARGET_HINT,
+  resolveBlockAtPos,
+} from "@/features/editor/components/review/review-anchor-util";
 
 export const REVIEW_DRAG_MIME = "application/x-manadocs-review-id";
 
@@ -76,10 +79,11 @@ export default function ReviewAnchorDropZone() {
       }
 
       // 드롭 위치의 블록을 해석 — 앵커는 콘텐츠가 아닌 이 blockId 에 귀속된다.
+      // 리스트 항목·표 셀·콜아웃 안의 문단도 정식 대상이다(review-anchor-util 참고).
       const block = resolveBlockAtPos(editor, pos);
       if (!block) {
         notifications.show({
-          message: "이 위치에는 리뷰를 달 수 없어요. 문단이나 제목 위에 놓아주세요.",
+          message: REVIEW_ANCHOR_TARGET_HINT,
           color: "yellow",
         });
         return;

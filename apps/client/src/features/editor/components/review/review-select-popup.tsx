@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import type { Editor, Range } from "@tiptap/core";
 import { queryClient } from "@/main";
 import {
+  REVIEW_ANCHOR_TARGET_HINT,
   resolveBlockAtPos,
   type ResolvedBlock,
 } from "@/features/editor/components/review/review-anchor-util";
@@ -190,9 +191,7 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
             color="yellow"
             variant="light"
           >
-            {t(
-              "이 위치에는 리뷰를 달 수 없어요. 문단이나 제목 위에서 다시 시도해주세요. (리스트·표·콜아웃 안의 문단도 괜찮아요)",
-            )}
+            {t(REVIEW_ANCHOR_TARGET_HINT)}
           </Alert>
           <Group justify="flex-end">
             <Button variant="subtle" onClick={onClose}>

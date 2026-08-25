@@ -543,7 +543,9 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
                   e.dataTransfer.setData(REVIEW_DRAG_MIME, review.id);
                   e.dataTransfer.effectAllowed = "copy";
                 }}
-                title={t("Drag to add a new anchor in the document")}
+                title={t(
+                  "본문의 문단이나 제목으로 끌어다 놓으면 앵커가 추가돼요 — 리스트·표·콜아웃 안의 문단도 괜찮아요.",
+                )}
               >
                 {t("Drag to add")}
               </Badge>
