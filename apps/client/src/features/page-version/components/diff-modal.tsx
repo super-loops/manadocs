@@ -38,6 +38,39 @@ import {
   normalizeContent,
   revertBlock,
 } from "@/features/page-version/utils/working-diff";
+import { IPageVersion } from "@/features/page-version/types/page-version.types";
+
+/** 텍스트가 없는 블럭(표·이미지·구분선 …)의 목록 표시용 라벨 */
+function blockTypeLabel(nodeType: string, t: (key: string) => string): string {
+  switch (nodeType) {
+    case "bulletList":
+      return t("목록");
+    case "orderedList":
+      return t("번호 목록");
+    case "taskList":
+      return t("체크리스트");
+    case "table":
+      return t("표");
+    case "codeBlock":
+      return t("코드 블럭");
+    case "blockquote":
+      return t("인용");
+    case "image":
+      return t("이미지");
+    case "video":
+      return t("동영상");
+    case "attachment":
+      return t("첨부파일");
+    case "horizontalRule":
+      return t("구분선");
+    case "callout":
+      return t("콜아웃");
+    case "details":
+      return t("토글");
+    default:
+      return t("(빈 블럭)");
+  }
+}
 
 const CURRENT = "__current__";
 const OTHER_DOC = "__other_doc__";
@@ -85,10 +118,16 @@ function DiffModalBody() {
     [versionsData],
   );
 
-  const versionOptions = versions.map((v) => ({
+  // 버전 0(생성 마커)은 내용이 없어 비교 대상이 못 된다 — 같은 문서/다른 문서
+  // 목록 모두에서 동일하게 제외한다.
+  const toVersionOption = (v: IPageVersion) => ({
     value: v.id,
     label: `${t("버전")} ${v.version}${v.message ? ` — ${v.message}` : ""}${v.discardedAt ? ` (${t("폐기됨")})` : ""}`,
-  }));
+  });
+
+  const versionOptions = versions
+    .filter((v) => v.version > 0)
+    .map(toVersionOption);
 
   const hasLiveEditor = !!pageEditor;
 
@@ -128,11 +167,16 @@ function DiffModalBody() {
       searchSuggestions({ query: otherPageQuery, includePages: true }),
     enabled: otherDocMode && otherPageQuery.length > 0,
   });
-  const { data: otherVersionsData } = usePageVersionsQuery(
-    otherDocMode ? (otherPageId ?? undefined) : undefined,
-  );
+  const { data: otherVersionsData, isFetching: otherVersionsFetching } =
+    usePageVersionsQuery(otherDocMode ? (otherPageId ?? undefined) : undefined);
   const otherVersions =
     otherVersionsData?.pages?.flatMap((p) => p.items) ?? [];
+  const otherVersionOptions = otherVersions
+    .filter((v) => v.version > 0)
+    .map(toVersionOption);
+  // 확정 버전이 하나도 없는 문서 — 빈 목록 대신 이유를 알려준다
+  const otherDocHasNoVersion =
+    !!otherPageId && !otherVersionsFetching && otherVersionOptions.length === 0;
 
   // ── 콘텐츠 해석 ────────────────────────────────────────────────
   const leftVersionId = otherDocMode ? otherVersionId : leftSel || null;
@@ -271,16 +315,34 @@ function DiffModalBody() {
               <Select
                 size="xs"
                 w={200}
-                placeholder={t("버전 선택")}
-                data={otherVersions
-                  .filter((v) => v.version > 0)
-                  .map((v) => ({
-                    value: v.id,
-                    label: `${t("버전")} ${v.version}${v.message ? ` — ${v.message}` : ""}`,
-                  }))}
+                placeholder={
+                  otherDocHasNoVersion
+                    ? t("확정된 버전 없음")
+                    : t("버전 선택")
+                }
+                data={otherVersionOptions}
                 value={otherVersionId}
                 onChange={setOtherVersionId}
+                disabled={!otherPageId || otherDocHasNoVersion}
+                nothingFoundMessage={t("확정된 버전이 없습니다")}
               />
+              {otherDocHasNoVersion && (
+                <Text size="xs" c="dimmed">
+                  {t("이 문서에는 아직 확정된 버전이 없어 비교할 수 없습니다.")}
+                </Text>
+              )}
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                onClick={() => {
+                  setOtherDocMode(false);
+                  setOtherPageId(null);
+                  setOtherVersionId(null);
+                  setOtherPageQuery("");
+                }}
+              >
+                {t("이 문서의 버전으로")}
+              </Button>
             </>
           ) : (
             <Select
@@ -363,11 +425,7 @@ function DiffModalBody() {
             <ScrollArea.Autosize mah={160}>
               <Stack gap={4}>
                 {blockDiff.map((entry) => (
-                  <Group
-                    key={`${entry.blockId}:${entry.status}`}
-                    gap="xs"
-                    wrap="nowrap"
-                  >
+                  <Group key={entry.key} gap="xs" wrap="nowrap">
                     <Badge
                       size="sm"
                       variant="light"
@@ -378,7 +436,7 @@ function DiffModalBody() {
                       {blockStatusLabel[entry.status]}
                     </Badge>
                     <Text size="sm" lineClamp={1} style={{ flex: 1 }}>
-                      {entry.preview || t("(빈 블럭)")}
+                      {entry.preview || blockTypeLabel(entry.nodeType, t)}
                     </Text>
                     <ActionIcon
                       variant="subtle"
