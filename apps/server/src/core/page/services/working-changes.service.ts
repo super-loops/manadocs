@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { sql } from 'kysely';
+import { SqlBool, sql } from 'kysely';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
 import { PagePermissionRepo } from '@manadocs/db/repos/page/page-permission.repo';
 import {
@@ -66,11 +66,9 @@ export class WorkingChangesService {
         eb.or([
           // 아직 한 번도 확정하지 않은 페이지 — 전체가 미확정 수정이다
           eb('p.primaryVersionId', 'is', null),
-          eb(
-            sql<boolean>`v.content is distinct from p.content`,
-            '=',
-            sql<boolean>`true`,
-          ),
+          // 괄호 필수 — `=` 가 `is distinct from` 보다 먼저 묶여서
+          // `v.content is distinct from (p.content = true)` 로 파싱된다.
+          sql<SqlBool>`(v.content is distinct from p.content)`,
         ]),
       )
       .orderBy('p.updatedAt', 'desc')
