@@ -14,14 +14,20 @@ import {
   Tabs,
   Text,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
 import {
+  IconCheck,
+  IconCopy,
   IconExternalLink,
   IconLock,
   IconTrash,
   IconWorld,
 } from "@tabler/icons-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
+import { useClipboard } from "@/hooks/use-clipboard";
 import {
   useCreateShareMutation,
   useDeleteShareMutation,
@@ -32,7 +38,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { extractPageSlugId, getPageIcon } from "@/lib";
 import { useTranslation } from "react-i18next";
 import { usePageQuery } from "@/features/page/queries/page-query.ts";
-import CopyTextButton from "@/components/common/copy.tsx";
 import { getAppUrl, isCloud } from "@/lib/config.ts";
 import { buildPageUrl } from "@/features/page/page.utils.ts";
 import classes from "@/features/share/components/share.module.css";
@@ -80,8 +85,18 @@ export default function ShareModal({ readOnly }: ShareModalProps) {
   const isDescendantShared =
     shareCount === 0 && inheritedShare && inheritedShare.level > 0;
 
+  // 확인 모달은 포털로 렌더돼 팝오버의 "바깥 클릭"으로 오인된다 —
+  // 모달이 떠 있는 동안은 팝오버가 닫히지 않게 잠근다.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
-    <Popover width={400} position="bottom" withArrow shadow="md">
+    <Popover
+      width={400}
+      position="bottom"
+      withArrow
+      shadow="md"
+      closeOnClickOutside={!confirmOpen}
+    >
       <Popover.Target>
         <Button
           size="compact-sm"
@@ -170,6 +185,7 @@ export default function ShareModal({ readOnly }: ShareModalProps) {
             hasCommitted={!!page?.primaryVersionId}
             shares={shares ?? []}
             readOnly={readOnly || !canEdit}
+            onConfirmOpenChange={setConfirmOpen}
           />
         )}
       </Popover.Dropdown>
@@ -183,12 +199,14 @@ function ShareTabs({
   hasCommitted,
   shares,
   readOnly,
+  onConfirmOpenChange,
 }: {
   pageId: string;
   pageSlug: string;
   hasCommitted: boolean;
   shares: IShare[];
   readOnly: boolean;
+  onConfirmOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>(
@@ -215,7 +233,13 @@ function ShareTabs({
       </Tabs.Panel>
 
       <Tabs.Panel value="links">
-        <ShareLinkList shares={shares} pageSlug={pageSlug} readOnly={readOnly} />
+        <ShareLinkList
+          shares={shares}
+          pageId={pageId}
+          pageSlug={pageSlug}
+          readOnly={readOnly}
+          onConfirmOpenChange={onConfirmOpenChange}
+        />
       </Tabs.Panel>
     </Tabs>
   );
@@ -341,17 +365,84 @@ function CreateShareForm({
   );
 }
 
+/** 링크 복사 — 체크 아이콘 전환 + 토스트로 성공을 분명히 알린다 */
+function ShareCopyButton({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const clipboard = useClipboard({ timeout: 2000 });
+
+  useEffect(() => {
+    if (clipboard.copied) {
+      notifications.show({
+        message: t("공유 링크를 복사했습니다"),
+        color: "teal",
+      });
+    }
+  }, [clipboard.copied]);
+
+  return (
+    <Tooltip
+      label={clipboard.copied ? t("Copied") : t("Copy")}
+      position="top"
+      withArrow
+    >
+      <ActionIcon
+        color={clipboard.copied ? "teal" : "gray"}
+        variant="subtle"
+        onClick={() => clipboard.copy(text)}
+      >
+        {clipboard.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
 function ShareLinkList({
   shares,
+  pageId,
   pageSlug,
   readOnly,
+  onConfirmOpenChange,
 }: {
   shares: IShare[];
+  pageId: string;
   pageSlug: string;
   readOnly: boolean;
+  onConfirmOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const deleteShareMutation = useDeleteShareMutation();
+
+  // 고정 링크가 어느 버전을 가리키는지 목록에서 바로 알 수 있게 번호를 붙인다
+  const hasFixed = shares.some((share) => share.versionMode === "fixed");
+  const { data: versionsData } = usePageVersionsQuery(
+    hasFixed ? pageId : undefined,
+  );
+  const versionNumberById = new Map<string, number>(
+    (versionsData?.pages?.flatMap((p) => p.items) ?? []).map((v) => [
+      v.id,
+      v.version,
+    ]),
+  );
+
+  const confirmDelete = (share: IShare) => {
+    onConfirmOpenChange(true);
+    modals.openConfirmModal({
+      title: t("공유 링크 삭제"),
+      // 팝오버 dropdown 보다 위에 떠야 한다
+      zIndex: 1000,
+      children: (
+        <Text size="sm">
+          {t(
+            "이 공유 링크를 삭제합니다. 링크를 가진 사람은 더 이상 이 문서를 볼 수 없습니다.",
+          )}
+        </Text>
+      ),
+      labels: { confirm: t("삭제"), cancel: t("취소") },
+      confirmProps: { color: "red" },
+      onClose: () => onConfirmOpenChange(false),
+      onConfirm: () => deleteShareMutation.mutate(share.id),
+    });
+  };
 
   if (shares.length === 0) {
     return (
@@ -365,6 +456,10 @@ function ShareLinkList({
     <Stack gap="xs">
       {shares.map((share) => {
         const publicLink = `${getAppUrl()}/share/${share.key}/p/${pageSlug}`;
+        const isFixed = share.versionMode === "fixed";
+        const fixedVersion = share.fixedVersionId
+          ? versionNumberById.get(share.fixedVersionId)
+          : undefined;
         return (
           <Card key={share.id} withBorder radius="md" padding="xs">
             <Group justify="space-between" wrap="nowrap" mb={4}>
@@ -372,10 +467,12 @@ function ShareLinkList({
                 size="sm"
                 variant="light"
                 radius="sm"
-                color={share.versionMode === "fixed" ? "grape" : "blue"}
+                color={isFixed ? "grape" : "blue"}
               >
-                {share.versionMode === "fixed"
-                  ? t("버전 고정")
+                {isFixed
+                  ? fixedVersion !== undefined
+                    ? t("버전 {{n}} 고정", { n: fixedVersion })
+                    : t("버전 고정")
                   : t("최신 추종")}
               </Badge>
               {!readOnly && (
@@ -383,19 +480,26 @@ function ShareLinkList({
                   variant="subtle"
                   color="red"
                   size="sm"
-                  onClick={() => deleteShareMutation.mutate(share.id)}
+                  onClick={() => confirmDelete(share)}
                 >
                   <IconTrash size={14} />
                 </ActionIcon>
               )}
             </Group>
+            <Text size="xs" c="dimmed" mb={4}>
+              {isFixed
+                ? share.onDiscard === "404"
+                  ? t("폐기 시 링크 차단(404)")
+                  : t("폐기 시 가까운 버전으로 안내(fallback)")
+                : t("Primary 버전이 바뀌면 자동 반영됩니다")}
+            </Text>
             <Group gap={4} wrap="nowrap">
               <TextInput
                 variant="filled"
                 size="xs"
                 value={publicLink}
                 readOnly
-                rightSection={<CopyTextButton text={publicLink} />}
+                rightSection={<ShareCopyButton text={publicLink} />}
                 style={{ width: "100%" }}
               />
               <ActionIcon
