@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "@mantine/core";
+import { ActionIcon, Tooltip } from "@mantine/core";
 import { IconEye } from "@tabler/icons-react";
 import { useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
@@ -16,17 +16,17 @@ export default function PreviewButton() {
 
   if (!page?.primaryVersionId) return null;
 
+  // 설명("독자가 보는 화면")은 모달 안으로 옮겼다 — 헤더는 아이콘만.
   return (
-    <Tooltip label={t("Primary 버전을 reader 시점으로")} openDelay={250} withArrow>
-      <Button
-        size="compact-sm"
+    <Tooltip label={t("미리보기")} openDelay={250} withArrow>
+      <ActionIcon
         variant="subtle"
         color="dark"
-        leftSection={<IconEye size={16} stroke={1.5} />}
+        aria-label={t("미리보기")}
         onClick={() => setPreviewVersionId(page.primaryVersionId)}
       >
-        {t("미리보기")}
-      </Button>
+        <IconEye size={20} stroke={1.7} />
+      </ActionIcon>
     </Tooltip>
   );
 }

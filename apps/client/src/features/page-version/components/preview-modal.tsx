@@ -53,6 +53,9 @@ export default function PreviewModal() {
           <Modal.CloseButton />
         </Modal.Header>
         <Modal.Body>
+          <Text size="xs" c="dimmed" mb="sm">
+            {t("독자와 공유 링크에 보이는 화면 그대로입니다")}
+          </Text>
           {version && (
             <ReadonlyPageEditor
               key={version.id}
