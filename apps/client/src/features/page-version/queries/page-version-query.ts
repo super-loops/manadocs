@@ -122,13 +122,8 @@ export function useCommitVersionMutation(pageId: string) {
       });
       invalidateVersionQueries(pageId);
     },
-    onError: (error: any) => {
-      notifications.show({
-        message:
-          error?.response?.data?.message ?? t("문서확정에 실패했습니다"),
-        color: "red",
-      });
-    },
+    // 실패 표시는 commit-dialog 가 맡는다 — 모달 안에 이유를 띄우고
+    // 모달을 열어둔 채로 다시 시도하게 한다(토스트와 이중 보고하지 않는다).
   });
 }
 
