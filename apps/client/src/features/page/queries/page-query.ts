@@ -118,10 +118,11 @@ export function useUpdatePageMutation() {
 }
 
 export function useRemovePageMutation() {
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: (pageId: string) => deletePage(pageId, false),
     onSuccess: (_, pageId) => {
-      notifications.show({ message: "Page moved to trash" });
+      notifications.show({ message: t("Page moved to trash") });
       invalidateOnDeletePage(pageId);
       queryClient.invalidateQueries({
         predicate: (item) =>
@@ -129,7 +130,10 @@ export function useRemovePageMutation() {
       });
     },
     onError: (error) => {
-      notifications.show({ message: "Failed to delete page", color: "red" });
+      notifications.show({
+        message: t("Failed to delete page"),
+        color: "red",
+      });
     },
   });
 }
