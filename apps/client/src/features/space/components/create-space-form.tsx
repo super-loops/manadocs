@@ -1,5 +1,5 @@
 import { Group, Box, Button, TextInput, Stack, Textarea } from "@mantine/core";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { z } from "zod/v4";
@@ -9,29 +9,50 @@ import { computeSpaceSlug } from "@/lib";
 import { getSpaceUrl } from "@/lib/config.ts";
 import { useTranslation } from "react-i18next";
 
-const formSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  slug: z
-    .string()
-    .trim()
-    .min(2)
-    .max(100)
-    .regex(
-      /^[a-zA-Z0-9]+$/,
-      "Space slug must be alphanumeric. No special characters",
-    ),
-  description: z.string().max(500),
-});
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  name: string;
+  slug: string;
+  description: string;
+};
 
 export function CreateSpaceForm() {
   const { t } = useTranslation();
   const createSpaceMutation = useCreateSpaceMutation();
   const navigate = useNavigate();
 
+  // Zod 기본 메시지("Too small: expected string to have >=2 characters")가
+  // 그대로 노출되던 걸 막기 위해 스키마를 컴포넌트 안에서 t() 로 조립한다.
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .min(2, t("스페이스 이름은 2자 이상 입력해주세요."))
+          .max(100, t("스페이스 이름은 100자까지 쓸 수 있어요.")),
+        slug: z
+          .string()
+          .trim()
+          .min(2, t("슬러그는 영문·숫자로 2자 이상 입력해주세요."))
+          .max(100, t("슬러그는 100자까지 쓸 수 있어요."))
+          .regex(
+            /^[a-zA-Z0-9]+$/,
+            t("슬러그에는 영문과 숫자만 쓸 수 있어요 (한글·공백·특수문자 불가)."),
+          ),
+        description: z
+          .string()
+          .max(500, t("스페이스 설명은 500자까지 쓸 수 있어요.")),
+      }),
+    [t],
+  );
+
   const form = useForm<FormValues>({
     validate: zod4Resolver(formSchema),
-    validateInputOnChange: ["slug"],
+    // 이름을 치는 동안 슬러그가 자동으로 다시 계산되므로, 그때마다 검증하면
+    // 첫 글자에서 뜬 에러가 그대로 굳어버린다(값이 그대로면 Mantine 이
+    // 재검증을 건너뛴다). 슬러그 검증은 blur·제출 시점에만 하고, 값이 바뀌면
+    // clearInputErrorOnChange 기본 동작으로 에러를 지운다.
+    validateInputOnBlur: ["slug"],
     initialValues: {
       name: "",
       slug: "",
@@ -87,6 +108,9 @@ export function CreateSpaceForm() {
               withAsterisk
               id="slug"
               label={t("Space slug")}
+              description={t(
+                "주소에 쓰이는 값이라 영문·숫자만 가능해요. 이름의 한글·공백은 자동으로 빠지니 필요하면 직접 고쳐주세요.",
+              )}
               placeholder={t("e.g product")}
               variant="filled"
               {...form.getInputProps("slug")}
