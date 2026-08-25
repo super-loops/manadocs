@@ -14,7 +14,7 @@ export default function PageHeader({ readOnly }: Props) {
     <div className={classes.header}>
       <Group justify="space-between" h="100%" px="md" wrap="nowrap" className={classes.group}>
         <Group wrap="nowrap" gap="sm">
-          <PageVersionTabs readOnly={readOnly} />
+          <PageVersionTabs />
           <Breadcrumb />
         </Group>
 

@@ -25,6 +25,18 @@ export async function getPageVersionInfo(
   return req.data;
 }
 
+/** 버전 번호로 확정본 조회 — 새 창 미리보기 라우트(/v/:versionNumber) */
+export async function getPageVersionByNumber(
+  pageId: string,
+  version: number,
+): Promise<IPageVersion> {
+  const req = await api.post<IPageVersion>("/pages/versions/by-number", {
+    pageId,
+    version,
+  });
+  return req.data;
+}
+
 export async function commitVersion(
   data: ICommitVersionInput,
 ): Promise<IPageVersion> {
@@ -53,8 +65,9 @@ export async function duplicateVersionAsPage(
 
 export async function getWorkingDocs(
   pageId: string,
+  withModified = false,
 ): Promise<IPageWorkingDoc[]> {
-  const req = await api.post("/pages/working-docs", { pageId });
+  const req = await api.post("/pages/working-docs", { pageId, withModified });
   return req.data;
 }
 

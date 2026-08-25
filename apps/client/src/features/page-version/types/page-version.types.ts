@@ -40,6 +40,12 @@ export interface IPageWorkingDoc {
   creator?: IVersionUser;
   contributors?: IVersionUser[];
   baseVersion?: { id: string; version: number; createdAt: string } | null;
+  /**
+   * base 버전과 내용이 다른가 — "작업중"(true) ↔ "원본"(false) 뱃지 판정.
+   * 서버가 jsonb 비교로 내려준다. 협업 문서의 디바운스 저장본 기준이라 지금
+   * 편집 중인 작업문서는 클라가 라이브 에디터로 덧씌운다.
+   */
+  modified?: boolean;
 }
 
 /** Reader 가 확정본을 볼 때 /pages/info 가 내려주는 컨텍스트 */
@@ -54,6 +60,8 @@ export interface ICommitVersionInput {
   pageId: string;
   workingDocId?: string;
   message?: string;
+  /** 채택되지 않은 나머지 분기 삭제 여부 (생략 = 유지) */
+  deleteOtherWorkingDocs?: boolean;
 }
 
 export interface ICreateWorkingDocInput {

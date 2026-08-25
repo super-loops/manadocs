@@ -25,6 +25,7 @@ import {
   IconWorld,
 } from "@tabler/icons-react";
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { useClipboard } from "@/hooks/use-clipboard";
@@ -51,6 +52,16 @@ import {
   ShareOnDiscard,
   ShareVersionMode,
 } from "@/features/share/types/share.types.ts";
+import {
+  SharePrefill,
+  sharePrefillAtom,
+} from "@/features/share/atoms/share-prefill-atom.ts";
+
+/**
+ * 새 창 미리보기에서 넘어오는 "이 버전 공유" — 별개 탭이라 atom 을 못 쓰고
+ * 쿼리스트링으로 온다. 한 번 읽고 곧바로 URL 에서 지운다(새로고침 시 재발동 방지).
+ */
+const SHARE_VERSION_PARAM = "shareVersion";
 
 interface ShareModalProps {
   readOnly: boolean;
@@ -89,16 +100,44 @@ export default function ShareModal({ readOnly }: ShareModalProps) {
   // 모달이 떠 있는 동안은 팝오버가 닫히지 않게 잠근다.
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // "이 버전 공유" — 미리보기(같은 탭: atom) / 새 창(다른 탭: 쿼리스트링)
+  const [prefill, setPrefill] = useAtom(sharePrefillAtom);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [opened, setOpened] = useState(false);
+
+  useEffect(() => {
+    const versionId = searchParams.get(SHARE_VERSION_PARAM);
+    if (!versionId || !pageId) return;
+    setPrefill({ pageId, fixedVersionId: versionId });
+    const next = new URLSearchParams(searchParams);
+    next.delete(SHARE_VERSION_PARAM);
+    setSearchParams(next, { replace: true });
+  }, [searchParams, pageId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const activePrefill = prefill?.pageId === pageId ? prefill : null;
+
+  useEffect(() => {
+    if (activePrefill) setOpened(true);
+  }, [activePrefill]);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpened(next);
+    if (!next) setPrefill(null);
+  };
+
   return (
     <Popover
       width={400}
       position="bottom"
       withArrow
       shadow="md"
+      opened={opened}
+      onChange={handleOpenChange}
       closeOnClickOutside={!confirmOpen}
     >
       <Popover.Target>
         <Button
+          onClick={() => handleOpenChange(!opened)}
           size="compact-sm"
           leftSection={
             <Indicator
@@ -185,6 +224,7 @@ export default function ShareModal({ readOnly }: ShareModalProps) {
             hasCommitted={!!page?.primaryVersionId}
             shares={shares ?? []}
             readOnly={readOnly || !canEdit}
+            prefill={activePrefill}
             onConfirmOpenChange={setConfirmOpen}
           />
         )}
@@ -199,6 +239,7 @@ function ShareTabs({
   hasCommitted,
   shares,
   readOnly,
+  prefill,
   onConfirmOpenChange,
 }: {
   pageId: string;
@@ -206,12 +247,18 @@ function ShareTabs({
   hasCommitted: boolean;
   shares: IShare[];
   readOnly: boolean;
+  prefill: SharePrefill | null;
   onConfirmOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>(
     shares.length > 0 ? "links" : "create",
   );
+
+  // "이 버전 공유"로 열렸으면 발급 폼부터 보여야 한다
+  useEffect(() => {
+    if (prefill) setActiveTab("create");
+  }, [prefill]);
 
   return (
     <Tabs value={activeTab} onChange={(value) => setActiveTab(value ?? "create")}>
@@ -228,6 +275,7 @@ function ShareTabs({
         <CreateShareForm
           pageId={pageId}
           hasCommitted={hasCommitted}
+          prefill={prefill}
           onCreated={() => setActiveTab("links")}
         />
       </Tabs.Panel>
@@ -248,10 +296,12 @@ function ShareTabs({
 function CreateShareForm({
   pageId,
   hasCommitted,
+  prefill,
   onCreated,
 }: {
   pageId: string;
   hasCommitted: boolean;
+  prefill: SharePrefill | null;
   onCreated: () => void;
 }) {
   const { t } = useTranslation();
@@ -260,6 +310,13 @@ function CreateShareForm({
   const [onDiscard, setOnDiscard] = useState<ShareOnDiscard>("fallback");
   const [includeSubPages, setIncludeSubPages] = useState(true);
   const createShareMutation = useCreateShareMutation();
+
+  // 미리보기에서 넘어온 버전으로 "현재 버전 고정" 을 미리 채워둔다
+  useEffect(() => {
+    if (!prefill) return;
+    setVersionMode("fixed");
+    setFixedVersionId(prefill.fixedVersionId);
+  }, [prefill]);
 
   const { data: versionsData } = usePageVersionsQuery(
     versionMode === "fixed" ? pageId : undefined,

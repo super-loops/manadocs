@@ -22,6 +22,7 @@ import {
   CommitVersionDto,
   CreateWorkingDocDto,
   PageVersionsDto,
+  VersionByNumberDto,
   VersionIdDto,
   VersionInfoDto,
   WorkingChangesDto,
@@ -87,13 +88,28 @@ export class PageVersionController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('versions/by-number')
+  async getVersionByNumber(
+    @Body() dto: VersionByNumberDto,
+    @AuthUser() user: User,
+  ) {
+    const page = await this.getPageOrThrow(dto.pageId);
+    await this.pageAccessService.validateCanView(page, user);
+    return this.pageVersionService.getVersionByNumber(page.id, dto.version);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('versions/commit')
   async commit(@Body() dto: CommitVersionDto, @AuthUser() user: User) {
     const page = await this.getPageOrThrow(dto.pageId);
     await this.pageAccessService.validateCanEdit(page, user);
     return this.pageVersionService.commit(
       page,
-      { workingDocId: dto.workingDocId, message: dto.message },
+      {
+        workingDocId: dto.workingDocId,
+        message: dto.message,
+        deleteOtherWorkingDocs: dto.deleteOtherWorkingDocs,
+      },
       user,
     );
   }
@@ -153,7 +169,9 @@ export class PageVersionController {
   async listWorkingDocs(@Body() dto: WorkingDocsDto, @AuthUser() user: User) {
     const page = await this.getPageOrThrow(dto.pageId);
     await this.pageAccessService.validateCanEdit(page, user);
-    return this.pageVersionService.listWorkingDocs(page);
+    return this.pageVersionService.listWorkingDocs(page, {
+      withModified: dto.withModified,
+    });
   }
 
   @HttpCode(HttpStatus.OK)

@@ -17,6 +17,7 @@ import {
   Page,
   PageVersion,
   PageWorkingDoc,
+  UpdatablePage,
   User,
 } from '@manadocs/db/types/entity.types';
 import { PaginationOptions } from '@manadocs/db/pagination/pagination-options';
@@ -28,6 +29,44 @@ import {
 import { createYdocFromJson } from '../../../common/helpers/prosemirror/utils';
 
 const EMPTY_DOC = { type: 'doc', content: [] };
+
+/**
+ * ProseMirror JSON 을 비교 가능한 형태로 정규화한다.
+ *
+ * ⚠ 두 JSON 을 그냥 비교하면 안 된다. 작업문서 content 는 Yjs 문서를 되읽어
+ * 만들어지는데, 그 왕복에서 **빈 블럭의 `content: []` 가 통째로 사라진다**
+ * (`{type:"paragraph",attrs:{...}}` vs `{...,"content":[]}`). 빈 문단은 거의 모든
+ * 문서에 있어서, 정규화 없이 비교하면 손대지 않은 문서도 "작업중"으로 오판된다
+ * (2026-08-26 QA 에서 실측). 같은 이유로 값이 null 인 attrs 도 누락과 동치로 본다.
+ */
+function canonicalizeDoc(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(canonicalizeDoc);
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, any> = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (child === null || child === undefined) continue;
+      if (
+        (key === 'content' || key === 'marks') &&
+        Array.isArray(child) &&
+        child.length === 0
+      ) {
+        continue;
+      }
+      out[key] = canonicalizeDoc(child);
+    }
+    return out;
+  }
+  return value;
+}
+
+/** 확정본 ↔ 작업문서 내용이 같은가 (직렬화 비대칭 무시) */
+function isSameDoc(a: any, b: any): boolean {
+  const left = a ?? EMPTY_DOC;
+  const right = b ?? EMPTY_DOC;
+  return isDeepStrictEqual(canonicalizeDoc(left), canonicalizeDoc(right));
+}
 
 @Injectable()
 export class PageVersionService {
@@ -73,10 +112,22 @@ export class PageVersionService {
   /**
    * 문서확정(commit) — 작업문서의 현재 상태를 새 버전으로 확정.
    * D7: 확정된 버전은 항상 자동 Primary.
+   *
+   * `deleteOtherWorkingDocs` — 채택되지 않은 나머지 분기를 정리한다.
+   * ⚠ 기본값이 **false(유지)** 인 것은 의도된 비대칭이다:
+   *   - 웹 UI 는 확정 다이얼로그에서 삭제될 분기를 경고로 보여주고 사람이 보는
+   *     앞에서 true 를 보낸다(체크박스로 유지 선택 가능).
+   *   - MCP(에이전트)는 이 옵션을 노출하지 않는다 — 에이전트가 남의 분기를
+   *     모르고 날리는 사고를 막기 위해 항상 유지 쪽으로 떨어져야 한다.
+   * 그래서 플래그 이름을 "keep~" 이 아니라 "delete~" 로 둔다(빠뜨리면 안전 쪽).
    */
   async commit(
     page: Page,
-    dto: { workingDocId?: string; message?: string },
+    dto: {
+      workingDocId?: string;
+      message?: string;
+      deleteOtherWorkingDocs?: boolean;
+    },
     user: User,
   ): Promise<PageVersion> {
     const primaryWorkingDocId = await this.ensureScaffold(page);
@@ -149,14 +200,38 @@ export class PageVersionService {
       );
 
       // D7 — 항상 자동 Primary + committed 검색 미러
-      await this.pageRepo.updatePage(
-        {
-          primaryVersionId: version.id,
-          committedTextContent: textContent,
-        },
-        page.id,
-        trx,
-      );
+      const pageUpdate: UpdatablePage = {
+        primaryVersionId: version.id,
+        committedTextContent: textContent,
+      };
+
+      // 비채택 분기 정리 — 채택된 작업문서만 남긴다.
+      // 남는 문서가 Primary 여야 하므로(Primary 작업문서는 삭제 불가) 필요하면
+      // 승격하고 pages 미러(content/ydoc/text)도 함께 옮긴다.
+      let doomedIds: string[] = [];
+      if (dto.deleteOtherWorkingDocs) {
+        doomedIds = await this.pageWorkingDocRepo.findOtherIdsByPageId(
+          page.id,
+          workingDocId,
+          trx,
+        );
+        if (
+          doomedIds.length > 0 &&
+          lockedPage.primaryWorkingDocId !== workingDocId
+        ) {
+          const adopted = await this.pageWorkingDocRepo.findById(workingDocId, {
+            includeContent: true,
+            includeYdoc: true,
+            trx,
+          });
+          pageUpdate.primaryWorkingDocId = workingDocId;
+          pageUpdate.content = adopted.content;
+          pageUpdate.ydoc = adopted.ydoc;
+          pageUpdate.textContent = textContent;
+        }
+      }
+
+      await this.pageRepo.updatePage(pageUpdate, page.id, trx);
 
       // 작업문서는 새 버전을 base 로 이어감 (git 의 HEAD 이동)
       await this.pageWorkingDocRepo.updateWorkingDoc(
@@ -164,6 +239,9 @@ export class PageVersionService {
         workingDocId,
         trx,
       );
+
+      // pages.primary_working_doc_id 를 옮긴 뒤에 지운다 (FK set null 회피)
+      await this.pageWorkingDocRepo.deleteWorkingDocs(doomedIds, trx);
     });
 
     return version;
@@ -294,6 +372,26 @@ export class PageVersionService {
     return this.pageVersionRepo.findVersionsByPageId(pageId, pagination);
   }
 
+  /**
+   * 버전 번호로 확정본 조회 — 새 창 미리보기 라우트가 쓴다.
+   * URL 에 uuid 대신 사람이 읽는 번호(`/v/3`)를 싣기 위한 진입점.
+   */
+  async getVersionByNumber(
+    pageId: string,
+    version: number,
+  ): Promise<PageVersion> {
+    const found = await this.pageVersionRepo.findByPageAndVersion(
+      pageId,
+      version,
+      { includeContent: true },
+    );
+    if (!found) {
+      throw new NotFoundException('Version not found');
+    }
+    // 목록 카드와 같은 정보(작성자·기여자)를 쓰도록 id 조회로 한 번 더 채운다
+    return this.getVersionInfo(found.id);
+  }
+
   async getVersionInfo(versionId: string): Promise<PageVersion> {
     const version = await this.pageVersionRepo.findById(versionId, {
       includeContent: true,
@@ -408,9 +506,47 @@ export class PageVersionService {
 
   // ── 작업문서 ─────────────────────────────────────────────────────
 
-  async listWorkingDocs(page: Page): Promise<PageWorkingDoc[]> {
+  /**
+   * 작업문서 목록.
+   * `withModified` 면 각 문서에 "base 버전과 내용이 다른가"(= 결합 패널의
+   * 원본/작업중 뱃지)를 실어 보낸다. **content 를 클라로 내리지 않기 위해**
+   * 비교는 여기서 하고 boolean 한 칸만 나간다.
+   *
+   * 기본값이 false 인 이유: 이 엔드포인트는 footer pill 이 페이지를 열 때마다
+   * 부른다(분기코드·작업문서 이름 때문에). 뱃지가 필요한 결합 패널이 열릴 때만
+   * content 를 읽게 해서 뜨거운 경로를 가볍게 유지한다.
+   */
+  async listWorkingDocs(
+    page: Page,
+    opts?: { withModified?: boolean },
+  ): Promise<PageWorkingDoc[]> {
     await this.ensureScaffold(page);
-    return this.pageWorkingDocRepo.findByPageId(page.id);
+    const workingDocs = await this.pageWorkingDocRepo.findByPageId(page.id, {
+      includeContent: opts?.withModified,
+    });
+
+    if (!opts?.withModified) {
+      return workingDocs;
+    }
+
+    const baseIds = Array.from(
+      new Set(workingDocs.map((doc) => doc.baseVersionId).filter(Boolean)),
+    );
+    const baseContents = new Map<string, any>();
+    for (const baseId of baseIds) {
+      const base = await this.pageVersionRepo.findById(baseId, {
+        includeContent: true,
+      });
+      baseContents.set(baseId, base?.content ?? null);
+    }
+
+    return workingDocs.map(({ content, ...doc }: any) => ({
+      ...doc,
+      modified: !isSameDoc(
+        doc.baseVersionId ? baseContents.get(doc.baseVersionId) : EMPTY_DOC,
+        content,
+      ),
+    }));
   }
 
   async createWorkingDoc(
@@ -481,15 +617,19 @@ export class PageVersionService {
   }
 
   /**
-   * 수정취소(전체) — 작업문서를 **Primary 버전** 내용으로 리셋.
-   * 문서확정(commit)이 Primary 와 비교해 새 버전을 만들므로, 되돌림 기준도
-   * Primary 로 통일한다(footer 변경감지·DIFF·reset 한 기준). Primary 가 없으면
-   * (미확정 페이지) 작업문서의 base 버전으로 폴백.
+   * 수정취소(전체) — 작업문서를 **자기 base 버전** 내용으로 리셋.
+   *
+   * 0.14.2 까지는 Primary 로 되돌렸다(commit 이 Primary 와 비교하니 기준을
+   * 통일한다는 논리). 그건 작업문서가 사실상 하나뿐이던 시절의 전제다. 분기가
+   * 여럿인 지금 그 동작은 "이 분기 되돌리기" 를 눌렀는데 **다른 버전 내용이
+   * 덮어써지는** 의미 위반이 된다(버전 4 기반 분기를 되돌렸더니 버전 5 본문이
+   * 들어옴). base 가 없는 미확정 페이지만 Primary 로 폴백한다.
+   * base == Primary 인 흔한 경우는 예전과 동작이 같다.
    */
   async resetWorkingDoc(workingDoc: PageWorkingDoc, user: User): Promise<void> {
     const page = await this.pageRepo.findById(workingDoc.pageId);
     const targetVersionId =
-      page?.primaryVersionId ?? workingDoc.baseVersionId ?? null;
+      workingDoc.baseVersionId ?? page?.primaryVersionId ?? null;
 
     let content: any = EMPTY_DOC;
     if (targetVersionId) {

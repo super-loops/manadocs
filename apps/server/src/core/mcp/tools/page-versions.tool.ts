@@ -165,6 +165,9 @@ export class CommitPageVersionTool {
       throw new NotFoundException('User not found');
     }
 
+    // 웹 UI 와 의도된 비대칭: 웹은 확정 다이얼로그에서 삭제될 분기를 사람에게
+    // 보여준 뒤 deleteOtherWorkingDocs=true 를 보낸다. MCP 는 그 옵션을 아예
+    // 노출하지 않는다 — 에이전트가 사정을 모르고 남의 분기를 날리면 안 된다.
     const version = await this.pageVersionService.commit(
       page,
       { message: String(args.message) },

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActionIcon,
   Button,
+  Code,
   Divider,
   Group,
   Paper,
@@ -25,6 +26,7 @@ import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { IPage } from "@/features/page/types/page.types";
 import { computeDiffStats } from "@/features/page-version/utils/working-diff";
 import { formattedDate } from "@/lib/time";
+import { getBranchCode } from "@/lib/branch-code";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import classes from "./css/footer-pill.module.css";
 
@@ -78,6 +80,9 @@ export default function FooterPill({ page }: FooterPillProps) {
             })
           : t("작업문서"))
       : null;
+  // 분기코드는 분기가 하나뿐이어도 보인다 — 협업자·에이전트가 "지금 같은
+  // 분기를 보고 있나" 를 이 칩 하나로 맞춘다.
+  const branchCode = getBranchCode(activeWorkingDocId);
 
   /**
    * 수정 시작 — 전용 필드가 없어 두 시각 중 나중을 쓴다.
@@ -198,10 +203,19 @@ export default function FooterPill({ page }: FooterPillProps) {
               </>
             )}
           </Group>
-          {workingDocName && (
-            <Text size="xs" c="dimmed" lh={1.2} lineClamp={1} maw={160}>
-              {workingDocName}
-            </Text>
+          {branchCode && (
+            <Group gap={4} wrap="nowrap" mt={2}>
+              <Tooltip label={t("분기코드")} openDelay={400} withArrow>
+                <Code fz={9} px={3} lh={1.4}>
+                  {branchCode}
+                </Code>
+              </Tooltip>
+              {workingDocName && (
+                <Text size="xs" c="dimmed" lh={1.2} lineClamp={1} maw={120}>
+                  {workingDocName}
+                </Text>
+              )}
+            </Group>
           )}
         </div>
 

@@ -15,6 +15,7 @@ import {
   deleteWorkingDoc,
   discardVersion,
   duplicateVersionAsPage,
+  getPageVersionByNumber,
   getPageVersionInfo,
   getPageVersions,
   getWorkingDocs,
@@ -100,6 +101,19 @@ export function usePageVersionQuery(
   });
 }
 
+/** 버전 번호로 확정본 — 새 창 미리보기 라우트가 쓴다(URL 에 uuid 대신 번호) */
+export function usePageVersionByNumberQuery(
+  pageId: string | undefined,
+  version: number | null,
+): UseQueryResult<IPageVersion, Error> {
+  return useQuery({
+    queryKey: ["page-version-by-number", pageId, version],
+    queryFn: () => getPageVersionByNumber(pageId, version),
+    enabled: !!pageId && version !== null && Number.isFinite(version),
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
 export function useWorkingDocsQuery(
   pageId: string,
   enabled = true,
@@ -107,6 +121,23 @@ export function useWorkingDocsQuery(
   return useQuery({
     queryKey: ["working-docs", pageId],
     queryFn: () => getWorkingDocs(pageId),
+    enabled: !!pageId && enabled,
+  });
+}
+
+/**
+ * 결합 패널 전용 — 원본/작업중 뱃지에 쓸 `modified` 를 함께 받는다.
+ * 서버가 content 를 읽어야 하는 무거운 쪽이라 패널이 열릴 때만 부른다
+ * (footer pill 은 위의 가벼운 쿼리를 계속 쓴다).
+ * 키가 ["working-docs", pageId] 로 시작해 기존 무효화가 그대로 걸린다.
+ */
+export function useWorkingDocsWithStatusQuery(
+  pageId: string,
+  enabled = true,
+): UseQueryResult<IPageWorkingDoc[], Error> {
+  return useQuery({
+    queryKey: ["working-docs", pageId, "with-status"],
+    queryFn: () => getWorkingDocs(pageId, true),
     enabled: !!pageId && enabled,
   });
 }

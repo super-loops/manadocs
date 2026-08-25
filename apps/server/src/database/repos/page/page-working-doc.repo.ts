@@ -53,15 +53,47 @@ export class PageWorkingDocRepo {
     return query.executeTakeFirst();
   }
 
-  async findByPageId(pageId: string): Promise<PageWorkingDoc[]> {
+  async findByPageId(
+    pageId: string,
+    opts?: { includeContent?: boolean },
+  ): Promise<PageWorkingDoc[]> {
     return this.db
       .selectFrom('pageWorkingDocs')
       .select(this.baseFields)
       .select((eb) => this.withCreator(eb))
       .select((eb) => this.withContributors(eb))
       .select((eb) => this.withBaseVersion(eb))
+      .$if(opts?.includeContent, (qb) => qb.select('content'))
       .where('pageId', '=', pageId)
       .orderBy('createdAt', 'asc')
+      .execute();
+  }
+
+  /** 같은 페이지의 다른 작업문서 id 들 — 확정 시 비채택 분기 정리에 쓴다 */
+  async findOtherIdsByPageId(
+    pageId: string,
+    keepWorkingDocId: string,
+    trx?: KyselyTransaction,
+  ): Promise<string[]> {
+    const db = dbOrTx(this.db, trx);
+    const rows = await db
+      .selectFrom('pageWorkingDocs')
+      .select('id')
+      .where('pageId', '=', pageId)
+      .where('id', '!=', keepWorkingDocId)
+      .execute();
+    return rows.map((row) => row.id);
+  }
+
+  async deleteWorkingDocs(
+    workingDocIds: string[],
+    trx?: KyselyTransaction,
+  ): Promise<void> {
+    if (workingDocIds.length === 0) return;
+    const db = dbOrTx(this.db, trx);
+    await db
+      .deleteFrom('pageWorkingDocs')
+      .where('id', 'in', workingDocIds)
       .execute();
   }
 

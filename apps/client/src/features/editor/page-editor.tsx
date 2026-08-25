@@ -33,7 +33,6 @@ import {
   pageEditorAtom,
   yjsConnectionStatusAtom,
 } from "@/features/editor/atoms/editor-atoms";
-import { asideStateAtom } from "@/components/layouts/global/hooks/atoms/sidebar-atom";
 import { EditorBubbleMenu } from "@/features/editor/components/bubble-menu/bubble-menu";
 import TableCellMenu from "@/features/editor/components/table/table-cell-menu.tsx";
 import TableMenu from "@/features/editor/components/table/table-menu.tsx";
@@ -87,7 +86,6 @@ export default function PageEditor({
 
   const [currentUser] = useAtom(currentUserAtom);
   const [, setEditor] = useAtom(pageEditorAtom);
-  const [, setAsideState] = useAtom(asideStateAtom);
   const [isLocalSynced, setIsLocalSynced] = useState(false);
   const [isRemoteSynced, setIsRemoteSynced] = useState(false);
   const [yjsConnectionStatus, setYjsConnectionStatus] = useAtom(
@@ -309,10 +307,6 @@ export default function PageEditor({
       });
     }
   }, 3000);
-
-  useEffect(() => {
-    setAsideState({ tab: "", isAsideOpen: false });
-  }, [pageId]);
 
   const isSynced = isLocalSynced && isRemoteSynced;
 

@@ -7,7 +7,6 @@ import { TableOfContents } from "@/features/editor/components/table-of-contents/
 import { useAtomValue } from "jotai";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms.ts";
 import VersionPanel from "@/features/page-version/components/version-panel.tsx";
-import WorkingDocPanel from "@/features/page-version/components/working-doc-panel.tsx";
 
 export default function Aside() {
   const [{ tab }] = useAtom(asideStateAtom);
@@ -23,12 +22,9 @@ export default function Aside() {
       title = "Table of contents";
       break;
     case "versions":
+      // 결합 패널 — 확정 버전 + 그 아래 작업문서(분기)를 한 화면에서 본다
       component = <VersionPanel />;
       title = "버전";
-      break;
-    case "working-docs":
-      component = <WorkingDocPanel />;
-      title = "작업문서";
       break;
     default:
       component = null;

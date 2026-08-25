@@ -1,5 +1,15 @@
-import { Alert, Button, Group, Modal, Text, TextInput } from "@mantine/core";
-import { IconAlertCircle } from "@tabler/icons-react";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Code,
+  Group,
+  List,
+  Modal,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +17,14 @@ import {
   activeWorkingDocAtom,
   commitDialogOpenAtom,
 } from "@/features/page-version/atoms/page-version-atoms";
-import { useCommitVersionMutation } from "@/features/page-version/queries/page-version-query";
+import {
+  useCommitVersionMutation,
+  useWorkingDocsQuery,
+} from "@/features/page-version/queries/page-version-query";
+import { usePageQuery } from "@/features/page/queries/page-query";
+import { extractPageSlugId } from "@/lib";
+import { getBranchCode } from "@/lib/branch-code";
+import { useParams } from "react-router-dom";
 
 interface CommitDialogProps {
   pageId: string;
@@ -16,6 +33,11 @@ interface CommitDialogProps {
 /**
  * 문서확정(commit) 다이얼로그 — 메시지 입력 후 확정.
  * 확정된 버전은 항상 자동 Primary(D7)가 되어 독자·공유에 즉시 반영됨을 안내.
+ *
+ * 채택되지 않은 다른 작업문서(분기)는 **기본적으로 함께 삭제**한다 — 확정이
+ * 끝난 뒤에도 낡은 분기가 남아 "어느 게 진짜냐" 를 흐리는 걸 막기 위해서다.
+ * 남길 분기가 있으면 "다른 분기 유지" 를 체크하면 된다. 삭제될 목록은 확정
+ * 전에 분기코드·이름으로 그대로 보여준다(모르고 날리는 일이 없게).
  */
 /**
  * 서버 확정 실패 메시지를 화면에 낼 문장으로 정리한다.
@@ -35,9 +57,12 @@ function commitErrorMessage(error: any, t: (key: string) => string): string {
 
 export default function CommitDialog({ pageId }: CommitDialogProps) {
   const { t } = useTranslation();
+  const { pageSlug } = useParams();
+  const { data: page } = usePageQuery({ pageId: extractPageSlugId(pageSlug) });
   const [opened, setOpened] = useAtom(commitDialogOpenAtom);
   const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
   const [message, setMessage] = useState("");
+  const [keepOthers, setKeepOthers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const commitMutation = useCommitVersionMutation(pageId);
 
@@ -46,9 +71,19 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
       ? activeWorkingDoc.workingDocId
       : undefined;
 
-  // 다시 열 때 지난 실패가 남아 있지 않게
+  // 확정 대상 — 명시 선택이 없으면 서버와 같은 규칙(Primary 작업문서)
+  const adoptedWorkingDocId = workingDocId ?? page?.primaryWorkingDocId ?? null;
+  const { data: workingDocs } = useWorkingDocsQuery(pageId, opened);
+  const doomedDocs = (workingDocs ?? []).filter(
+    (doc) => doc.id !== adoptedWorkingDocId,
+  );
+
+  // 다시 열 때 지난 실패·선택이 남아 있지 않게
   useEffect(() => {
-    if (opened) setError(null);
+    if (opened) {
+      setError(null);
+      setKeepOthers(false);
+    }
   }, [opened]);
 
   const handleCommit = async () => {
@@ -62,6 +97,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
         pageId,
         workingDocId,
         message: message.trim() || undefined,
+        deleteOtherWorkingDocs: doomedDocs.length > 0 && !keepOthers,
       });
       setMessage("");
       setOpened(false);
@@ -95,6 +131,48 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
         }}
       />
 
+      {doomedDocs.length > 0 && (
+        <Alert
+          icon={<IconAlertTriangle size={16} />}
+          color="orange"
+          variant="light"
+          mt="sm"
+          p="xs"
+        >
+          <Text size="xs" fw={500}>
+            {t("다른 작업문서 {{count}}개가 삭제됩니다", {
+              count: doomedDocs.length,
+            })}
+          </Text>
+          <List size="xs" spacing={2} mt={6} listStyleType="none">
+            {doomedDocs.map((doc) => (
+              <List.Item key={doc.id}>
+                <Group gap={6} wrap="nowrap">
+                  <Code fz={10} px={4}>
+                    {getBranchCode(doc.id)}
+                  </Code>
+                  <Text size="xs" lineClamp={1}>
+                    {doc.name ||
+                      (doc.baseVersion
+                        ? t("버전 {{n}}에서 시작", {
+                            n: doc.baseVersion.version,
+                          })
+                        : t("작업문서"))}
+                  </Text>
+                </Group>
+              </List.Item>
+            ))}
+          </List>
+          <Checkbox
+            mt="xs"
+            size="xs"
+            checked={keepOthers}
+            onChange={(e) => setKeepOthers(e.currentTarget.checked)}
+            label={t("다른 분기 유지")}
+          />
+        </Alert>
+      )}
+
       {error && (
         <Alert
           icon={<IconAlertCircle size={16} />}
@@ -119,10 +197,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
         <Button variant="default" onClick={() => setOpened(false)}>
           {t("취소")}
         </Button>
-        <Button
-          loading={commitMutation.isPending}
-          onClick={handleCommit}
-        >
+        <Button loading={commitMutation.isPending} onClick={handleCommit}>
           {t("문서확정")}
         </Button>
       </Group>

@@ -1,0 +1,16 @@
+/* 확정 버전 읽기 전용 화면 — 앱 셸(사이드바·헤더) 밖에서 단독으로 뜬다. */
+.shell {
+  min-height: 100vh;
+  padding: 0 var(--mantine-spacing-md) var(--mantine-spacing-xl);
+  background-color: var(--mantine-color-body);
+}
+
+/* 상단 얇은 바 — 어느 버전을 보고 있는지만 알린다(편집 UI 없음) */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--mantine-spacing-xs) 0;
+  background-color: var(--mantine-color-body);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
