@@ -27,6 +27,7 @@ import SpaceSettingsModal from "@/features/space/components/settings-modal.tsx";
 import { useGetSpaceBySlugQuery } from "@/features/space/queries/space-query.ts";
 import { getSpaceUrl } from "@/lib/config.ts";
 import SpaceTree from "@/features/page/tree/components/space-tree.tsx";
+import WorkingChangesSection from "@/features/working-changes/components/working-changes-section";
 import { useSpaceAbility } from "@/features/space/permissions/use-space-ability.ts";
 import {
   SpaceCaslAction,
@@ -153,6 +154,8 @@ export function SpaceSidebar() {
             )}
           </div>
         </div>
+
+        <WorkingChangesSection spaceId={space.id} spaceSlug={space.slug} />
 
         <div className={clsx(classes.section, classes.sectionPages)}>
           <Group className={classes.pagesHeader} justify="space-between">

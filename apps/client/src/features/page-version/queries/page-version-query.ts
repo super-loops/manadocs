@@ -73,6 +73,8 @@ function invalidateVersionQueries(pageId: string) {
   queryClient.invalidateQueries({ queryKey: ["working-docs", pageId] });
   // Primary 변경은 /pages/info 의 primaryVersionId 에도 반영됨
   queryClient.invalidateQueries({ queryKey: ["pages"] });
+  // 사이드바 "수정중" 섹션 — 확정·폐기·리셋이면 목록에서 빠져야 한다
+  queryClient.invalidateQueries({ queryKey: ["working-changes"] });
 }
 
 export function usePageVersionsQuery(

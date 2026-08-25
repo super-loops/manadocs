@@ -1,0 +1,66 @@
+.section {
+    margin-left: calc(var(--mantine-spacing-md) * -1);
+    margin-right: calc(var(--mantine-spacing-md) * -1);
+    margin-bottom: var(--mantine-spacing-md);
+    border-bottom: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.header {
+    padding-left: calc(var(--mantine-spacing-md) + rem(2px));
+    padding-right: var(--mantine-spacing-md);
+    margin-bottom: rem(5px);
+}
+
+.list {
+    padding-left: calc(var(--mantine-spacing-md) - rem(6px));
+    padding-right: calc(var(--mantine-spacing-md) - rem(6px));
+    padding-bottom: var(--mantine-spacing-md);
+    /* 수정중 페이지가 많아도 아래 트리를 밀어내지 않도록 */
+    max-height: rem(180px);
+    overflow-y: auto;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: rem(6px);
+    width: 100%;
+    padding: rem(4px) var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-sm);
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+    }
+
+    &[data-current] {
+        background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+    }
+}
+
+.icon {
+    flex: 0 0 auto;
+    font-size: rem(14px);
+    line-height: 1;
+}
+
+.title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.stats {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: rem(4px);
+    font-variant-numeric: tabular-nums;
+}
+
+.added {
+    color: light-dark(var(--mantine-color-teal-7), var(--mantine-color-teal-4));
+}
+
+.deleted {
+    color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-4));
+}
