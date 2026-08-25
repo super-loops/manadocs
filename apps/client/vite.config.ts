@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     BILLING_TRIAL_DAYS,
     POSTHOG_HOST,
     POSTHOG_KEY,
+    MANADOCS_DEFAULT_LANG,
   } = loadEnv(mode, envPath, "");
 
   return {
@@ -29,6 +30,10 @@ export default defineConfig(({ mode }) => {
         BILLING_TRIAL_DAYS,
         POSTHOG_HOST,
         POSTHOG_KEY,
+        // 운영에서는 서버가 window.CONFIG.DEFAULT_LANG 를 주입한다. dev 는 그
+        // 경로가 없어 여기서 넣어주지 않으면 getDefaultLang() 이 항상 en-US 로
+        // 떨어져 로그인 전 화면(404·공유 페이지 부팅)이 영어로 나온다.
+        DEFAULT_LANG: MANADOCS_DEFAULT_LANG,
       },
       APP_VERSION: JSON.stringify(process.env.npm_package_version),
     },
