@@ -866,7 +866,6 @@
   "(빈 블럭)": "(empty block)",
   "'{{title}}' 페이지를 만들었습니다": "Created page '{{title}}'",
   "Primary 로 변경": "Make primary",
-  "Primary 버전을 reader 시점으로": "See the primary version as a reader",
   "Primary 버전이 바뀌면 자동 반영됩니다": "Follows the primary version automatically",
   "Primary 버전이 변경되었습니다": "Primary version changed",
   "Primary 변경에 실패했습니다": "Failed to change the primary version",
@@ -989,5 +988,11 @@
   "확정된 버전이 없습니다": "No committed versions",
   "확정된 버전이 없어 비교할 대상이 없습니다": "Nothing to compare — this page has no committed version",
   "리뷰를 만들지 못했어요. 다시 시도해주세요.": "Couldn't create the review. Please try again.",
-  "이 페이지에는 아직 확정된 버전이 없어 리뷰를 만들 수 없어요. 편집 권한이 있는 사람에게 문서확정을 요청해주세요.": "This page has no committed version yet, so a review can't be created. Ask someone with edit access to commit the document."
+  "이 페이지에는 아직 확정된 버전이 없어 리뷰를 만들 수 없어요. 편집 권한이 있는 사람에게 문서확정을 요청해주세요.": "This page has no committed version yet, so a review can't be created. Ask someone with edit access to commit the document.",
+  "이 페이지 목차": "On this page",
+  "수정 시작": "Editing started",
+  "마지막 수정": "Last edited",
+  "독자와 공유 링크에 보이는 화면 그대로입니다": "This is exactly what readers and share links see",
+  "수정중": "Editing",
+  "제목 없음": "Untitled"
 }
