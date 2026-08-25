@@ -988,5 +988,6 @@
   "확정된 버전은 이 페이지의 Primary 가 되어 독자와 공유 링크(최신 추종)에 즉시 반영됩니다.": "The committed version becomes this page's primary and is shown immediately to readers and to share links that follow the latest.",
   "확정된 버전이 없습니다": "No committed versions",
   "확정된 버전이 없어 비교할 대상이 없습니다": "Nothing to compare — this page has no committed version",
-  "리뷰를 만들지 못했어요. 다시 시도해주세요.": "Couldn't create the review. Please try again."
+  "리뷰를 만들지 못했어요. 다시 시도해주세요.": "Couldn't create the review. Please try again.",
+  "이 페이지에는 아직 확정된 버전이 없어 리뷰를 만들 수 없어요. 편집 권한이 있는 사람에게 문서확정을 요청해주세요.": "This page has no committed version yet, so a review can't be created. Ask someone with edit access to commit the document."
 }
