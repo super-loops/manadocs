@@ -54,6 +54,8 @@ import { TokenService } from '../auth/services/token.service';
 import { JwtAttachmentPayload, JwtType } from '../auth/dto/jwt-payload';
 import * as path from 'path';
 import { AttachmentInfoDto, RemoveIconDto } from './dto/attachment.dto';
+import { SpaceAssetsDto, SpaceAssetStatsDto } from './dto/space-assets.dto';
+import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 import { PageAccessService } from '../page/page-access/page-access.service';
 import { AuditEvent, AuditResource } from '../../common/events/audit-events';
 import {
@@ -72,6 +74,7 @@ export class AttachmentController {
     private readonly spaceAbility: SpaceAbilityFactory,
     private readonly pageRepo: PageRepo,
     private readonly attachmentRepo: AttachmentRepo,
+    private readonly spaceRepo: SpaceRepo,
     private readonly environmentService: EnvironmentService,
     private readonly tokenService: TokenService,
     private readonly pageAccessService: PageAccessService,
@@ -394,6 +397,63 @@ export class AttachmentController {
     await this.pageAccessService.validateCanView(page, user);
 
     return attachment;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('attachments/space-assets')
+  async getSpaceAssets(
+    @Body() dto: SpaceAssetsDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const space = await this.resolveSpaceForRead(dto.spaceId, user, workspace);
+
+    return this.attachmentRepo.getSpaceAssets(space.id, {
+      category: dto.category,
+      query: dto.query,
+      sort: dto.sort,
+      direction: dto.direction,
+      page: dto.page,
+      limit: dto.limit,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('attachments/space-assets/stats')
+  async getSpaceAssetStats(
+    @Body() dto: SpaceAssetStatsDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const space = await this.resolveSpaceForRead(dto.spaceId, user, workspace);
+
+    const recentSince = new Date();
+    recentSince.setDate(recentSince.getDate() - 7);
+
+    return this.attachmentRepo.getSpaceAssetStats(space.id, recentSince);
+  }
+
+  /** slug 든 uuid 든 받아서 스페이스를 찾고 읽기 권한을 확인한다 */
+  private async resolveSpaceForRead(
+    spaceIdOrSlug: string,
+    user: User,
+    workspace: Workspace,
+  ) {
+    // spaceRepo.findById 는 uuid/slug 를 모두 받는다
+    const space = await this.spaceRepo.findById(spaceIdOrSlug, workspace.id);
+
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+
+    const ability = await this.spaceAbility.createForUser(user, space.id);
+    if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+      throw new ForbiddenException();
+    }
+
+    return space;
   }
 
   @UseGuards(JwtAuthGuard)

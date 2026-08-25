@@ -34,6 +34,9 @@ import {
 } from '../casl/interfaces/workspace-ability.type';
 import WorkspaceAbilityFactory from '../casl/abilities/workspace-ability.factory';
 import { CreateSpaceDto } from './dto/create-space.dto';
+import { SpaceOverviewService } from './services/space-overview.service';
+import { SpaceMaintenanceService } from './services/space-maintenance.service';
+import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 
 @UseGuards(JwtAuthGuard)
 @Controller('spaces')
@@ -41,6 +44,9 @@ export class SpaceController {
   constructor(
     private readonly spaceService: SpaceService,
     private readonly spaceMemberService: SpaceMemberService,
+    private readonly spaceOverviewService: SpaceOverviewService,
+    private readonly spaceMaintenanceService: SpaceMaintenanceService,
+    private readonly spaceRepo: SpaceRepo,
     private readonly spaceMemberRepo: SpaceMemberRepo,
     private readonly spaceAbility: SpaceAbilityFactory,
     private readonly workspaceAbility: WorkspaceAbilityFactory,
@@ -91,6 +97,79 @@ export class SpaceController {
     };
 
     return { ...space, membership };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('overview')
+  async getSpaceOverview(
+    @Body() spaceIdDto: SpaceIdDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const space = await this.resolveSpaceForRead(
+      spaceIdDto.spaceId,
+      user,
+      workspace,
+    );
+    return this.spaceOverviewService.getOverview(space.id);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('page-version-badges')
+  async getPageVersionBadges(
+    @Body() spaceIdDto: SpaceIdDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const space = await this.resolveSpaceForRead(
+      spaceIdDto.spaceId,
+      user,
+      workspace,
+    );
+    return this.spaceOverviewService.getPageVersionBadges(space.id);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('maintenance/scan')
+  async scanSpace(
+    @Body() spaceIdDto: SpaceIdDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const space = await this.spaceRepo.findById(
+      spaceIdDto.spaceId,
+      workspace.id,
+    );
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+
+    // 점검은 정리(휴지통) 액션이 따라붙으므로 페이지 관리 권한을 요구한다
+    const ability = await this.spaceAbility.createForUser(user, space.id);
+    if (ability.cannot(SpaceCaslAction.Manage, SpaceCaslSubject.Page)) {
+      throw new ForbiddenException();
+    }
+
+    return this.spaceMaintenanceService.scan(space.id);
+  }
+
+  /** slug/uuid 를 모두 받아 스페이스를 찾고 읽기 권한을 확인한다 */
+  private async resolveSpaceForRead(
+    spaceIdOrSlug: string,
+    user: User,
+    workspace: Workspace,
+  ) {
+    const space = await this.spaceRepo.findById(spaceIdOrSlug, workspace.id);
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+
+    const ability = await this.spaceAbility.createForUser(user, space.id);
+    if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+      throw new ForbiddenException();
+    }
+
+    return space;
   }
 
   @HttpCode(HttpStatus.OK)
