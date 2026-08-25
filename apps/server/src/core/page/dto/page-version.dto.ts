@@ -59,3 +59,8 @@ export class CreateWorkingDocDto {
   @MaxLength(200)
   name?: string;
 }
+
+export class WorkingChangesDto {
+  @IsUUID()
+  spaceId: string;
+}

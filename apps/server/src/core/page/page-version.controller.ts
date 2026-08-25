@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -23,9 +24,16 @@ import {
   PageVersionsDto,
   VersionIdDto,
   VersionInfoDto,
+  WorkingChangesDto,
   WorkingDocIdDto,
   WorkingDocsDto,
 } from './dto/page-version.dto';
+import { WorkingChangesService } from './services/working-changes.service';
+import SpaceAbilityFactory from '../casl/abilities/space-ability.factory';
+import {
+  SpaceCaslAction,
+  SpaceCaslSubject,
+} from '../casl/interfaces/space-ability.type';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -36,7 +44,24 @@ export class PageVersionController {
     private readonly pageRepo: PageRepo,
     private readonly pageVersionRepo: PageVersionRepo,
     private readonly pageWorkingDocRepo: PageWorkingDocRepo,
+    private readonly workingChangesService: WorkingChangesService,
+    private readonly spaceAbility: SpaceAbilityFactory,
   ) {}
+
+  // ── 수정중(미확정 수정이 남은 페이지) ────────────────────────────
+
+  @HttpCode(HttpStatus.OK)
+  @Post('working-changes')
+  async listWorkingChanges(
+    @Body() dto: WorkingChangesDto,
+    @AuthUser() user: User,
+  ) {
+    const ability = await this.spaceAbility.createForUser(user, dto.spaceId);
+    if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+      throw new ForbiddenException();
+    }
+    return this.workingChangesService.listForSpace(dto.spaceId, user.id);
+  }
 
   // ── 버전 ────────────────────────────────────────────────────────
 
