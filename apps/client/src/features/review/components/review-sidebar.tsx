@@ -105,6 +105,8 @@ interface ReviewCardProps {
 }
 
 function ReviewCard({ review, onClick }: ReviewCardProps) {
+  const { t } = useTranslation();
+  const title = (review.title ?? "").trim();
   const preview = extractPreviewText(review.content).slice(0, 80).trim();
   const assignees = review.assignees ?? [];
   const visibleAssignees = assignees.slice(0, 3);
@@ -134,8 +136,20 @@ function ReviewCard({ review, onClick }: ReviewCardProps) {
         </Group>
       </Group>
 
+      {/* 제목은 카드의 1차 식별자 — 홈 "할당된 리뷰" 목록과 동일하게 노출한다 */}
+      <Text
+        mt="xs"
+        size="sm"
+        fw={500}
+        lineClamp={1}
+        c={title ? undefined : "dimmed"}
+        fs={title ? undefined : "italic"}
+      >
+        {title || t("Untitled review")}
+      </Text>
+
       {preview && (
-        <Text mt="xs" size="sm" lineClamp={2}>
+        <Text mt={4} size="sm" c="dimmed" lineClamp={2}>
           {preview}
         </Text>
       )}
