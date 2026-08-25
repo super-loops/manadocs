@@ -31,7 +31,9 @@ import { openReviewSelectPopup } from "@/features/editor/components/review/revie
 import {
   CommandProps,
   SlashMenuGroupedItemsType,
+  SlashMenuItemType,
 } from "@/features/editor/components/slash-menu/types";
+import i18n from "@/i18n.ts";
 import { uploadImageAction } from "@/features/editor/components/image/upload-image-action.tsx";
 import { uploadVideoAction } from "@/features/editor/components/video/upload-video-action.tsx";
 import { uploadAudioAction } from "@/features/editor/components/audio/upload-audio-action.tsx";
@@ -56,7 +58,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Text",
       description: "Just start typing with plain text.",
-      searchTerms: ["p", "paragraph"],
+      searchTerms: ["p", "paragraph", "문단", "본문"],
       icon: IconTypography,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -70,7 +72,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "To-do list",
       description: "Track tasks with a to-do list.",
-      searchTerms: ["todo", "task", "list", "check", "checkbox"],
+      searchTerms: ["todo", "task", "list", "check", "checkbox", "할일", "체크박스", "투두"],
       icon: IconCheckbox,
       command: ({ editor, range }: CommandProps) => {
         editor.chain().focus().deleteRange(range).toggleTaskList().run();
@@ -79,7 +81,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Heading 1",
       description: "Big section heading.",
-      searchTerms: ["title", "big", "large"],
+      searchTerms: ["title", "big", "large", "헤딩"],
       icon: IconH1,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -93,7 +95,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Heading 2",
       description: "Medium section heading.",
-      searchTerms: ["subtitle", "medium"],
+      searchTerms: ["subtitle", "medium", "헤딩"],
       icon: IconH2,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -107,7 +109,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Heading 3",
       description: "Small section heading.",
-      searchTerms: ["subtitle", "small"],
+      searchTerms: ["subtitle", "small", "헤딩"],
       icon: IconH3,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -121,7 +123,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Bullet list",
       description: "Create a simple bullet list.",
-      searchTerms: ["unordered", "point", "list"],
+      searchTerms: ["unordered", "point", "list", "불릿", "리스트"],
       icon: IconList,
       command: ({ editor, range }: CommandProps) => {
         editor.chain().focus().deleteRange(range).toggleBulletList().run();
@@ -130,7 +132,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Numbered list",
       description: "Create a list with numbering.",
-      searchTerms: ["numbered", "ordered", "list"],
+      searchTerms: ["numbered", "ordered", "list", "번호", "리스트"],
       icon: IconListNumbers,
       command: ({ editor, range }: CommandProps) => {
         editor.chain().focus().deleteRange(range).toggleOrderedList().run();
@@ -139,7 +141,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Quote",
       description: "Create block quote.",
-      searchTerms: ["blockquote", "quotes"],
+      searchTerms: ["blockquote", "quotes", "인용구"],
       icon: IconBlockquote,
       command: ({ editor, range }: CommandProps) =>
         editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
@@ -147,7 +149,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Code",
       description: "Insert code snippet.",
-      searchTerms: ["codeblock"],
+      searchTerms: ["codeblock", "코드블럭"],
       icon: IconCode,
       command: ({ editor, range }: CommandProps) =>
         editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
@@ -155,7 +157,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Divider",
       description: "Insert horizontal rule divider",
-      searchTerms: ["horizontal rule", "hr"],
+      searchTerms: ["horizontal rule", "hr", "수평선"],
       icon: IconMenu4,
       command: ({ editor, range }: CommandProps) =>
         editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
@@ -163,7 +165,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Image",
       description: "Upload any image from your device.",
-      searchTerms: ["photo", "picture", "media", "file", "attachment"],
+      searchTerms: ["photo", "picture", "media", "file", "attachment", "사진", "그림"],
       icon: IconPhoto,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -196,7 +198,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Video",
       description: "Upload any video from your device.",
-      searchTerms: ["video", "mp4", "media", "file", "attachment"],
+      searchTerms: ["video", "mp4", "media", "file", "attachment", "영상", "동영상"],
       icon: IconMovie,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -229,7 +231,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Audio",
       description: "Upload any audio from your device.",
-      searchTerms: ["audio", "music", "sound", "mp3", "media", "file", "attachment"],
+      searchTerms: ["audio", "music", "sound", "mp3", "media", "file", "attachment", "음악", "소리"],
       icon: IconMusic,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -262,7 +264,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Embed PDF",
       description: "Upload and embed a PDF file.",
-      searchTerms: ["pdf", "document", "embed"],
+      searchTerms: ["pdf", "document", "embed", "피디에프"],
       icon: IconFileTypePdf,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -293,7 +295,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "File attachment",
       description: "Upload any file from your device.",
-      searchTerms: ["file", "attachment", "upload", "csv", "zip"],
+      searchTerms: ["file", "attachment", "upload", "csv", "zip", "첨부파일"],
       icon: IconPaperclip,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
@@ -326,7 +328,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Table",
       description: "Insert a table.",
-      searchTerms: ["table", "rows", "columns"],
+      searchTerms: ["table", "rows", "columns", "표"],
       icon: IconTable,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -339,7 +341,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Toggle block",
       description: "Insert collapsible block.",
-      searchTerms: ["collapsible", "block", "toggle", "details", "expand"],
+      searchTerms: ["collapsible", "block", "toggle", "details", "expand", "접기", "펼치기"],
       icon: IconCaretRightFilled,
       command: ({ editor, range }: CommandProps) =>
         editor.chain().focus().deleteRange(range).setDetails().run(),
@@ -356,6 +358,8 @@ const CommandGroups: SlashMenuGroupedItemsType = {
         "success",
         "error",
         "danger",
+        "콜아웃",
+        "알림",
       ],
       icon: IconInfoCircle,
       command: ({ editor, range }: CommandProps) =>
@@ -374,6 +378,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
         "katex",
         "latex",
         "tex",
+        "수식",
       ],
       icon: IconMathFunction,
       command: ({ editor, range }: CommandProps) =>
@@ -397,6 +402,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
         "katex",
         "latex",
         "tex",
+        "수식",
       ],
       icon: IconMath,
       command: ({ editor, range }: CommandProps) =>
@@ -405,7 +411,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Mermaid diagram",
       description: "Insert mermaid diagram",
-      searchTerms: ["mermaid", "diagrams", "chart", "uml"],
+      searchTerms: ["mermaid", "diagrams", "chart", "uml", "다이어그램", "머메이드"],
       icon: IconMermaid,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -419,7 +425,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Date",
       description: "Insert current date",
-      searchTerms: ["date", "today"],
+      searchTerms: ["date", "today", "오늘"],
       icon: IconCalendar,
       command: ({ editor, range }: CommandProps) => {
         const currentDate = new Date().toLocaleDateString("en-US", {
@@ -439,7 +445,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Review",
       description: "Start a review on a selection or insertion point.",
-      searchTerms: ["review", "anchor", "comment", "feedback"],
+      searchTerms: ["review", "anchor", "comment", "feedback", "검토"],
       icon: IconAnchor,
       command: ({ editor, range }: CommandProps) => {
         // @ts-ignore
@@ -451,7 +457,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Status",
       description: "Insert inline status badge.",
-      searchTerms: ["status", "badge", "label", "lozenge"],
+      searchTerms: ["status", "badge", "label", "lozenge", "뱃지"],
       icon: IconTag,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -465,7 +471,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Subpages (Child pages)",
       description: "List all subpages of the current page",
-      searchTerms: ["subpages", "child", "children", "nested", "hierarchy"],
+      searchTerms: ["subpages", "child", "children", "nested", "hierarchy", "서브페이지", "하위"],
       icon: IconSitemap,
       command: ({ editor, range }: CommandProps) => {
         editor.chain().focus().deleteRange(range).insertSubpages().run();
@@ -474,7 +480,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Linked pages",
       description: "Display selected pages from any space",
-      searchTerms: ["linkpages", "links", "pages", "reference"],
+      searchTerms: ["linkpages", "links", "pages", "reference", "링크", "페이지"],
       icon: IconSitemap,
       command: ({ editor, range }: CommandProps) => {
         editor.chain().focus().deleteRange(range).insertLinkpages().run();
@@ -483,7 +489,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "2 Columns",
       description: "Split content into two columns.",
-      searchTerms: ["columns", "layout", "split", "side"],
+      searchTerms: ["columns", "layout", "split", "side", "단", "컬럼"],
       icon: IconColumns2,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -496,7 +502,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "3 Columns",
       description: "Split content into three columns.",
-      searchTerms: ["columns", "layout", "split", "triple"],
+      searchTerms: ["columns", "layout", "split", "triple", "단", "컬럼"],
       icon: IconColumns3,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -509,7 +515,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "4 Columns",
       description: "Split content into four columns.",
-      searchTerms: ["columns", "layout", "split"],
+      searchTerms: ["columns", "layout", "split", "단", "컬럼"],
       icon: IconColumns4,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -522,7 +528,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "5 Columns",
       description: "Split content into five columns.",
-      searchTerms: ["columns", "layout", "split"],
+      searchTerms: ["columns", "layout", "split", "단", "컬럼"],
       icon: IconColumns5,
       command: ({ editor, range }: CommandProps) =>
         editor
@@ -535,7 +541,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "Iframe embed",
       description: "Embed any Iframe",
-      searchTerms: ["iframe"],
+      searchTerms: ["iframe", "임베드"],
       icon: IconAppWindow,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -605,7 +611,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
     {
       title: "YouTube",
       description: "Embed YouTube video",
-      searchTerms: ["youtube", "yt", "media", "video"],
+      searchTerms: ["youtube", "yt", "media", "video", "유튜브", "영상"],
       icon: YoutubeIcon,
       command: ({ editor, range }: CommandProps) => {
         editor
@@ -661,6 +667,19 @@ const CommandGroups: SlashMenuGroupedItemsType = {
   ],
 };
 
+/**
+ * 메뉴에 실제로 보이는 라벨. command-list 가 t(item.title) 로 렌더하므로
+ * 검색도 같은 문자열을 봐야 한다 — 안 그러면 화면엔 "리뷰"라고 떠 있는데
+ * `/리뷰` 로는 안 잡히고 `/review` 로만 잡힌다.
+ */
+const translated = (key: string): string => {
+  try {
+    return i18n.t(key) as string;
+  } catch {
+    return key;
+  }
+};
+
 export const getSuggestionItems = ({
   query,
 }: {
@@ -679,22 +698,34 @@ export const getSuggestionItems = ({
     return false;
   };
 
+  // 제목은 fuzzy(부분 순서), 설명·검색어는 부분 문자열 — 원문과 번역문 양쪽으로.
+  const matches = (item: SlashMenuItemType) => {
+    const titles = [item.title, translated(item.title)];
+    if (titles.some((title) => fuzzyMatch(search, title))) return true;
+
+    const haystacks = [
+      item.description,
+      translated(item.description),
+      ...(item.searchTerms ?? []),
+    ];
+    return haystacks.some((text) => text.toLowerCase().includes(search));
+  };
+
+  // 제목에 그대로 들어있는 항목을 위로 (원문/번역문 중 하나라도)
+  const titleRank = (item: SlashMenuItemType) =>
+    [item.title, translated(item.title)].some((title) =>
+      title.toLowerCase().includes(search),
+    )
+      ? 0
+      : 1;
+
   for (const [group, items] of Object.entries(CommandGroups)) {
-    const filteredItems = items.filter((item) => {
-      return (
-        fuzzyMatch(search, item.title) ||
-        item.description.toLowerCase().includes(search) ||
-        (item.searchTerms &&
-          item.searchTerms.some((term: string) => term.includes(search)))
-      );
-    });
+    const filteredItems = items.filter(matches);
 
     if (filteredItems.length) {
-      filteredGroups[group] = filteredItems.sort((a, b) => {
-        const aTitle = a.title.toLowerCase().includes(search) ? 0 : 1;
-        const bTitle = b.title.toLowerCase().includes(search) ? 0 : 1;
-        return aTitle - bTitle;
-      });
+      filteredGroups[group] = filteredItems.sort(
+        (a, b) => titleRank(a) - titleRank(b),
+      );
     }
   }
 
