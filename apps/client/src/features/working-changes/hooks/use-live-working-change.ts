@@ -4,11 +4,8 @@ import { useParams } from "react-router-dom";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { usePageVersionQuery } from "@/features/page-version/queries/page-version-query";
-import { computeDiffStats } from "@/features/page-version/utils/working-diff";
+import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
 import { extractPageSlugId } from "@/lib";
-
-/** 미확정 문서의 통계 기준 — footer pill 과 동일 */
-const EMPTY_DOC = { type: "doc", content: [] };
 
 export interface LiveWorkingChange {
   pageId: string;
@@ -49,13 +46,16 @@ export function useLiveWorkingChange(): LiveWorkingChange | null {
         setStats(null);
         return;
       }
-      // 확정본이 없으면 빈 문서 대비로 낸다 (footer pill 과 동일 규칙)
-      if (!primaryVersionId) {
-        setStats(computeDiffStats(editor, EMPTY_DOC, editor.getJSON()));
-        return;
-      }
-      if (!primaryContent) return; // Primary 로딩 중 — 직전 값 유지
-      setStats(computeDiffStats(editor, primaryContent, editor.getJSON()));
+      if (primaryVersionId && !primaryContent) return; // Primary 로딩 중 — 직전 값 유지
+      // footer pill·결합 패널 뱃지와 같은 함수 (F-1: 셋이 갈라지면 갓 만든 빈
+      // 페이지가 사이드바에만 유령으로 남는다)
+      setStats(
+        computeUncommittedStats(
+          editor,
+          primaryVersionId ? primaryContent : null,
+          editor.getJSON(),
+        ),
+      );
     },
     [editor, page, primaryVersionId, primaryContent],
   );

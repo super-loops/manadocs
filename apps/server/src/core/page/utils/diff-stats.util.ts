@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { getSchema } from '@tiptap/core';
 import { Node as PMNode, Schema } from '@tiptap/pm/model';
 import { ChangeSet, simplifyChanges } from '@tiptap/pm/changeset';
@@ -24,6 +25,54 @@ export function isBlankDoc(content: any): boolean {
   return (
     only?.type === 'paragraph' &&
     !(Array.isArray(only.content) && only.content.length > 0)
+  );
+}
+
+/**
+ * ProseMirror JSON 을 비교 가능한 형태로 정규화한다.
+ *
+ * ⚠ 두 JSON 을 그냥 비교하면 안 된다. 작업문서·페이지 content 는 Yjs 문서를
+ * 되읽어 만들어지는데, 그 왕복에서 **빈 블럭의 `content: []` 가 통째로 사라진다**
+ * (`{type:"paragraph",attrs:{id}}` vs `{...,"content":[]}`). 빈 문단은 거의 모든
+ * 문서에 있어서, 정규화 없이 비교하면 손대지 않은 문서도 "수정됨"으로 오판된다
+ * (2026-08-26 QA 실측). 같은 이유로 값이 null 인 attrs 도 누락과 동치로 본다.
+ */
+export function canonicalizeDoc(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(canonicalizeDoc);
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, any> = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (child === null || child === undefined) continue;
+      if (
+        (key === 'content' || key === 'marks') &&
+        Array.isArray(child) &&
+        child.length === 0
+      ) {
+        continue;
+      }
+      out[key] = canonicalizeDoc(child);
+    }
+    return out;
+  }
+  return value;
+}
+
+/**
+ * 두 문서가 실질적으로 같은가 — **미확정 판정의 단일 기준**.
+ *
+ * 결합 패널의 원본/작업중 뱃지와 사이드바 "수정중" 목록이 둘 다 이 함수를 쓴다.
+ * 판정이 갈라지면 같은 페이지가 한 화면에선 수정중, 다른 화면에선 아니게 보인다
+ * (F-1). 클라이언트 쪽 대응물은 working-diff.ts 의 isBlankDoc·computeUncommittedStats.
+ */
+export function isSameDoc(a: any, b: any): boolean {
+  // 갓 만든 페이지의 빈 문단 하나는 빈 문서와 같다 — 이걸 빠뜨리면 새 페이지가
+  // 만들자마자 "작업중"으로 잡히고 수정중 목록에 유령으로 적재된다.
+  if (isBlankDoc(a) && isBlankDoc(b)) return true;
+  return isDeepStrictEqual(
+    canonicalizeDoc(a ?? EMPTY_DOC),
+    canonicalizeDoc(b ?? EMPTY_DOC),
   );
 }
 

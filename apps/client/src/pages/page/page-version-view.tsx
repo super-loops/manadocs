@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, Container, Group, Text } from "@mantine/core";
@@ -9,6 +9,7 @@ import { extractPageSlugId } from "@/lib";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { usePageVersionByNumberQuery } from "@/features/page-version/queries/page-version-query";
 import { buildShareVersionUrl } from "@/features/page-version/utils/version-view-url";
+import { buildPageUrl } from "@/features/page/page.utils";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import classes from "./page-version-view.module.css";
 
@@ -43,11 +44,23 @@ export default function PageVersionView() {
   }
 
   if (isError || !version) {
+    // 새 창으로 뜬 화면이라 브라우저 뒤로가기가 없다 — 나갈 문을 만들어 준다
     return (
       <EmptyState
         icon={IconFileOff}
         title={t("이 버전을 찾을 수 없습니다")}
         description={t("폐기되었거나 아직 확정되지 않은 버전일 수 있습니다.")}
+        action={
+          <Button
+            component={Link}
+            to={buildPageUrl(spaceSlug, page.slugId, page.title)}
+            variant="default"
+            size="sm"
+            mt="xs"
+          >
+            {t("페이지로 돌아가기")}
+          </Button>
+        }
       />
     );
   }

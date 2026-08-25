@@ -27,46 +27,9 @@ import {
   pageDocumentName,
 } from '../../../collaboration/collaboration.util';
 import { createYdocFromJson } from '../../../common/helpers/prosemirror/utils';
+import { isSameDoc } from '../utils/diff-stats.util';
 
 const EMPTY_DOC = { type: 'doc', content: [] };
-
-/**
- * ProseMirror JSON 을 비교 가능한 형태로 정규화한다.
- *
- * ⚠ 두 JSON 을 그냥 비교하면 안 된다. 작업문서 content 는 Yjs 문서를 되읽어
- * 만들어지는데, 그 왕복에서 **빈 블럭의 `content: []` 가 통째로 사라진다**
- * (`{type:"paragraph",attrs:{...}}` vs `{...,"content":[]}`). 빈 문단은 거의 모든
- * 문서에 있어서, 정규화 없이 비교하면 손대지 않은 문서도 "작업중"으로 오판된다
- * (2026-08-26 QA 에서 실측). 같은 이유로 값이 null 인 attrs 도 누락과 동치로 본다.
- */
-function canonicalizeDoc(value: any): any {
-  if (Array.isArray(value)) {
-    return value.map(canonicalizeDoc);
-  }
-  if (value && typeof value === 'object') {
-    const out: Record<string, any> = {};
-    for (const [key, child] of Object.entries(value)) {
-      if (child === null || child === undefined) continue;
-      if (
-        (key === 'content' || key === 'marks') &&
-        Array.isArray(child) &&
-        child.length === 0
-      ) {
-        continue;
-      }
-      out[key] = canonicalizeDoc(child);
-    }
-    return out;
-  }
-  return value;
-}
-
-/** 확정본 ↔ 작업문서 내용이 같은가 (직렬화 비대칭 무시) */
-function isSameDoc(a: any, b: any): boolean {
-  const left = a ?? EMPTY_DOC;
-  const right = b ?? EMPTY_DOC;
-  return isDeepStrictEqual(canonicalizeDoc(left), canonicalizeDoc(right));
-}
 
 @Injectable()
 export class PageVersionService {

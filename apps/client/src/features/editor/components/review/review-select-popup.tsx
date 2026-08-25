@@ -374,7 +374,7 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
           />
           <Text size="xs" c="dimmed">
             {t(
-              "확정된 버전은 이 페이지의 Primary 가 되어 독자와 공유 링크(최신 추종)에 즉시 반영됩니다.",
+              "확정된 버전은 이 페이지의 Primary가 되어 독자와 공유 링크(최신 추종)에 즉시 반영됩니다.",
             )}
           </Text>
           <Group justify="flex-end" gap="xs">

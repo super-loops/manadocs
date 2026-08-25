@@ -24,7 +24,7 @@ import {
 } from "@/features/page-version/queries/page-version-query";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { IPage } from "@/features/page/types/page.types";
-import { computeDiffStats } from "@/features/page-version/utils/working-diff";
+import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
 import { formattedDate } from "@/lib/time";
 import { getBranchCode } from "@/lib/branch-code";
 import { useTimeAgo } from "@/hooks/use-time-ago";
@@ -33,9 +33,6 @@ import classes from "./css/footer-pill.module.css";
 interface FooterPillProps {
   page: IPage;
 }
-
-/** 미확정 문서의 통계 기준 — 빈 문서 */
-const EMPTY_DOC = { type: "doc", content: [] };
 
 /** 시각이 아직 없을 때 훅에 넘길 고정 값 — 매 렌더 new Date() 를 만들지 않는다 */
 const EPOCH = new Date(0);
@@ -125,18 +122,16 @@ export default function FooterPill({ page }: FooterPillProps) {
         setChanged(false);
         return;
       }
-      // 미확정 페이지(Primary 버전 없음) — 첫 문서확정을 허용해야 하므로
-      // 항상 변경으로 취급하고, 통계는 빈 문서 대비로 낸다.
-      if (!primaryVersionId) {
-        setChanged(true);
-        applyStats(computeDiffStats(editor, EMPTY_DOC, editor.getJSON()));
-        return;
-      }
-      if (!primaryContent) return; // Primary 콘텐츠 로딩 중 — 이전 판정 유지
-      const current = editor.getJSON();
-      // 동일 diff 엔진(ChangeSet)으로 판정 — 양쪽을 같은 스키마로 정규화하므로
-      // 서버 저장 JSON ↔ 에디터 JSON 직렬화 차이에 오탐하지 않는다.
-      const s = computeDiffStats(editor, primaryContent, current);
+      // Primary 콘텐츠 로딩 중이면 이전 판정을 유지한다(깜빡임 방지)
+      if (primaryVersionId && !primaryContent) return;
+      // 미확정 판정은 사이드바 "수정중"·결합 패널 뱃지와 **같은 함수**로 한다.
+      // 예전엔 여기서 확정본 없는 페이지를 무조건 변경으로 취급했는데, 갓 만든
+      // 빈 페이지의 빈 문단 하나가 +1 로 잡혀 유령 수정이 되었다(F-1).
+      const s = computeUncommittedStats(
+        editor,
+        primaryVersionId ? primaryContent : null,
+        editor.getJSON(),
+      );
       setChanged(s.total > 0);
       applyStats(s);
     },

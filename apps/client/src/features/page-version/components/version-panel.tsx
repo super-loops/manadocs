@@ -61,7 +61,7 @@ import {
   previewVersionIdAtom,
 } from "@/features/page-version/atoms/page-version-atoms";
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
-import { computeDiffStats } from "@/features/page-version/utils/working-diff";
+import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
 import { getBranchCode } from "@/lib/branch-code";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { extractPageSlugId } from "@/lib";
@@ -230,6 +230,7 @@ function VersionCard({
   const undiscardMutation = useUndiscardVersionMutation(pageId);
   const duplicateMutation = useDuplicateVersionMutation();
   const createWorkingDocMutation = useCreateWorkingDocMutation(pageId);
+  const setActiveWorkingDoc = useSetAtom(activeWorkingDocAtom);
   const setPreviewVersionId = useSetAtom(previewVersionIdAtom);
   const [, setDiffSelection] = useAtom(diffSelectionAtom);
 
@@ -310,16 +311,24 @@ function VersionCard({
                     leftSection={<IconCrown size={14} />}
                     onClick={() => setPrimaryMutation.mutate(version.id)}
                   >
-                    {t("Primary 로 변경")}
+                    {t("Primary로 변경")}
                   </Menu.Item>
                 )}
                 <Menu.Item
                   leftSection={<IconGitBranch size={14} />}
                   onClick={() =>
-                    createWorkingDocMutation.mutate({
-                      pageId,
-                      baseVersionId: version.id,
-                    })
+                    createWorkingDocMutation.mutate(
+                      { pageId, baseVersionId: version.id },
+                      {
+                        // 만들어만 두고 가만히 있으면 유저가 한 번 더 찾아
+                        // 눌러야 한다 — 만든 분기로 바로 편집을 옮긴다.
+                        onSuccess: (created) =>
+                          setActiveWorkingDoc({
+                            pageId,
+                            workingDocId: created.id,
+                          }),
+                      },
+                    )
                   }
                 >
                   {t("이 버전에서 작업 시작")}
@@ -429,18 +438,25 @@ function useLiveModified(
   );
   const [modified, setModified] = useState<boolean | null>(null);
   const baseContent = baseVersion?.content ?? null;
+  // base 가 아예 없는 분기(확정본 없는 페이지)는 빈 문서 대비로 판정한다 —
+  // "기준 버전 로딩 중"과 구분해야 갓 만든 페이지가 서버 응답을 기다리며
+  // 엉뚱한 뱃지를 달지 않는다.
+  const awaitingBase = !!baseVersionId && !baseContent;
 
   useEffect(() => {
-    if (!enabled || !editor || editor.isDestroyed || !baseContent) {
+    if (!enabled || !editor || editor.isDestroyed || awaitingBase) {
       setModified(null);
       return;
     }
 
     const recompute = () => {
       if (!editor || editor.isDestroyed) return;
-      // footer pill 과 같은 diff 엔진 — 서버 저장 JSON ↔ 에디터 JSON 의
-      // 직렬화 차이에 오탐하지 않는다.
-      const stats = computeDiffStats(editor, baseContent, editor.getJSON());
+      // footer pill·사이드바 "수정중" 과 같은 함수로 판정한다
+      const stats = computeUncommittedStats(
+        editor,
+        baseContent,
+        editor.getJSON(),
+      );
       setModified(stats.total > 0);
     };
 
@@ -459,7 +475,7 @@ function useLiveModified(
         // editor 정리됨
       }
     };
-  }, [editor, baseContent, enabled]);
+  }, [editor, baseContent, enabled, awaitingBase]);
 
   return modified;
 }
@@ -597,7 +613,7 @@ function WorkingDocRow({
                 leftSection={<IconCrown size={14} />}
                 onClick={() => setPrimaryMutation.mutate(workingDoc.id)}
               >
-                {t("Primary 로 변경")}
+                {t("기본 작업문서로 지정")}
               </Menu.Item>
             )}
             <Menu.Item
@@ -621,10 +637,18 @@ function WorkingDocRow({
 
       <Group gap={6} mt={6} wrap="nowrap" justify="space-between">
         <Group gap={4} wrap="nowrap">
+          {/* 버전의 Primary(= 독자에게 보이는 확정본)와 뜻이 다르다. 이건
+              "선택이 없을 때 기본으로 열리는 분기" 라 다른 말을 쓴다. */}
           {isPrimary && (
-            <Badge size="xs" variant="light" color="blue" radius="sm">
-              Primary
-            </Badge>
+            <Tooltip
+              label={t("선택이 없을 때 기본으로 열리는 작업문서")}
+              openDelay={400}
+              withArrow
+            >
+              <Badge size="xs" variant="light" color="blue" radius="sm">
+                {t("기본")}
+              </Badge>
+            </Tooltip>
           )}
           <Badge
             size="xs"

@@ -6,7 +6,7 @@ import { PagePermissionRepo } from '@manadocs/db/repos/page/page-permission.repo
 import {
   computeDiffStats,
   EMPTY_DOC,
-  isBlankDoc,
+  isSameDoc,
 } from '../utils/diff-stats.util';
 
 export interface WorkingChangeEntry {
@@ -97,12 +97,11 @@ export class WorkingChangesService {
       let stats = this.statsCache.get(key);
       if (!stats) {
         const row = contents.get(candidate.id);
-        // 확정본이 없는데 본문도 비어 있으면 갓 만든 페이지다 — 빈 문단 하나가
-        // 빈 문서 대비 +1 로 잡히므로 여기서 걸러야 목록이 새 페이지로 더럽혀지지
-        // 않는다.
-        const blankNewPage =
-          !candidate.versionid && isBlankDoc(row?.content);
-        const computed = blankNewPage
+        // SQL 의 `is distinct from` 은 후보를 넓게 뽑는 1차 필터일 뿐이다.
+        // 실질 동일 판정은 결합 패널 뱃지와 **같은 함수**로 한다 — 그래야
+        // 갓 만든 빈 페이지(빈 문단 하나)나 Yjs 왕복 차이가 한쪽 화면에서만
+        // "수정중"으로 보이는 일이 없다.
+        const computed = isSameDoc(row?.versionContent, row?.content)
           ? { added: 0, deleted: 0 }
           : computeDiffStats(
               row?.versionContent ?? EMPTY_DOC,

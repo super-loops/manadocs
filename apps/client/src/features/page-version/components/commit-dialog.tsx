@@ -9,7 +9,11 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconGitBranch,
+} from "@tabler/icons-react";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -133,16 +137,26 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
 
       {doomedDocs.length > 0 && (
         <Alert
-          icon={<IconAlertTriangle size={16} />}
-          color="orange"
+          icon={
+            keepOthers ? (
+              <IconGitBranch size={16} />
+            ) : (
+              <IconAlertTriangle size={16} />
+            )
+          }
+          color={keepOthers ? "gray" : "orange"}
           variant="light"
           mt="sm"
           p="xs"
         >
           <Text size="xs" fw={500}>
-            {t("다른 작업문서 {{count}}개가 삭제됩니다", {
-              count: doomedDocs.length,
-            })}
+            {keepOthers
+              ? t("다른 작업문서 {{count}}개를 유지합니다", {
+                  count: doomedDocs.length,
+                })
+              : t("다른 작업문서 {{count}}개가 삭제됩니다", {
+                  count: doomedDocs.length,
+                })}
           </Text>
           <List size="xs" spacing={2} mt={6} listStyleType="none">
             {doomedDocs.map((doc) => (
@@ -189,7 +203,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
 
       <Text size="xs" c="dimmed" mt="sm">
         {t(
-          "확정된 버전은 이 페이지의 Primary 가 되어 독자와 공유 링크(최신 추종)에 즉시 반영됩니다.",
+          "확정된 버전은 이 페이지의 Primary가 되어 독자와 공유 링크(최신 추종)에 즉시 반영됩니다.",
         )}
       </Text>
 

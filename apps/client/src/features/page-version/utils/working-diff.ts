@@ -11,6 +11,9 @@ export interface DiffStats {
 
 export type BlockDiffStatus = "modified" | "added" | "removed";
 
+/** 확정본이 없는 페이지의 비교 기준 */
+const EMPTY_DOC = { type: "doc", content: [] };
+
 export interface BlockDiffEntry {
   /** 목록 렌더/식별용 안정 키 */
   key: string;
@@ -320,6 +323,44 @@ export function computeDiffStats(
   } catch {
     return empty;
   }
+}
+
+/**
+ * 사실상 빈 문서인가 — 갓 만든 페이지는 빈 문단 하나를 들고 있다.
+ * 빈 문서 대비 diff 는 그 문단 삽입을 +1 로 세므로, 미확정 판정에서는 이 모양을
+ * 변경 없음으로 취급해야 한다. 서버 diff-stats.util.ts 의 isBlankDoc 과 같은 규칙.
+ */
+export function isBlankDoc(content: any): boolean {
+  const nodes = topBlocks(content);
+  if (nodes.length === 0) return true;
+  if (nodes.length > 1) return false;
+  const only = nodes[0];
+  return (
+    only?.type === "paragraph" &&
+    !(Array.isArray(only.content) && only.content.length > 0)
+  );
+}
+
+/**
+ * 아직 확정하지 않은 수정의 통계 — **미확정 판정의 단일 기준**.
+ *
+ * footer pill 의 +N −N, 사이드바 "수정중" 라이브 덮어쓰기, 결합 패널의
+ * 원본/작업중 뱃지가 전부 이 함수 하나를 쓴다. 셋이 갈라지면 같은 페이지가
+ * 화면마다 다르게 보인다(F-1: 갓 만든 빈 페이지가 pill 은 `1 +`, 사이드바엔
+ * 유령으로 적재, 뱃지는 "작업중").
+ *
+ * baseContent 가 null 이면 확정본이 없는 페이지다 — 빈 문서 대비로 재되,
+ * 본문도 사실상 비어 있으면 변경 없음으로 본다.
+ */
+export function computeUncommittedStats(
+  editor: Editor,
+  baseContent: any | null,
+  currentContent: any,
+): DiffStats {
+  if (!baseContent && isBlankDoc(currentContent)) {
+    return { added: 0, deleted: 0, total: 0 };
+  }
+  return computeDiffStats(editor, baseContent ?? EMPTY_DOC, currentContent);
 }
 
 /** current 문서 == base 문서인가 (변경 없음 판정, 키 순서 무관) */
