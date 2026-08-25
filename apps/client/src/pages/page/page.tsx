@@ -29,6 +29,8 @@ import TocRail from "@/features/editor/components/table-of-contents/toc-rail";
 import classes from "./page.module.css";
 const MemoizedFullEditor = React.memo(FullEditor);
 const MemoizedPageHeader = React.memo(PageHeader);
+// 편집 중 페이지 쿼리 리페치가 pill 까지 타고 내려오지 않게 한다
+const MemoizedFooterPill = React.memo(FooterPill);
 
 export default function Page() {
   const { t } = useTranslation();
@@ -189,7 +191,7 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
           </div>
           <TocRail />
         </div>
-        <FooterPill page={page} />
+        <MemoizedFooterPill page={page} />
         <CommitDialog pageId={page.id} />
         <PreviewModal />
         <DiffModal />

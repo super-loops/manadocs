@@ -35,6 +35,9 @@ interface FooterPillProps {
 /** 미확정 문서의 통계 기준 — 빈 문서 */
 const EMPTY_DOC = { type: "doc", content: [] };
 
+/** 시각이 아직 없을 때 훅에 넘길 고정 값 — 매 렌더 new Date() 를 만들지 않는다 */
+const EPOCH = new Date(0);
+
 /**
  * 페이지 하단 floating pill.
  * - 미확정(확정 버전 0개) → [이모지 · 미확정 · +N · 문서확정]
@@ -97,11 +100,19 @@ export default function FooterPill({ page }: FooterPillProps) {
   const lastEditedAt = currentWorkingDoc
     ? new Date(currentWorkingDoc.updatedAt)
     : null;
-  const lastEditedAgo = useTimeAgo(lastEditedAt ?? new Date());
+  const lastEditedAgo = useTimeAgo(lastEditedAt ?? EPOCH);
+  const hasTimestamps = !!editingStartedAt && !!lastEditedAt;
 
   // 라이브 에디터 ↔ Primary 비교 (편집 시 디바운스 재계산)
   const [changed, setChanged] = useState(false);
   const [stats, setStats] = useState({ added: 0, deleted: 0 });
+
+  // 400ms 마다 새 객체를 넣으면 숫자가 그대로여도 매번 리렌더된다 —
+  // 실제로 값이 달라질 때만 반영해 편집 중 렌더 churn 을 줄인다.
+  const applyStats = (next: { added: number; deleted: number }) =>
+    setStats((prev) =>
+      prev.added === next.added && prev.deleted === next.deleted ? prev : next,
+    );
 
   const recompute = useMemo(
     () => () => {
@@ -113,7 +124,7 @@ export default function FooterPill({ page }: FooterPillProps) {
       // 항상 변경으로 취급하고, 통계는 빈 문서 대비로 낸다.
       if (!primaryVersionId) {
         setChanged(true);
-        setStats(computeDiffStats(editor, EMPTY_DOC, editor.getJSON()));
+        applyStats(computeDiffStats(editor, EMPTY_DOC, editor.getJSON()));
         return;
       }
       if (!primaryContent) return; // Primary 콘텐츠 로딩 중 — 이전 판정 유지
@@ -122,7 +133,7 @@ export default function FooterPill({ page }: FooterPillProps) {
       // 서버 저장 JSON ↔ 에디터 JSON 직렬화 차이에 오탐하지 않는다.
       const s = computeDiffStats(editor, primaryContent, current);
       setChanged(s.total > 0);
-      setStats(s);
+      applyStats(s);
     },
     [editor, primaryVersionId, primaryContent],
   );
@@ -162,7 +173,7 @@ export default function FooterPill({ page }: FooterPillProps) {
           {page.icon || "📄"}
         </Text>
 
-        <div style={{ minWidth: 0 }}>
+        <div className={classes.info}>
           <Group gap={6} wrap="nowrap">
             <Text
               size="xs"
@@ -170,9 +181,7 @@ export default function FooterPill({ page }: FooterPillProps) {
               lh={1.2}
               c={isDraft ? "orange.7" : undefined}
             >
-              {isDraft
-                ? t("미확정")
-                : t("문서버전 {{n}}", { n: versionLabel })}
+              {isDraft ? t("미확정") : t("문서버전 {{n}}", { n: versionLabel })}
             </Text>
             {hasStats && (
               <>
@@ -196,11 +205,14 @@ export default function FooterPill({ page }: FooterPillProps) {
           )}
         </div>
 
-        {editingStartedAt && lastEditedAt && (
-          <Tooltip
-            withArrow
-            multiline
-            label={
+        {/* 작업문서 로딩이 끝나고 나타나면 그만큼 오른쪽 버튼이 밀린다 —
+            자리는 항상 잡아두고 내용만 채운다. */}
+        <Tooltip
+          withArrow
+          multiline
+          disabled={!hasTimestamps}
+          label={
+            hasTimestamps ? (
               <Stack gap={2}>
                 <Text size="xs">
                   {t("수정 시작")}: {formattedDate(editingStartedAt)}
@@ -210,49 +222,58 @@ export default function FooterPill({ page }: FooterPillProps) {
                   {lastEditedAgo})
                 </Text>
               </Stack>
-            }
+            ) : null
+          }
+        >
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            style={{ visibility: hasTimestamps ? "visible" : "hidden" }}
           >
-            <ActionIcon variant="subtle" color="gray" size="sm">
-              <IconClock size={16} stroke={1.7} />
-            </ActionIcon>
-          </Tooltip>
-        )}
+            <IconClock size={16} stroke={1.7} />
+          </ActionIcon>
+        </Tooltip>
 
         <Divider orientation="vertical" />
 
-        {isDraft ? (
-          <Tooltip
-            label={t("확정된 버전이 없어 비교할 대상이 없습니다")}
-            withArrow
-          >
-            {/* disabled 버튼은 포인터 이벤트가 없어 span 으로 감싼다 */}
-            <span>
-              <Button size="compact-sm" variant="default" disabled>
-                DIFF
-              </Button>
-            </span>
-          </Tooltip>
-        ) : (
-          <Button
-            size="compact-sm"
-            variant="default"
-            onClick={() =>
-              setDiffSelection({
-                pageId: page.id,
-                leftVersionId: primaryVersionId, // Primary 기준
-                rightVersionId: null, // null = 현재 작업문서
-              })
-            }
-          >
-            DIFF
-          </Button>
-        )}
+        {/* [문서확정] 은 변경이 있을 때만 나타난다(의도된 동작). 그때 DIFF 가
+            밀리지 않도록 버튼 묶음의 폭을 고정하고 왼쪽으로 붙인다. */}
+        <Group gap="sm" wrap="nowrap" w={148} justify="flex-start">
+          {isDraft ? (
+            <Tooltip
+              label={t("확정된 버전이 없어 비교할 대상이 없습니다")}
+              withArrow
+            >
+              {/* disabled 버튼은 포인터 이벤트가 없어 span 으로 감싼다 */}
+              <span>
+                <Button size="compact-sm" variant="default" disabled>
+                  DIFF
+                </Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Button
+              size="compact-sm"
+              variant="default"
+              onClick={() =>
+                setDiffSelection({
+                  pageId: page.id,
+                  leftVersionId: primaryVersionId, // Primary 기준
+                  rightVersionId: null, // null = 현재 작업문서
+                })
+              }
+            >
+              DIFF
+            </Button>
+          )}
 
-        {changed && (
-          <Button size="compact-sm" onClick={() => setCommitDialogOpen(true)}>
-            {t("문서확정")}
-          </Button>
-        )}
+          {changed && (
+            <Button size="compact-sm" onClick={() => setCommitDialogOpen(true)}>
+              {t("문서확정")}
+            </Button>
+          )}
+        </Group>
       </Group>
     </Paper>
   );

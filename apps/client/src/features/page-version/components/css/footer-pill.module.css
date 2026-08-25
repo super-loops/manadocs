@@ -1,3 +1,9 @@
+/*
+ * 화면 하단 중앙 고정. translateX(-50%) 로 가운데를 잡기 때문에 **폭이 변하면
+ * 안의 버튼이 전부 좌우로 밀린다** — +N/−N 이 나타나거나 자릿수가 바뀔 때마다
+ * (편집 중 400ms 마다) 버튼이 움직여서 조준한 클릭이 빗나갔다.
+ * 폭을 고정해 어떤 상태에서도 버튼 좌표가 변하지 않게 한다.
+ */
 .pill {
   position: fixed;
   bottom: 28px;
@@ -5,4 +11,13 @@
   transform: translateX(-50%);
   z-index: 90;
   background-color: var(--mantine-color-body);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+}
+
+/* 가변 텍스트(버전 라벨·통계·작업문서명)를 전부 흡수하는 슬롯.
+   여기서 폭을 다 먹으므로 오른쪽 버튼들의 위치가 고정된다. */
+.info {
+  flex: 1 1 auto;
+  min-width: 0;
 }
