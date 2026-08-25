@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Group, Paper, Text, Tooltip } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  Divider,
+  Group,
+  Paper,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import { IconClock } from "@tabler/icons-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import {
@@ -14,6 +24,8 @@ import {
 import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { IPage } from "@/features/page/types/page.types";
 import { computeDiffStats } from "@/features/page-version/utils/working-diff";
+import { formattedDate } from "@/lib/time";
+import { useTimeAgo } from "@/hooks/use-time-ago";
 import classes from "./css/footer-pill.module.css";
 
 interface FooterPillProps {
@@ -63,6 +75,29 @@ export default function FooterPill({ page }: FooterPillProps) {
             })
           : t("작업문서"))
       : null;
+
+  /**
+   * 수정 시작 — 전용 필드가 없어 두 시각 중 나중을 쓴다.
+   * - 작업문서 생성 시각: "새 작업문서"로 만든 경우엔 이게 편집 시작이다.
+   * - 기준 버전 확정 시각: Primary 작업문서는 페이지 생성 때 만들어져
+   *   createdAt 이 편집 시작이 아니다. 확정할 때마다 base 가 옮겨가므로
+   *   이 값이 현재 편집 사이클의 시작이다.
+   * 두 후보의 약점이 서로 배타적이라 max 가 양쪽 경우 모두 맞는다.
+   */
+  const editingStartedAt = currentWorkingDoc
+    ? new Date(
+        Math.max(
+          new Date(currentWorkingDoc.createdAt).getTime(),
+          currentWorkingDoc.baseVersion
+            ? new Date(currentWorkingDoc.baseVersion.createdAt).getTime()
+            : 0,
+        ),
+      )
+    : null;
+  const lastEditedAt = currentWorkingDoc
+    ? new Date(currentWorkingDoc.updatedAt)
+    : null;
+  const lastEditedAgo = useTimeAgo(lastEditedAt ?? new Date());
 
   // 라이브 에디터 ↔ Primary 비교 (편집 시 디바운스 재계산)
   const [changed, setChanged] = useState(false);
@@ -160,6 +195,28 @@ export default function FooterPill({ page }: FooterPillProps) {
             </Text>
           )}
         </div>
+
+        {editingStartedAt && lastEditedAt && (
+          <Tooltip
+            withArrow
+            multiline
+            label={
+              <Stack gap={2}>
+                <Text size="xs">
+                  {t("수정 시작")}: {formattedDate(editingStartedAt)}
+                </Text>
+                <Text size="xs">
+                  {t("마지막 수정")}: {formattedDate(lastEditedAt)} (
+                  {lastEditedAgo})
+                </Text>
+              </Stack>
+            }
+          >
+            <ActionIcon variant="subtle" color="gray" size="sm">
+              <IconClock size={16} stroke={1.7} />
+            </ActionIcon>
+          </Tooltip>
+        )}
 
         <Divider orientation="vertical" />
 

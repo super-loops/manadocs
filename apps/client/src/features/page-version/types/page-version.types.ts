@@ -39,7 +39,7 @@ export interface IPageWorkingDoc {
   updatedAt: string;
   creator?: IVersionUser;
   contributors?: IVersionUser[];
-  baseVersion?: { id: string; version: number } | null;
+  baseVersion?: { id: string; version: number; createdAt: string } | null;
 }
 
 /** Reader 가 확정본을 볼 때 /pages/info 가 내려주는 컨텍스트 */

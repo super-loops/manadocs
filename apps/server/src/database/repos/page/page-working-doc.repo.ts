@@ -140,7 +140,12 @@ export class PageWorkingDocRepo {
     return jsonObjectFrom(
       eb
         .selectFrom('pageVersions')
-        .select(['pageVersions.id', 'pageVersions.version'])
+        // createdAt: 이 작업문서의 "수정 시작" 기준 시각(마지막 확정 시점)
+        .select([
+          'pageVersions.id',
+          'pageVersions.version',
+          'pageVersions.createdAt',
+        ])
         .whereRef('pageVersions.id', '=', 'pageWorkingDocs.baseVersionId'),
     ).as('baseVersion');
   }
