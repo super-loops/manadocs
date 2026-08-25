@@ -105,7 +105,7 @@ function WorkingChangeRow({ item, spaceSlug }: WorkingChangeRowProps) {
     >
       <span className={classes.icon}>{item.icon || "📄"}</span>
       <Text size="sm" className={classes.title} truncate>
-        {item.title || t("제목 없음")}
+        {item.title || t("untitled")}
       </Text>
       <span className={classes.stats}>
         {item.added > 0 && (
