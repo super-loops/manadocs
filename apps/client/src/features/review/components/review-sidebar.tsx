@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import { IconBookmark, IconMessageOff } from "@tabler/icons-react";
 import { useAtom, useSetAtom } from "jotai";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,7 +20,10 @@ import {
   reviewSidebarTabAtom,
   selectedReviewIdAtom,
 } from "@/features/review/atoms/review-atom";
-import { useReviewsByPageQuery } from "@/features/review/queries/review-query";
+import {
+  useReviewQuery,
+  useReviewsByPageQuery,
+} from "@/features/review/queries/review-query";
 import {
   IReview,
   IReviewAssignee,
@@ -182,6 +186,21 @@ export default function ReviewSidebar() {
   const [selectedReviewId, setSelectedReviewId] = useAtom(selectedReviewIdAtom);
   const { pageSlug } = useParams();
   const { data: page } = usePageQuery({ pageId: extractPageSlugId(pageSlug) });
+  // 상세로 열려 있는 리뷰 (목록 카드와 같은 캐시라 추가 요청이 아니다)
+  const { data: selectedReview } = useReviewQuery(selectedReviewId);
+
+  /**
+   * 다른 페이지로 옮겼는데 앞 페이지의 리뷰 상세가 그대로 남던 것(N-4).
+   *
+   * "페이지가 바뀌면 무조건 닫는다" 로는 안 된다 — 알림·홈의 "리뷰 열기" 는
+   * selectedReviewId 를 먼저 세우고 그 페이지로 **이동**하므로, 도착하자마자
+   * 자기가 연 상세를 닫아버린다. 그래서 기준을 소속으로 잡는다:
+   * 지금 페이지의 리뷰가 아니면 닫는다. 이러면 이동 순서와 무관하게 옳다.
+   */
+  useEffect(() => {
+    if (!selectedReviewId || !page?.id || !selectedReview) return;
+    if (selectedReview.pageId !== page.id) setSelectedReviewId(null);
+  }, [selectedReviewId, selectedReview?.pageId, page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
     setSelectedReviewId(null);
