@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { Editor } from "@tiptap/core";
 
-export const pageEditorAtom = atom<Editor | null>(null);
+export const pageEditorAtom = atom(null as Editor | null);
 
 /**
  * pageEditorAtom 의 문서를 **믿어도 되는가**.
@@ -16,9 +16,9 @@ export const pageEditorAtom = atom<Editor | null>(null);
  */
 export const pageEditorContentReadyAtom = atom(false);
 
-export const titleEditorAtom = atom<Editor | null>(null);
+export const titleEditorAtom = atom(null as Editor | null);
 
-export const readOnlyEditorAtom = atom<Editor | null>(null);
+export const readOnlyEditorAtom = atom(null as Editor | null);
 
 export const yjsConnectionStatusAtom = atom<string>("");
 

@@ -287,12 +287,13 @@ export default function PageEditor({
       },
       onCreate({ editor }) {
         if (editor) {
-          // @ts-ignore
-          setEditor(editor);
+          // 신원 스탬프를 **먼저** 찍고 전역에 싣는다 — 소비자가 editorPageId()
+          // 로 대조하므로 스탬프 없는 상태가 노출되면 안 된다.
           // @ts-ignore
           editor.storage.pageId = pageId;
-          handleScrollTo(editor);
           editorRef.current = editor;
+          setEditor(editor);
+          handleScrollTo(editor);
         }
       },
       onUpdate({ editor }) {
@@ -334,6 +335,28 @@ export default function PageEditor({
     setPageEditorContentReady(ydocLoaded);
     return () => setPageEditorContentReady(false);
   }, [ydocLoaded, setPageEditorContentReady]);
+
+  /**
+   * 언마운트하면 atom 을 비운다 — pageEditorAtom 은 「**지금 열려 있는 페이지**의
+   * 에디터」여야 한다.
+   *
+   * 비우지 않으면 PageEditor 를 마운트하지 않는 곳(읽기전용 페이지·404·로딩·
+   * 페이지 아닌 라우트)에 도착했을 때 앞 페이지의 죽은 에디터가 그대로 눌러앉는다.
+   * tiptap 은 destroy 후에도 `state`·`storage` 를 살려두므로 `getHTML()` 같은
+   * 읽기가 **조용히 앞 페이지 내용을 돌려주고**(마크다운 복사가 남의 문서를
+   * 퍼갔다), `view` 는 던지는 Proxy 라 목차가 DOM 을 만지면 터진다.
+   *
+   * 소비자마다 가드를 복붙하는 대신 atom 이 이름값을 하게 두면, 이미 다들 갖고
+   * 있는 `if (!editor)` 가드가 그대로 옳아진다. 특히 목차는
+   * `pageEditor ?? readOnlyEditor` 라 null 이어야 폴백이 살아난다.
+   */
+  useEffect(() => {
+    // 「내가 실은 그 에디터일 때만」 비운다 — tiptap 의 create 는 setTimeout(0),
+    // React 의 정리는 별도 큐라 순서가 보장되지 않는다. 무조건 비우면 다음
+    // 페이지가 이미 실어 둔 에디터를 덮어 atom 이 영구 null 이 될 수 있다.
+    return () =>
+      setEditor((current) => (current === editorRef.current ? null : current));
+  }, [setEditor]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {

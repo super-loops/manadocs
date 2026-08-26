@@ -1,12 +1,13 @@
 import { Badge, Button, Group, Modal, Text } from "@mantine/core";
+import { Editor } from "@tiptap/core";
 import { IconExternalLink, IconWorld } from "@tabler/icons-react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useState } from "react";
+import { useAtom, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import ReadonlyPageEditor from "@/features/editor/readonly-page-editor";
 import { previewVersionIdAtom } from "@/features/page-version/atoms/page-version-atoms";
 import { usePageVersionQuery } from "@/features/page-version/queries/page-version-query";
-import { readOnlyEditorAtom } from "@/features/editor/atoms/editor-atoms";
 import { useReviewAnchorDecorations } from "@/features/editor/components/review/use-review-anchor-decorations";
 import { sharePrefillAtom } from "@/features/share/atoms/share-prefill-atom.ts";
 import { buildVersionViewUrl } from "@/features/page-version/utils/version-view-url";
@@ -21,11 +22,16 @@ export default function PreviewModal() {
   const { spaceSlug, pageSlug } = useParams();
   const [previewVersionId, setPreviewVersionId] = useAtom(previewVersionIdAtom);
   const { data: version } = usePageVersionQuery(previewVersionId);
-  const readonlyEditor = useAtomValue(readOnlyEditorAtom);
+  // 미리보기 에디터는 **지역**에서 받는다. 예전엔 전역 readOnlyEditorAtom 에
+  // 실어 두고 그걸 다시 읽었는데, 모달을 닫아도 atom 이 그대로 남아 페이지의
+  // 목차·리뷰 앵커가 죽은 미리보기 에디터를 물었다.
+  const [readonlyEditor, setReadonlyEditor] = useState<Editor | null>(null);
   const setSharePrefill = useSetAtom(sharePrefillAtom);
   // 확정본 위 리뷰 앵커 오버레이 (이 버전에 존재하는 블록에만)
+  // 모달이 닫혀 있으면 에디터를 넘기지 않는다 — state 를 이펙트로 되돌리면
+  // 되돌리기 전 한 프레임 동안 죽은 에디터가 그대로 쓰인다.
   useReviewAnchorDecorations(
-    readonlyEditor,
+    previewVersionId ? readonlyEditor : null,
     version?.pageId,
     !!previewVersionId,
   );
@@ -112,6 +118,8 @@ export default function PreviewModal() {
               key={version.id}
               title={version.title ?? ""}
               content={version.content}
+              publishAsPageEditor={false}
+              onEditorReady={setReadonlyEditor}
             />
           )}
         </Modal.Body>

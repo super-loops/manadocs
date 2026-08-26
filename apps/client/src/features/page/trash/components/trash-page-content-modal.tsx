@@ -32,7 +32,12 @@ export default function TrashPageContentModal({
         </Modal.Header>
         <Modal.Body p={0}>
           <ScrollArea h="650" w="100%" scrollbarSize={5}>
-            <ReadonlyPageEditor title={title} content={pageContent} />
+            {/* 휴지통 미리보기는 페이지 본문이 아니다 — 전역 atom 을 덮지 않는다 */}
+            <ReadonlyPageEditor
+              title={title}
+              content={pageContent}
+              publishAsPageEditor={false}
+            />
           </ScrollArea>
         </Modal.Body>
       </Modal.Content>

@@ -50,7 +50,12 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
   const headerPaddingRef = useRef<HTMLDivElement | null>(null);
 
   const handleScrollToHeading = (position: number) => {
-    const { view } = props.editor;
+    // links 는 state 라, 에디터가 사라진(페이지 이동·언마운트) 직후 한 프레임
+    // 동안 예전 목록이 남아 있을 수 있다. 그때 클릭하면 여기서 터진다 —
+    // destroy 된 tiptap 의 `view` 는 던지는 Proxy 다.
+    const editor = props.editor;
+    if (!editor || editor.isDestroyed) return;
+    const { view } = editor;
 
     const headerOffset = parseInt(
       window.getComputedStyle(headerPaddingRef.current).getPropertyValue("top"),

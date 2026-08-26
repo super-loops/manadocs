@@ -1,13 +1,16 @@
 import "@/features/editor/styles/index.css";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { Editor } from "@tiptap/core";
 import { Document } from "@tiptap/extension-document";
 import { Heading } from "@tiptap/extension-heading";
 import { Text } from "@tiptap/extension-text";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { useAtomValue } from "jotai";
 import {
+  editorPageId,
   pageEditorAtom,
+  pageEditorContentReadyAtom,
   titleEditorAtom,
 } from "@/features/editor/atoms/editor-atoms";
 import {
@@ -27,6 +30,7 @@ import localEmitter from "@/lib/local-emitter.ts";
 import { currentUserAtom } from "@/features/user/atoms/current-user-atom.ts";
 import { PageEditMode } from "@/features/user/types/user.types.ts";
 import { searchSpotlight } from "@/features/search/constants.ts";
+import { notifications } from "@mantine/notifications";
 
 export interface TitleEditorProps {
   pageId: string;
@@ -47,10 +51,13 @@ export function TitleEditor({
   const { mutateAsync: updateTitlePageMutationAsync } =
     useUpdateTitlePageMutation();
   const pageEditor = useAtomValue(pageEditorAtom);
+  const pageEditorReady = useAtomValue(pageEditorContentReadyAtom);
   const [, setTitleEditor] = useAtom(titleEditorAtom);
   const emit = useQueryEmit();
   const navigate = useNavigate();
   const [activePageId, setActivePageId] = useState(pageId);
+  /** 이 인스턴스가 전역에 실은 제목 에디터 — 정리할 때 신원 대조용 */
+  const createdTitleEditorRef = useRef<Editor | null>(null);
   const [currentUser] = useAtom(currentUserAtom);
   const userPageEditMode =
     currentUser?.user?.settings?.preferences?.pageEditMode ?? PageEditMode.Edit;
@@ -75,7 +82,7 @@ export function TitleEditor({
     ],
     onCreate({ editor }) {
       if (editor) {
-        // @ts-ignore
+        createdTitleEditorRef.current = editor;
         setTitleEditor(editor);
         setActivePageId(pageId);
       }
@@ -158,6 +165,15 @@ export function TitleEditor({
     }
   }, [pageId, title, titleEditor]);
 
+  // 언마운트하면 atom 을 비운다 — 「지금 열려 있는 페이지의 제목 에디터」여야 한다
+  useEffect(() => {
+    // 내가 실은 에디터일 때만 비운다 — page-editor.tsx 의 같은 주석 참고
+    return () =>
+      setTitleEditor((current) =>
+        current === createdTitleEditorRef.current ? null : current,
+      );
+  }, [setTitleEditor]);
+
   useEffect(() => {
     // 제목이 **비어 있을 때만** 커서를 제목으로 보낸다.
     //  - 새로 만든 페이지: 바로 제목을 칠 수 있게 커서가 간다.
@@ -204,6 +220,10 @@ export function TitleEditor({
 
   function handleTitleKeyDown(event: any) {
     if (!titleEditor || !pageEditor || event.shiftKey) return;
+    // 죽었거나 다른 페이지의 본문 에디터면 아무것도 하지 않는다.
+    // 렌더 시점 스냅샷이 아니라 **호출 시점에** 에디터 객체를 대조한다 —
+    // editor-atoms.ts 의 editorPageId() 주석에 적힌 규칙.
+    if (pageEditor.isDestroyed || editorPageId(pageEditor) !== pageId) return;
 
     // Prevent focus shift when IME composition is active
     // `keyCode === 229` is added to support Safari where `isComposing` may not be reliable
@@ -215,6 +235,22 @@ export function TitleEditor({
 
     if (key === "Enter") {
       event.preventDefault();
+
+      // 본문이 아직 안 실렸으면 **아무것도 건드리지 않는다.**
+      // 동기화 전 collab 에디터는 빈 문서다. 그대로 진행하면 아래에서 제목
+      // 뒷부분을 지운 뒤 그 문단을 빈 ydoc 0번에 넣는데, 뒤늦게 도착한 진짜
+      // 본문과 Yjs 가 병합하면서 **제목 글자는 사라지고 본문 맨 위에 유령
+      // 문단이 박힌다.** 지우기 전에 막아야 데이터가 안 없어진다.
+      //
+      // 여기서 Enter 를 «나중에 이어서» 처리하는 방안도 검토했지만, 몇 초 뒤에
+      // 문서가 저 혼자 바뀌는 편이 더 나쁘고 중간에 페이지를 떠나면 그대로
+      // 유실된다. 삼키되 왜 안 됐는지는 말해 준다.
+      if (!pageEditorReady) {
+        notifications.show({
+          message: t("본문을 불러오는 중입니다. 잠시 후 다시 시도해 주세요."),
+        });
+        return;
+      }
 
       const { $from } = titleEditor.state.selection;
       const titleText = titleEditor.getText();

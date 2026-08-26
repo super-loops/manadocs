@@ -922,6 +922,7 @@
   "번호 목록": "Numbered list",
   "변경 강조": "Highlight changes",
   "변경된 블럭 {{n}}개 — 블럭별 수정취소": "{{n}} changed blocks — revert one at a time",
+  "본문을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.": "Loading the document — please try again in a moment.",
   "본문의 문단이나 제목으로 끌어다 놓으면 앵커가 추가돼요 — 리스트·표·콜아웃 안의 문단도 괜찮아요.": "Drop it on a paragraph or heading to add an anchor — paragraphs inside lists, tables and callouts work too.",
   "복제에 실패했습니다": "Failed to duplicate",
   "분기코드": "Branch code",

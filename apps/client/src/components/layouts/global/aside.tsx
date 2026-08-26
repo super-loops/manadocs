@@ -5,20 +5,27 @@ import React, { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { TableOfContents } from "@/features/editor/components/table-of-contents/table-of-contents.tsx";
 import { useAtomValue } from "jotai";
-import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms.ts";
+import {
+  pageEditorAtom,
+  readOnlyEditorAtom,
+} from "@/features/editor/atoms/editor-atoms.ts";
 import VersionPanel from "@/features/page-version/components/version-panel.tsx";
 
 export default function Aside() {
   const [{ tab }] = useAtom(asideStateAtom);
   const { t } = useTranslation();
+  // 읽기전용 페이지는 PageEditor 를 마운트하지 않는다 — TocRail 과 같은 폴백을
+  // 두어야 목차 탭이 비지 않는다.
   const pageEditor = useAtomValue(pageEditorAtom);
+  const readOnlyEditor = useAtomValue(readOnlyEditorAtom);
+  const editor = pageEditor ?? readOnlyEditor;
 
   let title: string;
   let component: ReactNode;
 
   switch (tab) {
     case "toc":
-      component = <TableOfContents editor={pageEditor} />;
+      component = <TableOfContents editor={editor} />;
       title = "Table of contents";
       break;
     case "versions":

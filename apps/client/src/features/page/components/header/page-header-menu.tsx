@@ -33,6 +33,7 @@ import { TOC_RAIL_BREAKPOINT } from "@/features/editor/components/table-of-conte
 import { htmlToMarkdown } from "@manadocs/editor-ext";
 import {
   pageEditorAtom,
+  readOnlyEditorAtom,
   yjsConnectionStatusAtom,
 } from "@/features/editor/atoms/editor-atoms.ts";
 import { formattedDate } from "@/lib/time.ts";
@@ -114,7 +115,11 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
     movePageModalOpened,
     { open: openMovePageModal, close: closeMoveSpaceModal },
   ] = useDisclosure(false);
+  // 읽기전용 페이지는 PageEditor 를 마운트하지 않는다 — 폴백이 없으면
+  // 마크다운 복사가 조용히 아무 일도 안 하고 워드카운트가 0 으로 굳는다.
   const [pageEditor] = useAtom(pageEditorAtom);
+  const [readOnlyEditor] = useAtom(readOnlyEditorAtom);
+  const bodyEditor = pageEditor ?? readOnlyEditor;
   const pageUpdatedAt = useTimeAgo(page?.updatedAt);
   const { data: watchStatus } = useWatchStatusQuery(page?.id);
   const watchPage = useWatchPageMutation();
@@ -129,8 +134,8 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
   };
 
   const handleCopyAsMarkdown = () => {
-    if (!pageEditor) return;
-    const html = pageEditor.getHTML();
+    if (!bodyEditor) return;
+    const html = bodyEditor.getHTML();
     const markdown = htmlToMarkdown(html);
     const title = page?.title ? `# ${page.title}\n\n` : "";
     clipboard.copy(`${title}${markdown}`);
@@ -254,7 +259,9 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
                 <div style={{ width: 210 }}>
                   <Text size="xs" c="dimmed" truncate="end">
                     {t("Word count: {{wordCount}}", {
-                      wordCount: pageEditor?.storage?.characterCount?.words(),
+                      // 에디터가 아직 없으면 0 — 예전엔 "undefined" 가 떴다
+                      wordCount:
+                        bodyEditor?.storage?.characterCount?.words() ?? 0,
                     })}
                   </Text>
 
