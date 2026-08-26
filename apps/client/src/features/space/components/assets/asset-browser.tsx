@@ -5,6 +5,7 @@ import {
   Group,
   Image,
   Loader,
+  Menu,
   Select,
   Table,
   Tabs,
@@ -14,17 +15,24 @@ import {
 } from "@mantine/core";
 import {
   IconArrowsSort,
+  IconDots,
+  IconDownload,
   IconFile,
   IconFileText,
   IconFileZip,
   IconFolders,
+  IconLink,
   IconPhoto,
   IconSortAscending,
   IconSortDescending,
+  IconTrash,
   IconVideo,
 } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { modals } from "@mantine/modals";
+import { useClipboard } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { SearchInput } from "@/components/common/search-input.tsx";
 import Paginate from "@/components/common/paginate.tsx";
 import { EmptyState } from "@/components/ui/empty-state.tsx";
@@ -34,6 +42,7 @@ import { formattedDate } from "@/lib/time.ts";
 import { getFileUrl } from "@/lib/config.ts";
 import { buildPageUrl } from "@/features/page/page.utils.ts";
 import {
+  useDeleteSpaceAssetMutation,
   useSpaceAssetsQuery,
   useSpaceAssetStatsQuery,
 } from "@/features/space/queries/space-insight-query.ts";
@@ -74,6 +83,11 @@ function categoryOf(asset: ISpaceAsset): AssetCategory {
   return "other";
 }
 
+/** 파일 실물 URL — 링크 복사·다운로드가 같은 주소를 쓰게 한 곳에 모은다 */
+function assetFileUrl(asset: ISpaceAsset) {
+  return getFileUrl(`/files/${asset.id}/${encodeURIComponent(asset.fileName)}`);
+}
+
 function CategoryIcon({ category }: { category: AssetCategory }) {
   const size = 18;
   if (category === "image") return <IconPhoto size={size} stroke={1.8} />;
@@ -93,7 +107,7 @@ function AssetThumb({ asset }: { asset: ISpaceAsset }) {
         h={32}
         radius="sm"
         fit="cover"
-        src={getFileUrl(`/files/${asset.id}/${encodeURIComponent(asset.fileName)}`)}
+        src={assetFileUrl(asset)}
         alt={asset.fileName}
       />
     );
@@ -122,6 +136,9 @@ export default function AssetBrowser({ spaceId, spaceSlug }: Props) {
   const [sort, setSort] = useState<AssetSortField>("date");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+
+  const clipboard = useClipboard({ timeout: 1500 });
+  const deleteAssetMutation = useDeleteSpaceAssetMutation(spaceId);
 
   const { data: stats } = useSpaceAssetStatsQuery(spaceId);
 
@@ -160,6 +177,38 @@ export default function AssetBrowser({ spaceId, spaceSlug }: Props) {
   }, []);
 
   const resetPage = () => setPage(1);
+
+  const handleCopyLink = (asset: ISpaceAsset) => {
+    clipboard.copy(assetFileUrl(asset));
+    notifications.show({ message: t("링크를 복사했습니다") });
+  };
+
+  // 파일 URL 은 앱과 같은 오리진이라 download 속성이 그대로 먹는다.
+  const handleDownload = (asset: ISpaceAsset) => {
+    const link = document.createElement("a");
+    link.href = assetFileUrl(asset);
+    link.download = asset.fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const openDeleteModal = (asset: ISpaceAsset) => {
+    modals.openConfirmModal({
+      title: t("이 파일을 삭제할까요?"),
+      children: (
+        <Text size="sm">
+          {t("{{fileName}} 을(를) 영구 삭제합니다. 되돌릴 수 없습니다.", {
+            fileName: asset.fileName,
+          })}
+        </Text>
+      ),
+      centered: true,
+      labels: { confirm: t("Delete"), cancel: t("Cancel") },
+      confirmProps: { color: "red" },
+      onConfirm: () => deleteAssetMutation.mutate(asset.id),
+    });
+  };
 
   return (
     <>
@@ -254,6 +303,7 @@ export default function AssetBrowser({ spaceId, spaceSlug }: Props) {
                 <Table.Th w={170}>{t("만든 시간")}</Table.Th>
                 <Table.Th w={160}>{t("만든이")}</Table.Th>
                 <Table.Th w={200}>{t("소속 페이지")}</Table.Th>
+                <Table.Th w={48}></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -317,6 +367,41 @@ export default function AssetBrowser({ spaceId, spaceSlug }: Props) {
                         —
                       </Text>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Menu shadow="md" width={180} position="bottom-end" withinPortal>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label={t("파일 작업")}
+                        >
+                          <IconDots size={18} stroke={1.5} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconLink size={16} />}
+                          onClick={() => handleCopyLink(asset)}
+                        >
+                          {t("링크 복사")}
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconDownload size={16} />}
+                          onClick={() => handleDownload(asset)}
+                        >
+                          {t("다운로드")}
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          color="red"
+                          leftSection={<IconTrash size={16} />}
+                          onClick={() => openDeleteModal(asset)}
+                        >
+                          {t("Delete")}
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                   </Table.Td>
                 </Table.Tr>
               ))}

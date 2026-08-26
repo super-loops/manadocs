@@ -288,6 +288,25 @@ export class AttachmentService {
     );
   }
 
+  /**
+   * 첨부파일 하나를 영구 삭제한다 — 스토리지 파일과 DB 행을 함께.
+   * 권한 확인은 호출부(컨트롤러) 책임이다.
+   */
+  async deleteFileAttachment(attachment: Attachment): Promise<void> {
+    try {
+      await this.storageService.delete(attachment.filePath);
+    } catch (err) {
+      // 스토리지에 실물이 이미 없어도 DB 행은 지운다 — 유령 레코드를 남기면
+      // 에셋 브라우저에 지울 수 없는 행이 계속 뜬다.
+      this.logger.warn(
+        `deleteFileAttachment: storage delete failed for ${attachment.id} (${attachment.filePath})`,
+        err,
+      );
+    }
+
+    await this.attachmentRepo.deleteAttachmentById(attachment.id);
+  }
+
   async handleDeleteSpaceAttachments(spaceId: string) {
     try {
       const attachments = await this.attachmentRepo.findBySpaceId(spaceId);

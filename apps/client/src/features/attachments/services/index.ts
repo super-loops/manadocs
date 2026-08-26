@@ -6,4 +6,5 @@ export {
   removeAvatar,
   removeSpaceIcon,
   removeWorkspaceIcon,
+  deleteAttachment,
 } from "./attachment-service.ts";

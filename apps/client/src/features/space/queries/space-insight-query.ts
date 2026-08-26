@@ -1,9 +1,14 @@
 import { useMemo } from "react";
 import {
   keepPreviousData,
+  useMutation,
   useQuery,
   UseQueryResult,
 } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
+import { useTranslation } from "react-i18next";
+import { queryClient } from "@/main.tsx";
+import { deleteAttachment } from "@/features/attachments/services/attachment-service.ts";
 import {
   getSpaceAssets,
   getSpaceAssetStats,
@@ -53,6 +58,30 @@ export function useSpaceAssetStatsQuery(
     queryFn: () => getSpaceAssetStats(spaceId),
     enabled: !!spaceId,
     staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * 에셋 브라우저에서 첨부파일을 영구 삭제한다.
+ * 목록과 탭 카운트(stats)가 함께 어긋나므로 둘 다 무효화한다.
+ */
+export function useDeleteSpaceAssetMutation(spaceId: string) {
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (attachmentId: string) => deleteAttachment(attachmentId),
+    onSuccess: () => {
+      notifications.show({ message: t("파일을 삭제했습니다") });
+      queryClient.invalidateQueries({ queryKey: ["space-assets"] });
+      queryClient.invalidateQueries({
+        queryKey: ["space-asset-stats", spaceId],
+      });
+    },
+    onError: (error) => {
+      const message =
+        error["response"]?.data?.message || t("파일 삭제에 실패했습니다");
+      notifications.show({ message, color: "red" });
+    },
   });
 }
 

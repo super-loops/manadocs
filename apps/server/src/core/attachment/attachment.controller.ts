@@ -53,7 +53,11 @@ import { EnvironmentService } from '../../integrations/environment/environment.s
 import { TokenService } from '../auth/services/token.service';
 import { JwtAttachmentPayload, JwtType } from '../auth/dto/jwt-payload';
 import * as path from 'path';
-import { AttachmentInfoDto, RemoveIconDto } from './dto/attachment.dto';
+import {
+  AttachmentInfoDto,
+  DeleteAttachmentDto,
+  RemoveIconDto,
+} from './dto/attachment.dto';
 import { SpaceAssetsDto, SpaceAssetStatsDto } from './dto/space-assets.dto';
 import { SpaceRepo } from '@manadocs/db/repos/space/space.repo';
 import { PageAccessService } from '../page/page-access/page-access.service';
@@ -433,6 +437,65 @@ export class AttachmentController {
     recentSince.setDate(recentSince.getDate() - 7);
 
     return this.attachmentRepo.getSpaceAssetStats(space.id, recentSince);
+  }
+
+  /**
+   * 첨부파일 영구 삭제. 에셋 브라우저에서 소속을 잃은 파일을 걷어낼 때 쓴다.
+   *
+   * 권한은 두 갈래다:
+   *  - 소속 페이지가 살아 있으면 그 페이지의 편집 권한(페이지별 제한 규칙 포함)
+   *  - 소속을 잃었으면(pageId 없음 / 페이지가 이미 지워짐) 스페이스 편집 권한
+   * 유실 에셋은 기댈 페이지가 없으니 후자 경로를 탄다.
+   */
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('attachments/delete')
+  async deleteAttachment(
+    @Body() dto: DeleteAttachmentDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const attachment = await this.attachmentRepo.findById(dto.attachmentId);
+    if (
+      !attachment ||
+      attachment.workspaceId !== workspace.id ||
+      attachment.type !== AttachmentType.File
+    ) {
+      throw new NotFoundException('File not found');
+    }
+
+    const page = attachment.pageId
+      ? await this.pageRepo.findById(attachment.pageId)
+      : null;
+
+    if (page) {
+      await this.pageAccessService.validateCanEdit(page, user);
+    } else {
+      if (!attachment.spaceId) {
+        throw new ForbiddenException();
+      }
+      const ability = await this.spaceAbility.createForUser(
+        user,
+        attachment.spaceId,
+      );
+      if (ability.cannot(SpaceCaslAction.Edit, SpaceCaslSubject.Page)) {
+        throw new ForbiddenException();
+      }
+    }
+
+    await this.attachmentService.deleteFileAttachment(attachment);
+
+    this.auditService.log({
+      event: AuditEvent.ATTACHMENT_DELETED,
+      resourceType: AuditResource.ATTACHMENT,
+      resourceId: attachment.id,
+      spaceId: attachment.spaceId,
+      metadata: {
+        fileName: attachment.fileName,
+        pageId: attachment.pageId,
+        spaceId: attachment.spaceId,
+      },
+    });
   }
 
   /** slug 든 uuid 든 받아서 스페이스를 찾고 읽기 권한을 확인한다 */

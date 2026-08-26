@@ -7,6 +7,13 @@ export class AttachmentInfoDto {
   attachmentId: string;
 }
 
+/** 첨부파일 영구 삭제 — 에셋 브라우저에서 소속을 잃은 파일을 걷어낼 때도 쓴다 */
+export class DeleteAttachmentDto {
+  @IsNotEmpty()
+  @IsUUID()
+  attachmentId: string;
+}
+
 export class RemoveIconDto {
   @IsEnum(AttachmentType)
   @IsIn([

@@ -104,3 +104,11 @@ export async function removeSpaceIcon(spaceId: string): Promise<void> {
 export async function removeWorkspaceIcon(): Promise<void> {
   await removeIcon(AvatarIconType.WORKSPACE_ICON);
 }
+
+/**
+ * 첨부파일 영구 삭제. 소속 페이지가 살아 있으면 그 페이지 편집 권한이,
+ * 소속을 잃은 에셋이면 스페이스 편집 권한이 서버에서 확인된다.
+ */
+export async function deleteAttachment(attachmentId: string): Promise<void> {
+  await api.post("/attachments/delete", { attachmentId });
+}
