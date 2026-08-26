@@ -45,6 +45,10 @@ export interface IPageVersionBadge {
   version: number | null;
   workingDocId: string | null;
   baseVersion: number | null;
+  /** 툴팁 시각 2줄용 — footer pill 과 같은 계산에 쓰인다 */
+  workingDocCreatedAt: string | null;
+  workingDocUpdatedAt: string | null;
+  baseVersionCreatedAt: string | null;
 }
 
 export interface IPageVersionBadges {

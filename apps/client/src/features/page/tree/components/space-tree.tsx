@@ -16,7 +16,15 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import classes from "@/features/page/tree/styles/tree.module.css";
-import { ActionIcon, Box, Menu, rem, Text, Tooltip } from "@mantine/core";
+import {
+  ActionIcon,
+  Box,
+  Menu,
+  rem,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import {
   IconArrowRight,
   IconChevronDown,
@@ -71,6 +79,10 @@ import CopyPageModal from "../../components/copy-page-modal.tsx";
 import { duplicatePage } from "../../services/page-service.ts";
 import { usePageVersionBadgeMap } from "@/features/space/queries/space-insight-query.ts";
 import { formatVersionSummary, getBranchCode } from "@/lib/branch-code.ts";
+import {
+  resolveEditingTimestamps,
+  VersionTimeLines,
+} from "@/components/common/version-time-lines.tsx";
 
 interface SpaceTreeProps {
   spaceId: string;
@@ -406,6 +418,8 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
         baseVersion: badge.baseVersion,
       })
     : null;
+  // 버전·분기 한 줄 아래에 수정 시각 2줄 — footer pill 툴팁과 같은 문구다.
+  const editingTimes = resolveEditingTimestamps(badge);
 
   const title = node.data.name || t("untitled");
 
@@ -441,9 +455,15 @@ function Node({ node, style, dragHandle, tree }: NodeRendererProps<any>) {
 
         {versionSummary ? (
           <Tooltip
-            label={versionSummary}
+            label={
+              <Stack gap={2}>
+                <Text size="xs">{versionSummary}</Text>
+                {editingTimes && <VersionTimeLines {...editingTimes} />}
+              </Stack>
+            }
             position="right"
             withArrow
+            multiline
             openDelay={400}
           >
             <span className={classes.text}>{title}</span>

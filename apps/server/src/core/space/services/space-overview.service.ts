@@ -54,6 +54,12 @@ export class SpaceOverviewService {
         'primaryVersion.version as version',
         'pages.primaryWorkingDocId as workingDocId',
         'baseVersion.version as baseVersion',
+        // 툴팁의 "수정 시작 / 마지막 수정" 2줄용. 조인은 이미 걸려 있어서
+        // select 만 늘리면 된다 — footer pill 과 같은 계산을 쓴다
+        // (수정 시작 = max(작업문서 생성, 기준 버전 확정)).
+        'workingDoc.createdAt as workingDocCreatedAt',
+        'workingDoc.updatedAt as workingDocUpdatedAt',
+        'baseVersion.createdAt as baseVersionCreatedAt',
       ])
       .where('pages.spaceId', '=', spaceId)
       .where('pages.deletedAt', 'is', null)
