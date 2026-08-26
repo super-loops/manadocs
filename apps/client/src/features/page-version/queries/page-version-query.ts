@@ -33,6 +33,8 @@ import {
 } from "@/features/page-version/types/page-version.types";
 import { useAtom } from "jotai";
 import { useTranslation } from "react-i18next";
+import { useSetAtom } from "jotai";
+import { activeWorkingDocAtom } from "@/features/page-version/atoms/page-version-atoms";
 import { SimpleTree } from "react-arborist";
 import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom.ts";
 import { SpaceTreeNode } from "@/features/page/tree/types.ts";
@@ -249,11 +251,21 @@ export function useCreateWorkingDocMutation(pageId: string) {
 
 export function useDeleteWorkingDocMutation(pageId: string) {
   const { t } = useTranslation();
+  const setActiveWorkingDoc = useSetAtom(activeWorkingDocAtom);
 
   return useMutation({
     mutationFn: (workingDocId: string) => deleteWorkingDoc(workingDocId),
-    onSuccess: () => {
+    onSuccess: (_, workingDocId) => {
       notifications.show({ message: t("작업문서가 삭제되었습니다") });
+      // 「삭제하면 어디로 돌아가는가」를 **여기서 하나로 확정한다**: 기본(Primary)
+      // 작업문서. 선택을 비우면 resolveActiveWorkingDocId 가 기본으로 떨어진다.
+      // 이걸 안 비우면 atom 이 삭제된 id 를 계속 가리켜서, 패널은 어느 카드도
+      // 선택되지 않은 것처럼 보이고 에디터는 삭제된 문서를 계속 열어 둔다.
+      setActiveWorkingDoc((prev) =>
+        prev?.pageId === pageId && prev.workingDocId === workingDocId
+          ? null
+          : prev,
+      );
       invalidateVersionQueries(pageId);
     },
     onError: (error: any) => {

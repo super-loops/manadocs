@@ -30,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
+import { useActiveWorkingDocId } from "@/features/page-version/hooks/use-active-working-doc";
 import { modals } from "@mantine/modals";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
 import { useTimeAgo } from "@/hooks/use-time-ago";
@@ -60,7 +61,11 @@ import {
   diffSelectionAtom,
   previewVersionIdAtom,
 } from "@/features/page-version/atoms/page-version-atoms";
-import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
+import {
+  editorPageId,
+  pageEditorAtom,
+  pageEditorContentReadyAtom,
+} from "@/features/editor/atoms/editor-atoms";
 import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
 import { getBranchCode } from "@/lib/branch-code";
 import { usePageQuery } from "@/features/page/queries/page-query";
@@ -88,11 +93,36 @@ export default function VersionPanel() {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     usePageVersionsQuery(pageId);
-  const { data: workingDocs } = useWorkingDocsWithStatusQuery(pageId, canEdit);
+  const { data: workingDocs, isFetching: isFetchingWorkingDocs } =
+    useWorkingDocsWithStatusQuery(pageId, canEdit);
   const createMutation = useCreateWorkingDocMutation(pageId);
+
+  // 「지금 편집 중인 작업문서」는 여기서 **한 번만** 정하고 카드로 내려보낸다.
+  // 카드가 각자 계산하면 에디터(page.tsx)와 규칙이 갈라진다.
+  const activeWorkingDocId = useActiveWorkingDocId(pageId, primaryWorkingDocId);
+  const setActiveWorkingDoc = useSetAtom(activeWorkingDocAtom);
+
+  // 자가 치유 — 선택이 이미 사라진 작업문서를 가리키면 푼다(기본으로 떨어진다).
+  // 삭제 뮤테이션이 직접 비우지만, 확정 시 「나머지 작업문서 삭제」나 다른
+  // 세션의 삭제처럼 이 클라이언트를 거치지 않는 경로도 있다.
+  //
+  // 목록을 다시 받아오는 중에는 판정하지 않는다 — 방금 만든 작업문서로 선택을
+  // 옮긴 직후에는 목록이 아직 그 문서를 모르므로, 여기서 «없는 문서» 로 보고
+  // 선택을 도로 풀어버린다.
+  useEffect(() => {
+    if (!workingDocs || isFetchingWorkingDocs) return;
+    setActiveWorkingDoc((prev) => {
+      if (prev?.pageId !== pageId) return prev;
+      return workingDocs.some((doc) => doc.id === prev.workingDocId)
+        ? prev
+        : null;
+    });
+  }, [workingDocs, isFetchingWorkingDocs, pageId, setActiveWorkingDoc]);
 
   const versions: IPageVersion[] = data?.pages?.flatMap((p) => p.items) ?? [];
 
+  // 훅은 전부 이 위에 있어야 한다 — 아래로 내려가면 페이지를 옮겨 page 쿼리가
+  // 캐시 미스가 되는 순간 훅 개수가 줄어 React 가 트리를 통째로 날린다.
   if (!pageId) return null;
 
   // 작업문서를 base 버전별로 묶는다. 버전 목록은 페이지네이션이라 아직 안 실린
@@ -131,7 +161,18 @@ export default function VersionPanel() {
             size="compact-xs"
             variant="subtle"
             leftSection={<IconGitBranch size={14} />}
-            onClick={() => createMutation.mutate({ pageId })}
+            onClick={() =>
+              createMutation.mutate(
+                { pageId },
+                {
+                  // 「이 버전에서 작업 시작」과 같은 규칙 — 만들어만 두고 가만히
+                  // 있으면 편집 중 배지가 기본 작업문서에 남아, 유저는 새 분기를
+                  // 편집하는 줄 알고 엉뚱한 문서를 고친다.
+                  onSuccess: (created) =>
+                    setActiveWorkingDoc({ pageId, workingDocId: created.id }),
+                },
+              )
+            }
           >
             {t("새 작업문서")}
           </Button>
@@ -150,6 +191,7 @@ export default function VersionPanel() {
             docs={docsByBase.get(version.id) ?? []}
             pageId={pageId}
             primaryWorkingDocId={primaryWorkingDocId}
+            activeWorkingDocId={activeWorkingDocId}
           />
         </Stack>
       ))}
@@ -163,6 +205,7 @@ export default function VersionPanel() {
             docs={strayDocs}
             pageId={pageId}
             primaryWorkingDocId={primaryWorkingDocId}
+            activeWorkingDocId={activeWorkingDocId}
           />
         </Stack>
       )}
@@ -186,10 +229,13 @@ function WorkingDocBranch({
   docs,
   pageId,
   primaryWorkingDocId,
+  activeWorkingDocId,
 }: {
   docs: IPageWorkingDoc[];
   pageId: string;
   primaryWorkingDocId: string | null;
+  /** 목록에서 한 번만 정한 «편집 중» 대상 — 카드가 다시 계산하지 않는다 */
+  activeWorkingDocId: string | null;
 }) {
   if (docs.length === 0) return null;
 
@@ -206,6 +252,7 @@ function WorkingDocBranch({
             workingDoc={doc}
             pageId={pageId}
             isPrimary={doc.id === primaryWorkingDocId}
+            isActive={doc.id === activeWorkingDocId}
           />
         ))}
       </Stack>
@@ -265,9 +312,23 @@ function VersionCard({
       <Group justify="space-between" wrap="nowrap" mb={6}>
         <Group gap={6} wrap="nowrap">
           {isPrimary && (
-            <Badge size="sm" variant="light" color="blue" radius="sm">
-              Primary
-            </Badge>
+            <Tooltip
+              label={t(
+                "독자에게 보이는 확정본입니다. 편집은 아래 작업문서에서 합니다.",
+              )}
+              openDelay={400}
+              withArrow
+            >
+              <Badge
+                size="sm"
+                variant="light"
+                color="blue"
+                radius="sm"
+                style={{ cursor: "help" }}
+              >
+                Primary
+              </Badge>
+            </Tooltip>
           )}
           {isDiscarded && (
             <Badge size="sm" variant="light" color="gray" radius="sm">
@@ -429,10 +490,12 @@ function VersionCard({
  * 서버 flag 로 떨어지게 한다.
  */
 function useLiveModified(
+  pageId: string,
   baseVersionId: string | null,
   enabled: boolean,
 ): boolean | null {
   const editor = useAtomValue(pageEditorAtom);
+  const contentReady = useAtomValue(pageEditorContentReadyAtom);
   const { data: baseVersion } = usePageVersionQuery(
     enabled ? baseVersionId : null,
   );
@@ -444,13 +507,27 @@ function useLiveModified(
   const awaitingBase = !!baseVersionId && !baseContent;
 
   useEffect(() => {
-    if (!enabled || !editor || editor.isDestroyed || awaitingBase) {
+    // contentReady 전에는 collab 에디터가 빈 문서다 — 판정하면 원본인 분기가
+    // 잠깐 «작업중» 으로 뒤집힌다(N-8). 그동안은 서버 flag 로 떨어뜨린다.
+    if (
+      !enabled ||
+      !editor ||
+      editor.isDestroyed ||
+      awaitingBase ||
+      !contentReady
+    ) {
       setModified(null);
       return;
     }
 
     const recompute = () => {
       if (!editor || editor.isDestroyed) return;
+      // 페이지를 옮기는 한 프레임 동안 atom 에는 앞 페이지 에디터가 남아 있다 —
+      // 렌더 시점에 읽은 contentReady 로는 못 거른다(호출 시점에 대조한다)
+      if (editorPageId(editor) !== pageId) {
+        setModified(null);
+        return;
+      }
       // footer pill·사이드바 "수정중" 과 같은 함수로 판정한다
       const stats = computeUncommittedStats(
         editor,
@@ -475,7 +552,7 @@ function useLiveModified(
         // editor 정리됨
       }
     };
-  }, [editor, baseContent, enabled, awaitingBase]);
+  }, [editor, baseContent, enabled, awaitingBase, contentReady, pageId]);
 
   return modified;
 }
@@ -484,25 +561,27 @@ function WorkingDocRow({
   workingDoc,
   pageId,
   isPrimary,
+  isActive,
 }: {
   workingDoc: IPageWorkingDoc;
   pageId: string;
   isPrimary: boolean;
+  /** 에디터가 지금 열고 있는 문서인가 — 목록이 정해서 내려준다 */
+  isActive: boolean;
 }) {
   const { t } = useTranslation();
-  const [activeWorkingDoc, setActiveWorkingDoc] = useAtom(activeWorkingDocAtom);
+  const setActiveWorkingDoc = useSetAtom(activeWorkingDocAtom);
   const setPrimaryMutation = useSetPrimaryWorkingDocMutation(pageId);
   const deleteMutation = useDeleteWorkingDocMutation(pageId);
   const resetMutation = useResetWorkingDocMutation(pageId);
   // 공용 틱 훅 — 버전 카드와 같은 기준 시점으로 상대시간을 갱신한다
   const updatedAtAgo = useTimeAgo(workingDoc.updatedAt);
 
-  const isActive =
-    activeWorkingDoc?.pageId === pageId
-      ? activeWorkingDoc.workingDocId === workingDoc.id
-      : isPrimary;
-
-  const liveModified = useLiveModified(workingDoc.baseVersionId, isActive);
+  const liveModified = useLiveModified(
+    pageId,
+    workingDoc.baseVersionId,
+    isActive,
+  );
   const isModified = liveModified ?? workingDoc.modified ?? false;
 
   const branchCode = getBranchCode(workingDoc.id);
@@ -555,7 +634,10 @@ function WorkingDocRow({
       padding={8}
       style={
         isActive
-          ? { borderColor: "var(--mantine-color-blue-5)" }
+          ? {
+              borderColor: "var(--mantine-color-blue-5)",
+              borderWidth: 2,
+            }
           : { borderStyle: "dashed" }
       }
     >
@@ -572,9 +654,21 @@ function WorkingDocRow({
 
         {/* 원클릭 전환 — ⋯ 를 열지 않고 바로 이 분기로 편집을 옮긴다 */}
         {isActive ? (
-          <Badge size="xs" variant="light" color="blue" radius="sm">
-            {t("편집 중")}
-          </Badge>
+          <Tooltip
+            label={t("에디터가 지금 열고 있는 문서입니다")}
+            openDelay={400}
+            withArrow
+          >
+            <Badge
+              size="xs"
+              variant="filled"
+              color="blue"
+              radius="sm"
+              style={{ cursor: "help" }}
+            >
+              {t("편집 중")}
+            </Badge>
+          </Tooltip>
         ) : (
           <Tooltip label={t("이 작업문서로 편집")} openDelay={300} withArrow>
             <ActionIcon

@@ -9,6 +9,7 @@ import CommitDialog from "@/features/page-version/components/commit-dialog";
 import PreviewModal from "@/features/page-version/components/preview-modal";
 import DiffModal from "@/features/page-version/components/diff-modal";
 import { activeWorkingDocAtom } from "@/features/page-version/atoms/page-version-atoms";
+import { resolveActiveWorkingDocId } from "@/features/page-version/hooks/use-active-working-doc";
 import { asideStateAtom } from "@/components/layouts/global/hooks/atoms/sidebar-atom.ts";
 import ReviewAnchorDropZone from "@/features/editor/components/review/review-anchor-drop-zone";
 import ReviewAnchorClickListener from "@/features/editor/components/review/review-anchor-click-listener";
@@ -95,11 +96,13 @@ function PageContent({ pageSlug }: { pageSlug: string | undefined }) {
   const readonlyEditor = useAtomValue(readOnlyEditorAtom);
   useReviewAnchorDecorations(canEdit ? liveEditor : readonlyEditor, page?.id);
 
-  // 현재 편집 대상 작업문서 — 선택이 없으면 Primary 작업문서
-  const workingDocId =
-    page && activeWorkingDoc?.pageId === page.id
-      ? activeWorkingDoc.workingDocId
-      : (page?.primaryWorkingDocId ?? null);
+  // 현재 편집 대상 작업문서 — 선택이 없으면 Primary 작업문서.
+  // 버전 패널의 선택 하이라이트와 **같은 함수**를 써야 둘이 어긋나지 않는다.
+  const workingDocId = resolveActiveWorkingDocId(
+    activeWorkingDoc,
+    page?.id,
+    page?.primaryWorkingDocId,
+  );
 
   useEffect(() => {
     if (!page) return;

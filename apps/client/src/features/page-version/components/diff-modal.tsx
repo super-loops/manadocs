@@ -23,8 +23,15 @@ import {
   diffCountsAtom,
   highlightChangesAtom,
 } from "@/features/page-history/atoms/history-atoms";
-import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms.ts";
-import { activeWorkingDocAtom, diffSelectionAtom } from "@/features/page-version/atoms/page-version-atoms";
+import {
+  pageEditorAtom,
+  pageEditorContentReadyAtom,
+} from "@/features/editor/atoms/editor-atoms.ts";
+import {
+  activeWorkingDocAtom,
+  diffSelectionAtom,
+} from "@/features/page-version/atoms/page-version-atoms";
+import { resolveActiveWorkingDocId } from "@/features/page-version/hooks/use-active-working-doc";
 import {
   usePageVersionQuery,
   usePageVersionsQuery,
@@ -107,7 +114,12 @@ function DiffModalBody() {
   const [diffSelection, setDiffSelection] = useAtom(diffSelectionAtom);
   const [highlightChanges, setHighlightChanges] = useAtom(highlightChangesAtom);
   const diffCounts = useAtomValue(diffCountsAtom);
-  const pageEditor = useAtomValue(pageEditorAtom);
+  const pageEditorRaw = useAtomValue(pageEditorAtom);
+  const pageEditorReady = useAtomValue(pageEditorContentReadyAtom);
+  // 동기화 전 collab 에디터는 빈 문서다. 그대로 diff 를 그리면 문서 전체가
+  // 삭제된 것처럼 보이고, 더 나쁘게는 「이 블럭 되돌리기」가 **빈 ydoc 에 써서**
+  // 뒤늦은 원격 동기화와 병합돼 본문이 중복될 수 있다(N-8 과 같은 원인).
+  const pageEditor = pageEditorReady ? pageEditorRaw : null;
 
   const pageId = diffSelection?.pageId;
 
@@ -215,10 +227,11 @@ function DiffModalBody() {
     !!page?.primaryVersionId &&
     leftSel === page.primaryVersionId;
 
-  const activeWorkingDocId =
-    activeWorkingDoc?.pageId === pageId
-      ? activeWorkingDoc.workingDocId
-      : (page?.primaryWorkingDocId ?? null);
+  const activeWorkingDocId = resolveActiveWorkingDocId(
+    activeWorkingDoc,
+    pageId,
+    page?.primaryWorkingDocId,
+  );
 
   // base(서버 JSON)를 에디터 스키마로 정규화 후 블럭 비교 — 직렬화 비대칭 제거
   const normalizedLeft = useMemo(
