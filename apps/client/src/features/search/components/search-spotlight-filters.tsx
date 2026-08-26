@@ -5,7 +5,6 @@ import {
   Text,
   TextInput,
   Divider,
-  Badge,
   ScrollArea,
   Avatar,
   Group,
@@ -77,14 +76,9 @@ export function SearchSpotlightFilters({
     }
   }, []);
 
-  const contentTypeOptions = [
-    { value: "page", label: t("Pages") },
-    {
-      value: "attachment",
-      label: t("Attachments"),
-      disabled: true,
-    },
-  ];
+  // 유형은 「페이지」 하나뿐이다. 예전에 있던 '첨부 파일'(disabled + 기업 배지)은
+  // 제공하지 않기로 해 제거했다. 필터 버튼 자체는 남긴다.
+  const contentTypeOptions = [{ value: "page", label: t("Pages") }];
 
   const handleSpaceSelect = (spaceId: string | null) => {
     setSelectedSpaceId(spaceId);
@@ -135,6 +129,47 @@ export function SearchSpotlightFilters({
 
   return (
     <div className={classes.filtersContainer}>
+
+      <Menu
+        shadow="md"
+        width={220}
+        position="bottom-start"
+        zIndex={getDefaultZIndex("max")}
+      >
+        <Menu.Target>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="sm"
+            rightSection={<IconChevronDown size={14} />}
+            leftSection={<IconFileDescription size={16} />}
+            className={classes.filterButton}
+            fw={500}
+          >
+            {contentType
+              ? `${t("Type")}: ${contentTypeOptions.find((opt) => opt.value === contentType)?.label ?? t("Pages")}`
+              : t("Type")}
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {contentTypeOptions.map((option) => (
+            <Menu.Item
+              key={option.value}
+              onClick={() =>
+                contentType !== option.value &&
+                handleFilterChange("contentType", option.value)
+              }
+            >
+              <Group flex="1" gap="xs">
+                <Text size="sm" style={{ flex: 1 }}>
+                  {option.label}
+                </Text>
+                {contentType === option.value && <IconCheck size={20} />}
+              </Group>
+            </Menu.Item>
+          ))}
+        </Menu.Dropdown>
+      </Menu>
 
       <Menu
         shadow="md"
@@ -214,54 +249,6 @@ export function SearchSpotlightFilters({
               </Menu.Item>
             ))}
           </ScrollArea.Autosize>
-        </Menu.Dropdown>
-      </Menu>
-
-      <Menu
-        shadow="md"
-        width={220}
-        position="bottom-start"
-        zIndex={getDefaultZIndex("max")}
-      >
-        <Menu.Target>
-          <Button
-            variant="subtle"
-            color="gray"
-            size="sm"
-            rightSection={<IconChevronDown size={14} />}
-            leftSection={<IconFileDescription size={16} />}
-            className={classes.filterButton}
-            fw={500}
-          >
-            {contentType
-              ? `${t("Type")}: ${contentTypeOptions.find((opt) => opt.value === contentType)?.label || t(contentType === "page" ? "Pages" : "Attachments")}`
-              : t("Type")}
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {contentTypeOptions.map((option) => (
-            <Menu.Item
-              key={option.value}
-              onClick={() =>
-                !option.disabled &&
-                contentType !== option.value &&
-                handleFilterChange("contentType", option.value)
-              }
-              disabled={option.disabled}
-            >
-              <Group flex="1" gap="xs">
-                <div>
-                  <Text size="sm">{option.label}</Text>
-                  {option.disabled && (
-                    <Badge size="xs" mt={4}>
-                      {t("Enterprise")}
-                    </Badge>
-                  )}
-                </div>
-                {contentType === option.value && <IconCheck size={20} />}
-              </Group>
-            </Menu.Item>
-          ))}
         </Menu.Dropdown>
       </Menu>
 
