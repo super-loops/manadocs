@@ -6,4 +6,4 @@ export const activeHistoryPrevIdAtom = atom<string>("");
 export const highlightChangesAtom = atom<boolean>(true);
 
 export type DiffCounts = { added: number; deleted: number; total: number };
-export const diffCountsAtom = atom<DiffCounts | null>(null);
+export const diffCountsAtom = atom(null as DiffCounts | null);
