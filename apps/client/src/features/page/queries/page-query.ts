@@ -121,8 +121,15 @@ export function useRemovePageMutation() {
   const { t } = useTranslation();
   return useMutation({
     mutationFn: (pageId: string) => deletePage(pageId, false),
-    onSuccess: (_, pageId) => {
-      notifications.show({ message: t("Page moved to trash") });
+    onSuccess: (result, pageId) => {
+      // 이미 휴지통에 있는 페이지를 다시 지우면 서버가 아무것도 옮기지 않고
+      // 200 을 준다(findById 가 deletedAt 을 안 거른다). 그걸 «옮겼습니다» 로
+      // 알리면 유저가 하지도 않은 일을 했다고 믿는다.
+      notifications.show({
+        message: result.trashedPageIds.length
+          ? t("Page moved to trash")
+          : t("이미 휴지통에 있는 페이지입니다"),
+      });
       invalidateOnDeletePage(pageId);
       queryClient.invalidateQueries({
         predicate: (item) =>

@@ -249,6 +249,10 @@ export class PageController {
 
     const ability = await this.spaceAbility.createForUser(user, page.spaceId);
 
+    // 휴지통 이동은 하위 트리 전체를 데려간다. 무엇이 실제로 갔는지 호출자가
+    // 알아야 «한 건 지웠는데 목록이 통째로 비었다» 를 화면에서 설명할 수 있다.
+    let trashedPageIds: string[] = [];
+
     if (deletePageDto.permanentlyDelete) {
       // Permanent deletion requires space admin permissions
       if (ability.cannot(SpaceCaslAction.Manage, SpaceCaslSubject.Settings)) {
@@ -276,7 +280,7 @@ export class PageController {
       // User with edit permission can delete
       await this.pageAccessService.validateCanEdit(page, user);
 
-      await this.pageService.removePage(
+      trashedPageIds = await this.pageService.removePage(
         page,
         user.id,
         workspace.id,
@@ -297,6 +301,8 @@ export class PageController {
         },
       });
     }
+
+    return { trashedPageIds };
   }
 
   @HttpCode(HttpStatus.OK)

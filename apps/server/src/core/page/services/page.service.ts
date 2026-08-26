@@ -1041,12 +1041,17 @@ export class PageService {
     }
   }
 
+  /** 휴지통으로 이동한 페이지 id (하위 트리 포함) 를 돌려준다 */
   async removePage(
     page: Page,
     userId: string,
     workspaceId: string,
-  ): Promise<void> {
-    await this.pageRepo.removePage(page.id, userId, workspaceId);
+  ): Promise<string[]> {
+    const trashedPageIds = await this.pageRepo.removePage(
+      page.id,
+      userId,
+      workspaceId,
+    );
 
     this.wsService
       .emitTreeEvent(page.spaceId, {
@@ -1062,6 +1067,8 @@ export class PageService {
       .catch((err) =>
         this.logger.warn(`Failed to emit deleteTreeNode: ${err.message}`),
       );
+
+    return trashedPageIds;
   }
 
   private async parseProsemirrorContent(

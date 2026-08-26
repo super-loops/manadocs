@@ -100,3 +100,12 @@ export enum ExportFormat {
   HTML = "html",
   Markdown = "markdown",
 }
+
+export interface IDeletePageResult {
+  /**
+   * 휴지통으로 실제 이동한 페이지 id — **하위 트리 전체**를 포함한다.
+   * 빈 배열이면 아무것도 이동하지 않았다(이미 휴지통에 있던 페이지).
+   * 영구 삭제 경로에서도 빈 배열이다.
+   */
+  trashedPageIds: string[];
+}

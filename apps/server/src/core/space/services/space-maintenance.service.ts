@@ -20,6 +20,12 @@ export interface MaintenancePageRow {
   createdAt: Date;
   /** integrity 항목에서만 채워지는 세부 사유 코드 */
   detail?: string;
+  /**
+   * 이 페이지를 휴지통으로 보낼 때 함께 딸려가는 살아있는 하위 페이지 수
+   * (자기 자신 제외). 휴지통 이동은 하위 트리 전체를 캐스케이드하므로
+   * 화면이 «몇 건이 지워지는가» 를 말할 수 있어야 한다.
+   */
+  descendantCount: number;
 }
 
 export interface MaintenanceGroup {
@@ -57,16 +63,80 @@ export class SpaceMaintenanceService {
       this.findIntegrityIssues(spaceId),
     ]);
 
+    const groups = [empty, untitled, stale, integrity];
+    await this.attachDescendantCounts(groups);
+
     return {
-      groups: [
-        empty,
-        untitled,
-        stale,
-        integrity,
-      ],
+      groups,
       staleDays: STALE_DAYS,
       scannedAt: new Date(),
     };
+  }
+
+  /**
+   * 각 행에 «함께 휴지통으로 갈 하위 페이지 수» 를 채운다.
+   * PageRepo.removePage 가 재귀 CTE 로 하위 트리 전체를 soft-delete 하므로,
+   * 그 폭발 반경을 지우기 전에 화면에서 볼 수 있어야 한다.
+   */
+  private async attachDescendantCounts(
+    groups: MaintenanceGroup[],
+  ): Promise<void> {
+    const rows = groups.flatMap((group) => group.items);
+    const ids = [...new Set(rows.map((row) => row.id))];
+
+    const counts = await this.countLiveDescendants(ids);
+    for (const row of rows) {
+      row.descendantCount = counts.get(row.id) ?? 0;
+    }
+  }
+
+  /** pageId -> 살아있는 하위 페이지 수(자기 자신 제외) */
+  private async countLiveDescendants(
+    pageIds: string[],
+  ): Promise<Map<string, number>> {
+    if (pageIds.length === 0) return new Map();
+
+    const rows = await this.db
+      .withRecursive('subtree', (qb) =>
+        qb
+          .selectFrom('pages')
+          .select(['pages.id as rootId', 'pages.id as descendantId'])
+          .where('pages.id', 'in', pageIds)
+          .where('pages.deletedAt', 'is', null)
+          .unionAll((eb) =>
+            eb
+              .selectFrom('pages')
+              .innerJoin(
+                'subtree',
+                'subtree.descendantId',
+                'pages.parentPageId',
+              )
+              .select(['subtree.rootId as rootId', 'pages.id as descendantId'])
+              .where('pages.deletedAt', 'is', null),
+          ),
+      )
+      .selectFrom('subtree')
+      .select('subtree.rootId')
+      .select((eb) => eb.fn.countAll<string>().as('total'))
+      .groupBy('subtree.rootId')
+      .execute();
+
+    // 앵커 행(자기 자신)이 1건 섞여 있으니 뺀다
+    return new Map(
+      rows.map((row) => [row.rootId, Math.max(0, Number(row.total) - 1)]),
+    );
+  }
+
+  /**
+   * livePages() 결과를 MaintenancePageRow 로 승격한다.
+   * descendantCount 는 attachDescendantCounts() 가 한 번에 채운다.
+   */
+  private toRows(rows: any[], detail?: string): MaintenancePageRow[] {
+    return rows.map((row) => ({
+      ...row,
+      ...(detail ? { detail } : {}),
+      descendantCount: 0,
+    }));
   }
 
   private livePages(spaceId: string) {
@@ -104,7 +174,7 @@ export class SpaceMaintenanceService {
       eb.and([blankTitle(eb), blankText(eb)]),
     );
 
-    return { kind: 'empty', count, items };
+    return { kind: 'empty', count, items: this.toRows(items) };
   }
 
   /** (b) 제목만 없는 페이지 (내용은 있음 — 빈 페이지와 겹치지 않게) */
@@ -124,7 +194,7 @@ export class SpaceMaintenanceService {
 
     const count = await this.countLive(spaceId, predicate);
 
-    return { kind: 'untitled', count, items };
+    return { kind: 'untitled', count, items: this.toRows(items) };
   }
 
   /** (c) 확정본 0 + 오래 손대지 않은 페이지 */
@@ -146,7 +216,7 @@ export class SpaceMaintenanceService {
 
     const count = await this.countLive(spaceId, predicate);
 
-    return { kind: 'staleUncommitted', count, items };
+    return { kind: 'staleUncommitted', count, items: this.toRows(items) };
   }
 
   /**
@@ -200,11 +270,7 @@ export class SpaceMaintenanceService {
             eb
               .selectFrom('pageWorkingDocs')
               .select('pageWorkingDocs.id')
-              .whereRef(
-                'pageWorkingDocs.id',
-                '=',
-                'pages.primaryWorkingDocId',
-              ),
+              .whereRef('pageWorkingDocs.id', '=', 'pages.primaryWorkingDocId'),
           ),
         ),
       )
@@ -213,12 +279,12 @@ export class SpaceMaintenanceService {
 
     const byId = new Map<string, MaintenancePageRow>();
     const absorb = (rows: any[], detail: string) => {
-      for (const row of rows) {
+      for (const row of this.toRows(rows, detail)) {
         const existing = byId.get(row.id);
         if (existing) {
           existing.detail = `${existing.detail}, ${detail}`;
         } else {
-          byId.set(row.id, { ...row, detail });
+          byId.set(row.id, row);
         }
       }
     };

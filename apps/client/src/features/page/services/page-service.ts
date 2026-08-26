@@ -1,6 +1,7 @@
 import api from "@/lib/api-client";
 import {
   ICopyPageToSpace,
+  IDeletePageResult,
   IExportPageParams,
   IMovePage,
   IMovePageToSpace,
@@ -32,8 +33,12 @@ export async function updatePage(data: Partial<IPageInput>): Promise<IPage> {
   return req.data;
 }
 
-export async function deletePage(pageId: string, permanentlyDelete = false): Promise<void> {
-  await api.post("/pages/delete", { pageId, permanentlyDelete });
+export async function deletePage(
+  pageId: string,
+  permanentlyDelete = false,
+): Promise<IDeletePageResult> {
+  const req = await api.post("/pages/delete", { pageId, permanentlyDelete });
+  return { trashedPageIds: req.data?.trashedPageIds ?? [] };
 }
 
 export async function getDeletedPages(

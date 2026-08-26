@@ -173,11 +173,16 @@ export class PageRepo {
     await query.execute();
   }
 
+  /**
+   * 페이지를 휴지통으로 보낸다. **하위 트리 전체가 함께 간다.**
+   * 무엇이 실제로 딸려갔는지 호출자가 알 수 있게 이동한 id 를 돌려준다 —
+   * 이미 휴지통에 있는 페이지면 빈 배열이다(아무 일도 일어나지 않았다는 뜻).
+   */
   async removePage(
     pageId: string,
     deletedById: string,
     workspaceId: string,
-  ): Promise<void> {
+  ): Promise<string[]> {
     const currentDate = new Date();
 
     const descendants = await this.db
@@ -221,6 +226,8 @@ export class PageRepo {
         workspaceId,
       });
     }
+
+    return pageIds;
   }
 
   async restorePage(pageId: string, workspaceId: string): Promise<void> {
