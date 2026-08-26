@@ -47,6 +47,7 @@ import { searchSpotlight } from "@/features/search/constants";
 import {
   getSpaceAssetsUrl,
   getSpaceSettingsUrl,
+  getSpaceTrashUrl,
 } from "@/features/space/space.utils.ts";
 
 interface SubMenuItem {
@@ -221,6 +222,11 @@ export function SpaceSidebar() {
                   to: getSpaceAssetsUrl(spaceSlug),
                   icon: IconFolders,
                 },
+                {
+                  label: t("Trash"),
+                  to: getSpaceTrashUrl(spaceSlug),
+                  icon: IconTrash,
+                },
               ]}
             />
 
@@ -242,7 +248,7 @@ export function SpaceSidebar() {
                   className={classes.menuItemIcon}
                   stroke={2}
                 />
-                <span>{t("Search")}</span>
+                <span>{t("상세검색")}</span>
               </div>
             </UnstyledButton>
 
@@ -361,14 +367,6 @@ function SpaceMenu({ spaceId }: SpaceMenuProps) {
             leftSection={<IconSettings size={16} />}
           >
             {t("Space settings")}
-          </Menu.Item>
-
-          <Menu.Item
-            component={Link}
-            to={`/s/${spaceSlug}/trash`}
-            leftSection={<IconTrash size={16} />}
-          >
-            {t("Trash")}
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>

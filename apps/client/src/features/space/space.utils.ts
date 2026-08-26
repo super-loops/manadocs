@@ -3,6 +3,10 @@ export function getSpaceAssetsUrl(spaceSlug: string) {
   return `/s/${spaceSlug}/assets`;
 }
 
+export function getSpaceTrashUrl(spaceSlug: string) {
+  return `/s/${spaceSlug}/trash`;
+}
+
 export function getSpaceSettingsUrl(
   spaceSlug: string,
   tab?: "members" | "maintenance",
