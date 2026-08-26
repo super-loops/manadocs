@@ -6,13 +6,13 @@ import {
   Divider,
   Group,
   Paper,
-  Stack,
   Text,
   Tooltip,
 } from "@mantine/core";
 import { IconClock } from "@tabler/icons-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
+import { resolveActiveWorkingDocId } from "@/features/page-version/hooks/use-active-working-doc";
 import {
   activeWorkingDocAtom,
   commitDialogOpenAtom,
@@ -22,20 +22,23 @@ import {
   usePageVersionQuery,
   useWorkingDocsQuery,
 } from "@/features/page-version/queries/page-version-query";
-import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
+import {
+  editorPageId,
+  pageEditorAtom,
+  pageEditorContentReadyAtom,
+} from "@/features/editor/atoms/editor-atoms";
 import { IPage } from "@/features/page/types/page.types";
 import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
-import { formattedDate } from "@/lib/time";
 import { getBranchCode } from "@/lib/branch-code";
-import { useTimeAgo } from "@/hooks/use-time-ago";
+import {
+  resolveEditingTimestamps,
+  VersionTimeLines,
+} from "@/components/common/version-time-lines";
 import classes from "./css/footer-pill.module.css";
 
 interface FooterPillProps {
   page: IPage;
 }
-
-/** 시각이 아직 없을 때 훅에 넘길 고정 값 — 매 렌더 new Date() 를 만들지 않는다 */
-const EPOCH = new Date(0);
 
 /**
  * 페이지 하단 floating pill.
@@ -50,6 +53,7 @@ export default function FooterPill({ page }: FooterPillProps) {
   const setCommitDialogOpen = useSetAtom(commitDialogOpenAtom);
   const setDiffSelection = useSetAtom(diffSelectionAtom);
   const editor = useAtomValue(pageEditorAtom);
+  const contentReady = useAtomValue(pageEditorContentReadyAtom);
   const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
 
   const primaryVersionId = page.primaryVersionId ?? null;
@@ -61,10 +65,11 @@ export default function FooterPill({ page }: FooterPillProps) {
   // ── 편집 중인 작업문서 (여러 개일 때만 이름 노출) ────────────────
   const canEdit = page.permissions?.canEdit ?? false;
   const { data: workingDocs } = useWorkingDocsQuery(page.id, canEdit);
-  const activeWorkingDocId =
-    activeWorkingDoc?.pageId === page.id
-      ? activeWorkingDoc.workingDocId
-      : (page.primaryWorkingDocId ?? null);
+  const activeWorkingDocId = resolveActiveWorkingDocId(
+    activeWorkingDoc,
+    page.id,
+    page.primaryWorkingDocId,
+  );
   const currentWorkingDoc = (workingDocs ?? []).find(
     (doc) => doc.id === activeWorkingDocId,
   );
@@ -81,29 +86,18 @@ export default function FooterPill({ page }: FooterPillProps) {
   // 분기를 보고 있나" 를 이 칩 하나로 맞춘다.
   const branchCode = getBranchCode(activeWorkingDocId);
 
-  /**
-   * 수정 시작 — 전용 필드가 없어 두 시각 중 나중을 쓴다.
-   * - 작업문서 생성 시각: "새 작업문서"로 만든 경우엔 이게 편집 시작이다.
-   * - 기준 버전 확정 시각: Primary 작업문서는 페이지 생성 때 만들어져
-   *   createdAt 이 편집 시작이 아니다. 확정할 때마다 base 가 옮겨가므로
-   *   이 값이 현재 편집 사이클의 시작이다.
-   * 두 후보의 약점이 서로 배타적이라 max 가 양쪽 경우 모두 맞는다.
-   */
-  const editingStartedAt = currentWorkingDoc
-    ? new Date(
-        Math.max(
-          new Date(currentWorkingDoc.createdAt).getTime(),
-          currentWorkingDoc.baseVersion
-            ? new Date(currentWorkingDoc.baseVersion.createdAt).getTime()
-            : 0,
-        ),
-      )
-    : null;
-  const lastEditedAt = currentWorkingDoc
-    ? new Date(currentWorkingDoc.updatedAt)
-    : null;
-  const lastEditedAgo = useTimeAgo(lastEditedAt ?? EPOCH);
-  const hasTimestamps = !!editingStartedAt && !!lastEditedAt;
+  // 시각 계산·문구는 공용 컴포넌트가 갖는다 — 사이드바 트리 툴팁이 같은 2줄을
+  // 쓰므로, 여기서 따로 만들면 두 곳의 문구가 갈라진다.
+  const timestamps = resolveEditingTimestamps(
+    currentWorkingDoc
+      ? {
+          workingDocCreatedAt: currentWorkingDoc.createdAt,
+          workingDocUpdatedAt: currentWorkingDoc.updatedAt,
+          baseVersionCreatedAt: currentWorkingDoc.baseVersion?.createdAt,
+        }
+      : null,
+  );
+  const hasTimestamps = !!timestamps;
 
   // 라이브 에디터 ↔ Primary 비교 (편집 시 디바운스 재계산)
   const [changed, setChanged] = useState(false);
@@ -118,8 +112,17 @@ export default function FooterPill({ page }: FooterPillProps) {
 
   const recompute = useMemo(
     () => () => {
-      if (!editor || editor.isDestroyed) {
+      // 정적 본문을 보여주는 동안 collab 에디터는 비어 있다 — 그때 판정하면
+      // 안 고친 페이지가 «−N» 으로 잡힌다(N-8)
+      if (
+        !editor ||
+        editor.isDestroyed ||
+        !contentReady ||
+        // 페이지 전환 한 프레임 동안 남아 있는 앞 페이지 에디터를 걸러낸다
+        editorPageId(editor) !== page.id
+      ) {
         setChanged(false);
+        applyStats({ added: 0, deleted: 0 });
         return;
       }
       // Primary 콘텐츠 로딩 중이면 이전 판정을 유지한다(깜빡임 방지)
@@ -135,17 +138,17 @@ export default function FooterPill({ page }: FooterPillProps) {
       setChanged(s.total > 0);
       applyStats(s);
     },
-    [editor, primaryVersionId, primaryContent],
+    [editor, primaryVersionId, primaryContent, contentReady, page.id],
   );
 
   useEffect(() => {
-    if (!editor || editor.isDestroyed) return;
     recompute();
     let timer: ReturnType<typeof setTimeout> | null = null;
     const onUpdate = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(recompute, 400);
     };
+    if (!editor || editor.isDestroyed) return;
     editor.on("update", onUpdate);
     return () => {
       if (timer) clearTimeout(timer);
@@ -220,19 +223,7 @@ export default function FooterPill({ page }: FooterPillProps) {
           withArrow
           multiline
           disabled={!hasTimestamps}
-          label={
-            hasTimestamps ? (
-              <Stack gap={2}>
-                <Text size="xs">
-                  {t("수정 시작")}: {formattedDate(editingStartedAt)}
-                </Text>
-                <Text size="xs">
-                  {t("마지막 수정")}: {formattedDate(lastEditedAt)} (
-                  {lastEditedAgo})
-                </Text>
-              </Stack>
-            ) : null
-          }
+          label={timestamps ? <VersionTimeLines {...timestamps} /> : null}
         >
           <ActionIcon
             variant="subtle"
