@@ -49,3 +49,4 @@ lerna-debug.log*
 *:Zone.Identifier
 
 /tmp
+.coleading/
