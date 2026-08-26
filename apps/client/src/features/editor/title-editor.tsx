@@ -159,12 +159,22 @@ export function TitleEditor({
   }, [pageId, title, titleEditor]);
 
   useEffect(() => {
-    setTimeout(() => {
+    // 제목이 **비어 있을 때만** 커서를 제목으로 보낸다.
+    //  - 새로 만든 페이지: 바로 제목을 칠 수 있게 커서가 간다.
+    //  - 제목이 있는 문서를 열 때: 커서를 건드리지 않는다. 예전엔 이동할 때마다
+    //    무조건 발동해서, 읽으려고 연 문서에서도 포커스를 뺏어갔다(N-8 (2)).
+    // 공백만 있는 제목도 빈 것으로 본다.
+    if (title?.trim()) return;
+
+    // 타이머를 안 걷으면 이미 떠난 페이지의 포커스 요청이 뒤늦게 터진다 —
+    // 페이지를 연달아 넘기면 방금 연 페이지에서 커서가 제목으로 튄다.
+    const timer = setTimeout(() => {
       // guard against Cannot access view['hasFocus'] error
       if (!titleEditor?.isInitialized) return;
       titleEditor?.commands?.focus("end");
     }, 300);
-  }, [titleEditor]);
+    return () => clearTimeout(timer);
+  }, [titleEditor, title]);
 
   useEffect(() => {
     return () => {

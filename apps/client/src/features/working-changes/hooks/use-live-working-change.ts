@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useParams } from "react-router-dom";
-import { pageEditorAtom } from "@/features/editor/atoms/editor-atoms";
+import {
+  editorPageId,
+  pageEditorAtom,
+  pageEditorContentReadyAtom,
+} from "@/features/editor/atoms/editor-atoms";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { usePageVersionQuery } from "@/features/page-version/queries/page-version-query";
 import { computeUncommittedStats } from "@/features/page-version/utils/working-diff";
@@ -29,6 +33,7 @@ export interface LiveWorkingChange {
 export function useLiveWorkingChange(): LiveWorkingChange | null {
   const { pageSlug } = useParams();
   const editor = useAtomValue(pageEditorAtom);
+  const contentReady = useAtomValue(pageEditorContentReadyAtom);
   const { data: page } = usePageQuery({
     pageId: extractPageSlugId(pageSlug),
   });
@@ -42,7 +47,17 @@ export function useLiveWorkingChange(): LiveWorkingChange | null {
 
   const recompute = useMemo(
     () => () => {
-      if (!editor || editor.isDestroyed || !page) {
+      // contentReady 전에는 collab 에디터가 빈 문서라, 확정본과 비교하면
+      // 아무것도 안 고친 페이지가 «−N» 유령으로 목록에 올라온다(N-8)
+      if (!editor || editor.isDestroyed || !page || !contentReady) {
+        setStats(null);
+        return;
+      }
+      // 페이지를 옮기는 한 프레임 동안 atom 에는 아직 **앞 페이지의** 에디터가
+      // 실려 있다(트리 hover prefetch 로 언마운트·마운트가 같은 커밋에 일어나면
+      // contentReady 스냅샷도 아직 true 다). 에디터에 찍힌 pageId 를 호출 시점에
+      // 대조해, 앞 페이지의 본문을 이 페이지의 통계로 내보내지 않는다.
+      if (editorPageId(editor) !== page.id) {
         setStats(null);
         return;
       }
@@ -57,7 +72,7 @@ export function useLiveWorkingChange(): LiveWorkingChange | null {
         ),
       );
     },
-    [editor, page, primaryVersionId, primaryContent],
+    [editor, page, primaryVersionId, primaryContent, contentReady],
   );
 
   useEffect(() => {

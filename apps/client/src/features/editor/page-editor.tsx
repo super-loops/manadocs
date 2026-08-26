@@ -26,11 +26,12 @@ import {
   collabExtensions,
   mainExtensions,
 } from "@/features/editor/extensions/extensions";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import useCollaborationUrl from "@/features/editor/hooks/use-collaboration-url";
 import { currentUserAtom } from "@/features/user/atoms/current-user-atom";
 import {
   pageEditorAtom,
+  pageEditorContentReadyAtom,
   yjsConnectionStatusAtom,
 } from "@/features/editor/atoms/editor-atoms";
 import { EditorBubbleMenu } from "@/features/editor/components/bubble-menu/bubble-menu";
@@ -86,8 +87,22 @@ export default function PageEditor({
 
   const [currentUser] = useAtom(currentUserAtom);
   const [, setEditor] = useAtom(pageEditorAtom);
+  const setPageEditorContentReady = useSetAtom(pageEditorContentReadyAtom);
   const [isLocalSynced, setIsLocalSynced] = useState(false);
   const [isRemoteSynced, setIsRemoteSynced] = useState(false);
+  /**
+   * ydoc 이 서버와 한 번이라도 동기화됐는가 — 「이 에디터의 본문을 믿어도 되는가」.
+   *
+   * 동기화 전 collab 에디터는 **빈 문서**다. 그걸 확정본과 비교하면 아무것도
+   * 안 고친 페이지가 «−1» 로 잡혀 사이드바 "수정중" 에 유령이 떴다 사라진다(N-8).
+   *
+   * showStatic 을 쓰지 않는 이유: 그건 yjsConnectionStatus 를 타는데, 7500ms
+   * 타임아웃이 그 값을 Disconnected 로 덮고 되돌리는 경로가 없다(재연결 effect 의
+   * deps 에 yjsConnectionStatus 가 빠져 있다). 동기화만 느려도 판정이 영구히
+   * 닫힐 수 있어, 연결 상태를 거치지 않는 신호를 쓴다.
+   * 끊겼다 붙는 사이 판정이 깜빡이지 않게 한 번 켜지면 방을 옮길 때까지 유지한다.
+   */
+  const [ydocLoaded, setYdocLoaded] = useState(false);
   const [yjsConnectionStatus, setYjsConnectionStatus] = useAtom(
     yjsConnectionStatusAtom,
   );
@@ -113,6 +128,7 @@ export default function PageEditor({
   const [providersReady, setProvidersReady] = useState(false);
 
   useEffect(() => {
+    setYdocLoaded(false);
     if (!providersRef.current) {
       // 작업문서별 명시 room — 서버가 해당 작업문서 row 에 저장한다.
       // workingDocId 미지정(레거시)은 Primary 작업문서로 해석됨.
@@ -309,6 +325,15 @@ export default function PageEditor({
   }, 3000);
 
   const isSynced = isLocalSynced && isRemoteSynced;
+
+  useEffect(() => {
+    if (isRemoteSynced) setYdocLoaded(true);
+  }, [isRemoteSynced]);
+
+  useEffect(() => {
+    setPageEditorContentReady(ydocLoaded);
+    return () => setPageEditorContentReady(false);
+  }, [ydocLoaded, setPageEditorContentReady]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
