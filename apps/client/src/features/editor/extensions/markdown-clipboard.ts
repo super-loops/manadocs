@@ -100,7 +100,9 @@ export const MarkdownClipboard = Extension.create({
           // parses as an extra paragraph. Inside a list item this creates
           // an orphan empty line that breaks the list structure.
           transformPasted: (slice) => {
-            let { content, openStart, openEnd } = slice;
+            // content 는 아래 while 에서 재대입되므로 let 으로 남긴다.
+            let { content } = slice;
+            const { openStart, openEnd } = slice;
 
             // Remove trailing paragraphs that contain only whitespace
             while (content.childCount > 1) {
