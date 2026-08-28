@@ -36,7 +36,9 @@ export default function AttachmentView(props: NodeViewProps) {
         },
       )
       .run();
-  }, [editor, getPos, node, url, name, attachmentId]);
+  // size 는 node.attrs 에서 온 값이라 node 가 바뀔 때만 바뀐다 — 이미 deps 에
+  // 있는 node 보다 자주 무효화될 수 없다.
+  }, [editor, getPos, node, url, name, attachmentId, size]);
 
   return (
     <NodeViewWrapper>

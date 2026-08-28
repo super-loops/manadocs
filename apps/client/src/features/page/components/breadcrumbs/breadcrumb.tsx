@@ -33,7 +33,9 @@ export default function Breadcrumb() {
   const { t } = useTranslation();
   const treeData = useAtomValue(treeDataAtom);
   /** 빈 제목 표기는 앱 전체에서 "제목 없음"(untitled) 하나로 통일 */
-  const nameOf = (name: string) => name || t("untitled");
+  // renderAnchor 의 deps 에 넣어야 하는데 매 렌더 새로 만들어지면 메모가 무의미해진다.
+  // t 에만 의존하므로 고정해 둔다 — renderAnchor 는 이미 t 에 의존해 빈도는 그대로다.
+  const nameOf = useCallback((name: string) => name || t("untitled"), [t]);
   const [breadcrumbNodes, setBreadcrumbNodes] = useState<
     SpaceTreeNode[] | null
   >(null);
@@ -50,8 +52,9 @@ export default function Breadcrumb() {
    * 영역(트리) 전용이라 여기엔 넣지 않는다.
    */
   const versionBadges = usePageVersionBadgeMap(currentPage?.spaceId ?? "");
+  const currentPageId = currentPage?.id;
   const currentVersionSummary = useMemo(() => {
-    const badge = currentPage ? versionBadges.get(currentPage.id) : null;
+    const badge = currentPageId ? versionBadges.get(currentPageId) : null;
     return badge
       ? formatVersionSummary(t, {
           version: badge.version,
@@ -59,11 +62,15 @@ export default function Breadcrumb() {
           baseVersion: badge.baseVersion,
         })
       : null;
-  }, [currentPage?.id, versionBadges, t]);
+  }, [currentPageId, versionBadges, t]);
 
   useEffect(() => {
     if (treeData?.length > 0 && currentPage) {
       const breadcrumb = findBreadcrumbPath(treeData, currentPage.id);
+      // 조건이 안 맞으면 «세팅하지 않아» 직전 값을 유지하는 것이 의도된 동작이다.
+      // useMemo 파생으로 바꾸면 페이지 이동 중 currentPage 가 잠시 비는 순간
+      // 상단 문서명이 사라졌다 돌아온다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBreadcrumbNodes(breadcrumb || null);
     }
   }, [currentPage?.id, treeData]);
@@ -130,7 +137,7 @@ export default function Breadcrumb() {
         </Anchor>
       </Tooltip>
     ),
-    [spaceSlug, t],
+    [spaceSlug, nameOf],
   );
 
   /** 마지막 항목 = 지금 보고 있는 문서. 여기에만 버전·작업문서를 붙인다. */

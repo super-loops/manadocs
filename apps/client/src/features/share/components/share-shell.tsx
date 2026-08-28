@@ -64,10 +64,12 @@ export default function ShareShell({
   const setSharedTreeData = useSetAtom(sharedTreeDataAtom);
 
   // Build and set the tree data when it changes
+  // 위와 같은 이유 — 옵셔널 체이닝을 deps 에 두지 않고 지역 상수로 올린다.
+  const pageTree = data?.pageTree;
   const treeData = useMemo(() => {
-    if (!data?.pageTree) return null;
-    return buildSharedPageTree(data.pageTree);
-  }, [data?.pageTree]);
+    if (!pageTree) return null;
+    return buildSharedPageTree(pageTree);
+  }, [pageTree]);
 
   useEffect(() => {
     setSharedPageTree(data || null);

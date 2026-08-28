@@ -134,6 +134,9 @@ function SearchAndReplaceDialog({ editor, editable = true }: PageFindDialogDialo
   };
 
   useEffect(() => {
+    // 바깥 atom 이 닫히면 로컬 상태도 닫는 «명령형» 동기화라 파생으로 표현되지
+    // 않는다. 재설계하면 Ctrl+F 동작에 회귀 위험이 있어 예외로 둔다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     !pageFindState.isOpen && closeDialog();
 
     document.addEventListener("openFindDialogFromEditor", handleOpenEvent);
@@ -154,25 +157,25 @@ function SearchAndReplaceDialog({ editor, editable = true }: PageFindDialogDialo
     goToSelection();
   }, [caseSensitive]);
 
+  // deps 에 옵셔널 체이닝 표현식을 두면 컴파일러 추론과 어긋난다 — 지역 상수로
+  // 올린다. 읽는 값도 무효화 빈도도 그대로다.
+  const searchStorage = editor?.storage?.searchAndReplace;
+  const resultIndex = searchStorage?.resultIndex;
+  const resultsLength = searchStorage?.results.length;
   const resultsCount = useMemo(
     () =>
       searchText.trim() === ""
         ? ""
-        : editor?.storage?.searchAndReplace?.results.length > 0
-        ? editor?.storage?.searchAndReplace?.resultIndex +
-          1 +
-          "/" +
-          editor?.storage?.searchAndReplace?.results.length
+        : resultsLength > 0
+        ? resultIndex + 1 + "/" + resultsLength
         : t("Not found"),
-    [
-      searchText,
-      editor?.storage?.searchAndReplace?.resultIndex,
-      editor?.storage?.searchAndReplace?.results.length,
-    ],
+    [searchText, resultIndex, resultsLength, t],
   );
 
   const location = useLocation();
   useEffect(() => {
+    // 라우트 이동이라는 바깥 사건에 반응해 닫는 동작이다 — 파생할 상태가 아니다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     closeDialog();
   }, [location]);
 

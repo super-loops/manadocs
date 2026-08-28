@@ -152,7 +152,17 @@ export function TitleEditor({
       localEmitter.emit("message", event);
       emit(event);
     });
-  }, [pageId, title, titleEditor]);
+    // emit 은 useQueryEmit 이 socket 에만 의존해 고정한다. activePageId 는
+    // onCreate 에서만 세팅돼 pageId 와 함께 움직인다. 셋 다 넣어도 saveTitle 이
+    // 다시 만들어지는 빈도는 사실상 그대로다.
+  }, [
+    pageId,
+    title,
+    titleEditor,
+    activePageId,
+    updateTitlePageMutationAsync,
+    emit,
+  ]);
 
   const debounceUpdate = useDebouncedCallback(saveTitle, 500);
 

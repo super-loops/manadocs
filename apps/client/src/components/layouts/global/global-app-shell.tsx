@@ -56,7 +56,9 @@ export default function GlobalAppShell({
         setSidebarWidth(newWidth);
       }
     },
-    [isResizing],
+    // setSidebarWidth 는 jotai useAtom 의 setter 라 참조가 고정이다 —
+    // deps 에 넣어도 resize 가 다시 만들어지는 빈도는 그대로다.
+    [isResizing, setSidebarWidth],
   );
 
   useEffect(() => {

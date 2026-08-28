@@ -49,13 +49,17 @@ export function SearchSpotlightFilters({
     query: debouncedSpaceQuery,
   });
 
+  // deps 에 옵셔널 체이닝(spacesData?.items)을 쓰면 컴파일러 추론(spacesData.items)과
+  // 표현식이 어긋난다. 지역 상수로 올리면 값도 무효화 빈도도 그대로다.
+  const spaceItems = spacesData?.items;
+
   const selectedSpaceData = useMemo(() => {
-    if (!spacesData?.items || !selectedSpaceId) return null;
-    return spacesData.items.find((space) => space.id === selectedSpaceId);
-  }, [spacesData?.items, selectedSpaceId]);
+    if (!spaceItems || !selectedSpaceId) return null;
+    return spaceItems.find((space) => space.id === selectedSpaceId);
+  }, [spaceItems, selectedSpaceId]);
 
   const availableSpaces = useMemo(() => {
-    const spaces = spacesData?.items || [];
+    const spaces = spaceItems || [];
     if (!selectedSpaceId) return spaces;
 
     // Sort to put selected space first
@@ -64,7 +68,7 @@ export function SearchSpotlightFilters({
       if (b.id === selectedSpaceId) return 1;
       return 0;
     });
-  }, [spacesData?.items, selectedSpaceId]);
+  }, [spaceItems, selectedSpaceId]);
 
   useEffect(() => {
     if (onFiltersChange) {

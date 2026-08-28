@@ -67,14 +67,17 @@ export function AudioMenu({ editor }: EditorMenuProps) {
     };
   }, [editor]);
 
+  // editorState 객체를 deps 에 넣으면 src 가 그대로여도 매번 다시 만들어진다.
+  // 원시값으로 올려두면 컴파일러 추론과 맞으면서 무효화 빈도는 지금과 같다.
+  const audioSrc = editorState?.src;
   const handleDownload = useCallback(() => {
-    if (!editorState?.src) return;
-    const url = getFileUrl(editorState.src);
+    if (!audioSrc) return;
+    const url = getFileUrl(audioSrc);
     const a = document.createElement("a");
     a.href = url;
     a.download = "";
     a.click();
-  }, [editorState?.src]);
+  }, [audioSrc]);
 
   const handleDelete = useCallback(() => {
     editor.commands.deleteSelection();
