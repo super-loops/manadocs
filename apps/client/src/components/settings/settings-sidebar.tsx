@@ -98,15 +98,12 @@ const groupedData: DataGroup[] = [
 export default function SettingsSidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const [active, setActive] = useState(location.pathname);
+  // location.pathname 을 state 로 복사할 이유가 없다 — 그대로 읽는다.
+  const active = location.pathname;
   const { goBack } = useSettingsNavigation();
   const { isAdmin } = useUserRole();
   const [mobileSidebarOpened] = useAtom(mobileSidebarAtom);
   const toggleMobileSidebar = useToggleSidebar(mobileSidebarAtom);
-
-  useEffect(() => {
-    setActive(location.pathname);
-  }, [location.pathname]);
 
   const canShowItem = (item: DataItem) => {
     if (item.role === "admin" && !isAdmin) return false;

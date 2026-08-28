@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Group, MultiSelect, MultiSelectProps, Text } from "@mantine/core";
 import { IGroup } from "@/features/group/types/group.types.ts";
@@ -43,45 +43,41 @@ export function MultiMemberSelect({ value, onChange }: MultiMemberSelectProps) {
     includeUsers: true,
     includeGroups: true,
   });
+  // 여기는 누적이 아니라 **교체**다(원래도 setData(newData) 였다). 다만
+  // suggestion 이 undefined 인 동안(다음 검색 로딩 중)에는 손대지 않아야
+  // 목록이 잠깐 비지 않는다 — 그 조건까지 그대로 옮긴다.
   const [data, setData] = useState([]);
+  const [lastKey, setLastKey] = useState<unknown>(null);
 
-  useEffect(() => {
-    if (suggestion) {
-      // Extract user and group items
-      const userItems = suggestion?.users.map((user: IUser) => ({
-        value: `user-${user.id}`,
-        label: user.name,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        type: "user",
-      }));
+  if (suggestion && suggestion !== lastKey) {
+    setLastKey(suggestion);
 
-      const groupItems = suggestion?.groups.map((group: IGroup) => ({
-        value: `group-${group.id}`,
-        label: group.name,
-        type: "group",
-      }));
+    const userItems = suggestion?.users.map((user: IUser) => ({
+      value: `user-${user.id}`,
+      label: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      type: "user",
+    }));
 
-      // Create fresh data structure based on current search results
-      const newData = [];
-      
-      if (userItems && userItems.length > 0) {
-        newData.push({
-          group: t("Select a user"),
-          items: userItems,
-        });
-      }
-      
-      if (groupItems && groupItems.length > 0) {
-        newData.push({
-          group: t("Select a group"),
-          items: groupItems,
-        });
-      }
+    const groupItems = suggestion?.groups.map((group: IGroup) => ({
+      value: `group-${group.id}`,
+      label: group.name,
+      type: "group",
+    }));
 
-      setData(newData);
+    const newData = [];
+
+    if (userItems && userItems.length > 0) {
+      newData.push({ group: t("Select a user"), items: userItems });
     }
-  }, [suggestion, t]);
+
+    if (groupItems && groupItems.length > 0) {
+      newData.push({ group: t("Select a group"), items: groupItems });
+    }
+
+    setData(newData);
+  }
 
   return (
     <MultiSelect

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Group, Select, SelectProps, Text } from "@mantine/core";
 import { useGetSpacesQuery } from "@/features/space/queries/space-query.ts";
@@ -49,27 +49,19 @@ export function SpaceSelect({
     query: debouncedQuery,
     limit: 50,
   });
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    if (spaces) {
-      const spaceData = spaces?.items
+  // 검색 결과를 state 에 쌓지 않는다 — 쌓으면 지난 질의 결과가 영영 남아
+  // 목록이 무한히 자란다. 현재 결과에서 바로 만든다(현재 스페이스는 제외).
+  const data = useMemo(
+    () =>
+      (spaces?.items ?? [])
         .filter((space: ISpace) => space.slug !== value)
-        .map((space: ISpace) => {
-          return {
-            label: space.name,
-            value: space.slug,
-            icon: space.logo,
-          };
-        });
-
-      const filteredSpaceData = spaceData.filter(
-        (space) =>
-          !data.find((existingSpace) => existingSpace.value === space.value),
-      );
-      setData((prevData) => [...prevData, ...filteredSpaceData]);
-    }
-  }, [spaces]);
+        .map((space: ISpace) => ({
+          label: space.name,
+          value: space.slug,
+          icon: space.logo,
+        })),
+    [spaces, value],
+  );
 
   return (
     <Select

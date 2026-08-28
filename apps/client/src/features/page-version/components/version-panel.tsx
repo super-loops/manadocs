@@ -516,6 +516,14 @@ function useLiveModified(
       awaitingBase ||
       !contentReady
     ) {
+      // 라이브로 «판정할 수 없는» 상태다(에디터 없음·죽음·기준 버전 로딩 중·
+      // 협업 문서 미동기화). null 은 «수정 없음»이 아니라 **«라이브 판정 포기»**
+      // 라서, 호출부가 서버 flag(workingDoc.modified)로 떨어진다.
+      //
+      // 이 분기는 아래 editor.on("update") 구독과 한 effect 여야 한다. 갈라내면
+      // 구독이 붙기 전 한 프레임 동안 빈 협업 문서로 계산한 결과가 남아, 손대지
+      // 않은 분기가 «원본» 에서 «작업중» 으로 뒤집힌다(N-8 에서 잡은 그것).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModified(null);
       return;
     }

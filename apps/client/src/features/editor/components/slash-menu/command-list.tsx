@@ -75,9 +75,12 @@ const CommandList = ({
     };
   }, [flatItems, selectedIndex, setSelectedIndex, selectItem]);
 
-  useEffect(() => {
+  // 목록이 바뀌면 하이라이트를 맨 위로 — effect 대신 렌더 중 조정.
+  const [lastFlatItems, setLastFlatItems] = useState(flatItems);
+  if (flatItems !== lastFlatItems) {
+    setLastFlatItems(flatItems);
     setSelectedIndex(0);
-  }, [flatItems]);
+  }
 
   useEffect(() => {
     viewportRef.current

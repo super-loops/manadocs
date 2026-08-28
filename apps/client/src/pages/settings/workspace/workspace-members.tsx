@@ -2,7 +2,6 @@ import WorkspaceInviteModal from "@/features/workspace/components/members/compon
 import { Group, SegmentedControl, Space, Text } from "@mantine/core";
 import WorkspaceMembersTable from "@/features/workspace/components/members/components/workspace-members-table";
 import SettingsTitle from "@/components/settings/settings-title.tsx";
-import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import WorkspaceInvitesTable from "@/features/workspace/components/members/components/workspace-invites-table.tsx";
 import useUserRole from "@/hooks/use-user-role.tsx";
@@ -14,21 +13,16 @@ import { workspaceAtom } from "@/features/user/atoms/current-user-atom.ts";
 
 export default function WorkspaceMembers() {
   const { t } = useTranslation();
-  const [segmentValue, setSegmentValue] = useState("members");
   const [workspace] = useAtom(workspaceAtom);
   const [searchParams] = useSearchParams();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const currentTab = searchParams.get("tab");
-    if (currentTab === "invites") {
-      setSegmentValue(currentTab);
-    }
-  }, [searchParams.get("tab")]);
+  // 탭은 URL 이 진실이다 — state 로 복사하면 뒤로가기 때 URL 과 화면이 어긋난다.
+  const segmentValue =
+    searchParams.get("tab") === "invites" ? "invites" : "members";
 
   const handleSegmentChange = (value: string) => {
-    setSegmentValue(value);
     if (value === "invites") {
       navigate(`?tab=${value}`);
     } else {

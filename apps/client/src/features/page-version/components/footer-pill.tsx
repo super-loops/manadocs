@@ -142,6 +142,9 @@ export default function FooterPill({ page }: FooterPillProps) {
   );
 
   useEffect(() => {
+    // 「구독 직전의 초기 계산」이다. 아래 editor.on("update") 구독과 한 몸이라
+    // 떼어낼 수 없고, diff 계산이라 렌더 중 파생으로 돌리기에는 비싸다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     recompute();
     let timer: ReturnType<typeof setTimeout> | null = null;
     const onUpdate = () => {

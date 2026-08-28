@@ -313,12 +313,15 @@ export default function SpaceMaintenance({ spaceId, spaceSlug }: Props) {
     }
   };
 
-  // Space 를 옮기면 앞 Space 의 정리 내역·검사 상태가 남으면 안 된다
-  useEffect(() => {
+  // Space 를 옮기면 앞 Space 의 정리 내역·검사 상태가 남으면 안 된다.
+  // effect 로 미루면 새 Space 의 첫 프레임에 앞 Space 의 결과가 비친다.
+  const [lastSpaceId, setLastSpaceId] = useState(spaceId);
+  if (spaceId !== lastSpaceId) {
+    setLastSpaceId(spaceId);
     setStarted(false);
     setTrashedIdSet(new Set());
     setTrashedRowCount(0);
-  }, [spaceId]);
+  }
 
   const handleTrash = (page: IMaintenancePage) => {
     const title = page.title || t("untitled");

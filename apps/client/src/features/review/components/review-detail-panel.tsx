@@ -103,12 +103,16 @@ export default function ReviewDetailPanel({ reviewId }: ReviewDetailPanelProps) 
   const [contentEditing, setContentEditing] = useState(false);
   const [contentDraft, setContentDraft] = useState("");
 
-  useEffect(() => {
+  // 다른 리뷰로 바뀌면 초안을 그 리뷰 내용으로 되돌린다. effect 로 미루면
+  // 새 리뷰를 연 첫 프레임에 앞 리뷰의 초안이 남는다.
+  const [lastReviewId, setLastReviewId] = useState(review?.id);
+  if (review?.id !== lastReviewId) {
+    setLastReviewId(review?.id);
     if (review) {
       setTitleDraft(review.title ?? "");
       setContentDraft(toMarkdownString(review.content));
     }
-  }, [review?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   const statusOptions = useMemo(
     () =>

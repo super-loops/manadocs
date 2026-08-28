@@ -29,12 +29,16 @@ export function useDiffNavigation(
     [scrollViewportRef],
   );
 
+  // 인덱스 리셋은 상태 조정이라 렌더 중에, 스크롤은 진짜 부수효과라 effect 에.
+  const [lastDiffCounts, setLastDiffCounts] = useState(diffCounts);
+  if (diffCounts !== lastDiffCounts) {
+    setLastDiffCounts(diffCounts);
+    setCurrentChangeIndex(diffCounts && diffCounts.total > 0 ? 1 : 0);
+  }
+
   useEffect(() => {
     if (diffCounts && diffCounts.total > 0) {
-      setCurrentChangeIndex(1);
       requestAnimationFrame(() => scrollToChangeIndex(1));
-    } else {
-      setCurrentChangeIndex(0);
     }
   }, [diffCounts, scrollToChangeIndex]);
 

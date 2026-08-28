@@ -77,6 +77,12 @@ export function useLiveWorkingChange(): LiveWorkingChange | null {
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) {
+      // 에디터가 없거나 죽었다 — 라이브 덮어쓰기를 포기한다. null 은 «수정
+      // 없음»이 아니라 «라이브 값 없음»이라, 사이드바가 서버 목록을 그대로 쓴다.
+      // (무엇을 «판정 가능»으로 볼지는 recompute 안에 있다 — contentReady 와
+      //  editorPageId 신원 대조. 그 둘이 유령 「수정중」과 페이지 간 오염을 막는다.)
+      // 아래 editor.on("update") 구독과 한 effect 여야 짝이 맞는다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStats(null);
       return;
     }

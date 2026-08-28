@@ -1,7 +1,7 @@
 import "katex/dist/katex.min.css";
 import katex from "katex";
 //import "katex/dist/contrib/mhchem.min.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Popover, Textarea } from "@mantine/core";
 import classes from "./math.module.css";
@@ -13,23 +13,34 @@ export default function MathInlineView(props: NodeViewProps) {
   const { node, updateAttributes, editor, getPos } = props;
   const mathResultContainer = useRef<HTMLDivElement>(null);
   const mathPreviewContainer = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
+  // 그리기만 한다 — 오류 여부는 아래에서 렌더 중에 따로 계산한다.
   const renderMath = (
     katexString: string,
     container: HTMLDivElement | null,
   ) => {
     try {
       katex.render(katexString, container);
-      setError(null);
-    } catch (e) {
-      //console.error(e);
-      setError(e.message);
+    } catch {
+      // 표시용 오류는 error 파생값이 담당한다.
     }
   };
+
+  // 지금 화면에 걸린 수식(편집 중이면 미리보기, 아니면 확정 본문).
+  const activeMath = isEditing ? (preview ?? "") : node.attrs.text;
+
+  // 오류는 state 가 아니라 파생값이다 — renderToString 은 DOM 을 건드리지 않는다.
+  const error = useMemo(() => {
+    try {
+      katex.renderToString(activeMath);
+      return null;
+    } catch (e) {
+      return e.message as string;
+    }
+  }, [activeMath]);
 
   useEffect(() => {
     renderMath(node.attrs.text, mathResultContainer.current);
@@ -45,13 +56,17 @@ export default function MathInlineView(props: NodeViewProps) {
     }
   }, [preview, isEditing]);
 
-  useEffect(() => {
+  // 선택이 바뀌는 순간의 상태 조정 — effect 로 미루면 한 프레임 늦게 열린다.
+  const [lastSelected, setLastSelected] = useState(props.selected);
+  if (props.selected !== lastSelected) {
+    setLastSelected(props.selected);
     const pos = getPos();
     const { from, to } = editor.state.selection;
-    const nodeSelected = props.selected && from === pos && to === pos + node.nodeSize;
+    const nodeSelected =
+      props.selected && from === pos && to === pos + node.nodeSize;
     setIsEditing(nodeSelected);
     if (nodeSelected) setPreview(node.attrs.text);
-  }, [props.selected]);
+  }
 
   return (
     <>

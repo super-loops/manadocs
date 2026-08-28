@@ -35,9 +35,13 @@ export function LinkpagesSettingsModal({
     new Set(selectedPageIds),
   );
 
-  useEffect(() => {
+  // 바깥에서 넘어온 선택 목록이 바뀌면 로컬 선택을 그것으로 되돌린다.
+  const [lastSelectedPageIds, setLastSelectedPageIds] =
+    useState(selectedPageIds);
+  if (selectedPageIds !== lastSelectedPageIds) {
+    setLastSelectedPageIds(selectedPageIds);
     setSelected(new Set(selectedPageIds));
-  }, [selectedPageIds]);
+  }
 
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {

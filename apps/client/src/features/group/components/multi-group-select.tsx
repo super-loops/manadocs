@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Group, MultiSelect, MultiSelectProps, Text } from "@mantine/core";
 import { useGetGroupsQuery } from "@/features/group/queries/group-query.ts";
@@ -37,29 +37,26 @@ export function MultiGroupSelect({
     query: debouncedQuery,
     limit: 25,
   });
+  // 검색 결과는 **누적해야 한다** — hidePickedOptions 로 이미 고른 항목이
+  // 목록에서 빠지므로, 다음 검색에서 그 항목이 사라지면 선택 칩의 라벨을
+  // 잃는다. effect 대신 "질의 결과가 바뀌면 렌더 중 조정" 으로 옮긴다.
+  // 겸사겸사 예전의 스테일 클로저(effect 가 옛 data 로 중복 검사하던 것)도 없앤다.
   const [data, setData] = useState([]);
+  const [lastGroups, setLastGroups] = useState(groups);
 
-  useEffect(() => {
-    if (groups) {
-      const groupsData = groups?.items
-        .filter((group: IGroup) => group.name.toLowerCase() !== 'everyone')
-        .map((group: IGroup) => {
-          return {
-            value: group.id,
-            label: group.name,
-          };
-        });
-
-      // Filter out existing groups by their ids
-      const filteredGroupData = groupsData.filter(
-        (group) =>
-          !data.find((existingGroup) => existingGroup.value === group.value),
-      );
-
-      // Combine existing data with new search data
-      setData((prevData) => [... prevData, ... filteredGroupData]);
-    }
-  }, [groups]);
+  if (groups !== lastGroups) {
+    setLastGroups(groups);
+    setData((prevData) => {
+      const fresh = (groups?.items ?? [])
+        .filter((group: IGroup) => group.name.toLowerCase() !== "everyone")
+        .map((group: IGroup) => ({ value: group.id, label: group.name }))
+        .filter(
+          (group) =>
+            !prevData.some((existing) => existing.value === group.value),
+        );
+      return fresh.length > 0 ? [...prevData, ...fresh] : prevData;
+    });
+  }
 
   return (
     <MultiSelect

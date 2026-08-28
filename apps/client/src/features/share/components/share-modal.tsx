@@ -116,9 +116,12 @@ export default function ShareModal({ readOnly }: ShareModalProps) {
 
   const activePrefill = prefill?.pageId === pageId ? prefill : null;
 
-  useEffect(() => {
+  // prefill 이 도착하면 팝오버를 연다 — effect 로 미루면 한 프레임 늦게 열린다.
+  const [lastActivePrefill, setLastActivePrefill] = useState(activePrefill);
+  if (activePrefill !== lastActivePrefill) {
+    setLastActivePrefill(activePrefill);
     if (activePrefill) setOpened(true);
-  }, [activePrefill]);
+  }
 
   const handleOpenChange = (next: boolean) => {
     setOpened(next);
@@ -256,9 +259,11 @@ function ShareTabs({
   );
 
   // "이 버전 공유"로 열렸으면 발급 폼부터 보여야 한다
-  useEffect(() => {
+  const [lastPrefill, setLastPrefill] = useState(prefill);
+  if (prefill !== lastPrefill) {
+    setLastPrefill(prefill);
     if (prefill) setActiveTab("create");
-  }, [prefill]);
+  }
 
   return (
     <Tabs value={activeTab} onChange={(value) => setActiveTab(value ?? "create")}>
@@ -312,11 +317,14 @@ function CreateShareForm({
   const createShareMutation = useCreateShareMutation();
 
   // 미리보기에서 넘어온 버전으로 "현재 버전 고정" 을 미리 채워둔다
-  useEffect(() => {
-    if (!prefill) return;
-    setVersionMode("fixed");
-    setFixedVersionId(prefill.fixedVersionId);
-  }, [prefill]);
+  const [lastPrefill, setLastPrefill] = useState(prefill);
+  if (prefill !== lastPrefill) {
+    setLastPrefill(prefill);
+    if (prefill) {
+      setVersionMode("fixed");
+      setFixedVersionId(prefill.fixedVersionId);
+    }
+  }
 
   const { data: versionsData } = usePageVersionsQuery(
     versionMode === "fixed" ? pageId : undefined,

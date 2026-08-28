@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Button,
   Code,
@@ -16,28 +16,24 @@ import {
 } from "@/features/workspace/services/workspace-service.ts";
 import { workspaceAtom } from "@/features/user/atoms/current-user-atom.ts";
 import { useAtom } from "jotai";
+import { useQuery } from "@tanstack/react-query";
 
 export default function WorkspaceMcpPreview() {
   const { t } = useTranslation();
   const [opened, setOpened] = useState(false);
-  const [preview, setPreview] = useState<IMcpPreview | null>(null);
-  const [loading, setLoading] = useState(false);
   const [workspace] = useAtom(workspaceAtom);
 
-  useEffect(() => {
-    if (opened && !preview) {
-      setLoading(true);
-      getWorkspaceMcpPreview()
-        .then(setPreview)
-        .catch((err) => console.error(err))
-        .finally(() => setLoading(false));
-    }
-  }, [opened, preview]);
-
-  useEffect(() => {
-    // reset cache when instructions change
-    setPreview(null);
-  }, [workspace?.mcpInstructions]);
+  // 손으로 만든 캐시(펼치면 받고·받아두면 재사용·지시문 바뀌면 버림)를 그대로
+  // react-query 에 맡긴다. 지시문을 키에 넣었으므로 바뀌면 저절로 새로 받는다.
+  const {
+    data: preview,
+    isFetching: loading,
+    refetch,
+  } = useQuery<IMcpPreview>({
+    queryKey: ["workspace-mcp-preview", workspace?.mcpInstructions],
+    queryFn: getWorkspaceMcpPreview,
+    enabled: opened,
+  });
 
   return (
     <Paper withBorder p="md" mt="md" radius="sm">
@@ -89,11 +85,7 @@ export default function WorkspaceMcpPreview() {
                   ))}
                 </Stack>
               </div>
-              <Button
-                size="xs"
-                variant="subtle"
-                onClick={() => setPreview(null)}
-              >
+              <Button size="xs" variant="subtle" onClick={() => refetch()}>
                 {t("Refresh")}
               </Button>
             </>

@@ -42,9 +42,13 @@ export const LinkEditorPanel = ({
 
   const pages: Partial<IPage>[] = suggestion?.pages ?? [];
 
-  useEffect(() => {
+  // 결과 목록이 바뀌면 키보드 하이라이트를 맨 위로. effect 로 하면 한 프레임
+  // 동안 옛 인덱스가 남은 화면이 보인다.
+  const [lastPageCount, setLastPageCount] = useState(pages.length);
+  if (pages.length !== lastPageCount) {
+    setLastPageCount(pages.length);
     setSelectedIndex(0);
-  }, [pages.length]);
+  }
 
   const selectPage = useCallback(
     (page: Partial<IPage>) => {

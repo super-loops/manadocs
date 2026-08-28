@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Group, Switch, Text, Stack, Loader } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 export default function McpToggle() {
   const { t } = useTranslation();
-  const [mcpEnabled, setMcpEnabled] = useState(false);
+  // 서버값을 state 로 복사하지 않는다 — 토글 직후의 낙관적 값만 따로 들고,
+  // 그 값이 없으면 쿼리 결과를 그대로 읽는다.
+  const [optimisticEnabled, setOptimisticEnabled] = useState<boolean | null>(
+    null,
+  );
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch workspace settings
@@ -17,12 +21,6 @@ export default function McpToggle() {
       return response.json();
     },
   });
-
-  useEffect(() => {
-    if (workspace?.mcpEnabled !== undefined) {
-      setMcpEnabled(workspace.mcpEnabled);
-    }
-  }, [workspace]);
 
   // Update workspace settings
   const { mutate: updateMcp } = useMutation({
@@ -40,8 +38,10 @@ export default function McpToggle() {
     },
   });
 
+  const mcpEnabled = optimisticEnabled ?? workspace?.mcpEnabled ?? false;
+
   const handleToggle = (enabled: boolean) => {
-    setMcpEnabled(enabled);
+    setOptimisticEnabled(enabled);
     setIsUpdating(true);
     updateMcp(enabled);
   };

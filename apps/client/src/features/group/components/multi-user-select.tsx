@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useWorkspaceMembersQuery } from "@/features/workspace/queries/workspace-query.ts";
 import { IUser } from "@/features/user/types/user.types.ts";
@@ -37,29 +37,27 @@ export function MultiUserSelect({ onChange, label }: MultiUserSelectProps) {
     query: debouncedQuery,
     limit: 50,
   });
+  // 누적 유지 이유는 multi-group-select 와 같다 — hidePickedOptions 때문에
+  // 목록에서 빠진 선택 항목의 라벨을 잃지 않으려면 지난 결과를 들고 있어야 한다.
   const [data, setData] = useState([]);
+  const [lastUsers, setLastUsers] = useState(users);
 
-  useEffect(() => {
-    if (users) {
-      const usersData = users?.items.map((user: IUser) => {
-        return {
+  if (users !== lastUsers) {
+    setLastUsers(users);
+    setData((prevData) => {
+      const fresh = (users?.items ?? [])
+        .map((user: IUser) => ({
           value: user.id,
           label: user.name,
           avatarUrl: user.avatarUrl,
           email: user.email,
-        };
-      });
-
-      // Filter out existing users by their ids
-      const filteredUsersData = usersData.filter(
-        (user) =>
-          !data.find((existingUser) => existingUser.value === user.value),
-      );
-
-      // Combine existing data with new search data
-      setData((prevData) => [...prevData, ...filteredUsersData]);
-    }
-  }, [users]);
+        }))
+        .filter(
+          (user) => !prevData.some((existing) => existing.value === user.value),
+        );
+      return fresh.length > 0 ? [...prevData, ...fresh] : prevData;
+    });
+  }
 
   return (
     <MultiSelect

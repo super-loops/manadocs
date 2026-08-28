@@ -305,36 +305,27 @@ function PageActionMenu({ readOnly }: PageActionMenuProps) {
 function ConnectionWarning() {
   const { t } = useTranslation();
   const yjsConnectionStatus = useAtomValue(yjsConnectionStatusAtom);
-  const [showWarning, setShowWarning] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [warnArmed, setWarnArmed] = useState(false);
 
+  const isDisconnected = ["disconnected", "connecting"].includes(
+    yjsConnectionStatus,
+  );
+
+  // 연결이 돌아오면 경고를 즉시 내린다 — 파생값이라 effect 가 필요 없다.
+  const [lastDisconnected, setLastDisconnected] = useState(isDisconnected);
+  if (isDisconnected !== lastDisconnected) {
+    setLastDisconnected(isDisconnected);
+    if (!isDisconnected) setWarnArmed(false);
+  }
+
+  // effect 에는 진짜 부수효과인 타이머만 남는다. 끊긴 채로 5초가 지나야 무장.
   useEffect(() => {
-    const isDisconnected = ["disconnected", "connecting"].includes(
-      yjsConnectionStatus,
-    );
+    if (!isDisconnected) return;
+    const id = setTimeout(() => setWarnArmed(true), 5000);
+    return () => clearTimeout(id);
+  }, [isDisconnected]);
 
-    if (isDisconnected) {
-      if (!timeoutRef.current) {
-        timeoutRef.current = setTimeout(() => setShowWarning(true), 5000);
-      }
-    } else {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      setShowWarning(false);
-    }
-  }, [yjsConnectionStatus]);
-
-  // Cleanup only on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
+  const showWarning = isDisconnected && warnArmed;
   if (!showWarning) return null;
 
   return (

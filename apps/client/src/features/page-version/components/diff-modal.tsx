@@ -151,9 +151,20 @@ function DiffModalBody() {
     diffSelection?.leftVersionId ?? "",
   );
 
-  // 좌측 기본값 — 우측보다 오래된 첫 버전
-  useEffect(() => {
-    if (leftSel || versions.length === 0) return;
+  // 좌측 기본값 — 우측보다 오래된 첫 버전. 사용자가 고르기 전(leftSel 이 빈
+  // 문자열)에만 채운다. effect 대신 렌더 중 조정이라 목록이 도착한 첫 프레임에
+  // 이미 기본값이 잡혀 있다.
+  const defaultLeftInput = `${versions.length}|${rightSel}`;
+  const [lastDefaultLeftInput, setLastDefaultLeftInput] = useState<
+    string | null
+  >(null);
+
+  if (
+    !leftSel &&
+    versions.length > 0 &&
+    defaultLeftInput !== lastDefaultLeftInput
+  ) {
+    setLastDefaultLeftInput(defaultLeftInput);
     if (rightSel === CURRENT) {
       // 현재 작업문서의 비교 기준은 최신 비폐기 버전
       const base = versions.find((v) => !v.discardedAt && v.version > 0);
@@ -165,7 +176,7 @@ function DiffModalBody() {
       );
       if (older) setLeftSel(older.id);
     }
-  }, [versions, rightSel, leftSel]);
+  }
 
   // ── 다른 문서 비교 (좌측) ─────────────────────────────────────
   const [otherDocMode, setOtherDocMode] = useState(false);

@@ -82,13 +82,16 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
     (doc) => doc.id !== adoptedWorkingDocId,
   );
 
-  // 다시 열 때 지난 실패·선택이 남아 있지 않게
-  useEffect(() => {
+  // 다시 열 때 지난 실패·선택이 남아 있지 않게 — effect 로 미루면 열린 첫
+  // 프레임에 지난 오류가 그대로 비친다.
+  const [lastOpened, setLastOpened] = useState(opened);
+  if (opened !== lastOpened) {
+    setLastOpened(opened);
     if (opened) {
       setError(null);
       setKeepOthers(false);
     }
-  }, [opened]);
+  }
 
   const handleCommit = async () => {
     // Enter 와 버튼이 각각 발사돼 두 번 확정되면, 두 번째는 "변경 없음" 400 이

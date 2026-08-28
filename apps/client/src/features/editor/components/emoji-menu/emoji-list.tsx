@@ -96,9 +96,12 @@ const EmojiList = ({
     };
   }, [items, selectedIndex, setSelectedIndex]);
 
-  useEffect(() => {
+  // 목록이 바뀌면 하이라이트를 맨 위로 — effect 대신 렌더 중 조정.
+  const [lastItems, setLastItems] = useState(items);
+  if (items !== lastItems) {
+    setLastItems(items);
     setSelectedIndex(0);
-  }, [items]);
+  }
 
   useEffect(() => {
     viewportRef.current

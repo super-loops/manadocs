@@ -104,6 +104,11 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
   // deps 라 "버튼으로 열 때(=에디터 준비 후) 마운트된다"는 가정에 기대고
   // 있었는데, 상시 표시되는 레일은 에디터보다 먼저 마운트된다.
   useEffect(() => {
+    // 에디터(외부 저장소)가 준비된 시점의 **초기 동기화**다. 렌더 중에 tiptap
+    // 문서를 읽는 것은 순수하지 않고, 파생으로 바꾸면 매 렌더 목차를 다시
+    // 계산하게 된다. 제대로 된 답은 useSyncExternalStore 인데 스냅샷 캐싱을
+    // 같이 설계해야 해서 별건이다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     handleUpdate();
   }, [props.editor]);
 
