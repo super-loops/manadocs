@@ -28,7 +28,11 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "react-hooks/exhaustive-deps": "off",
+      // 경고로만 — 65건이 남아 있고 고치지 않기로 했다(보이기만 한다).
+      "react-hooks/exhaustive-deps": "warn",
+      // queryKey 에 빠진 의존값은 캐시가 안 갈려 «남의 결과»를 받는 실제 버그다.
+      // recommended 를 통째로 켜면 prefer-query-options 97건이 딸려오므로 이것만.
+      "@tanstack/query/exhaustive-deps": "error",
       "@typescript-eslint/no-unused-expressions": "off",
       "no-useless-escape": "off",
     },
