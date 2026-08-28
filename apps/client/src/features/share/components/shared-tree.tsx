@@ -4,7 +4,7 @@ import {
   buildSharedPageTree,
   SharedPageTreeNode,
 } from "@/features/share/utils.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useElementSize, useMergedRef } from "@mantine/hooks";
 import { SpaceTreeNode } from "@/features/page/tree/types.ts";
 import { Link, useParams } from "react-router-dom";
@@ -36,9 +36,12 @@ export default function SharedTree({ sharedPageTree }: SharedTree) {
   const [tree, setTree] = useState<
     TreeApi<SharedPageTreeNode> | null | undefined
   >(null);
-  const rootElement = useRef<HTMLDivElement>();
+  // 컨테이너 엘리먼트를 state 로 들고 있는다(react-hooks/refs). 예전엔 ref 라
+  // 엘리먼트가 붙어도 스스로 리렌더하지 않았고, 다른 state 변화에 얹혀서야
+  // Tree 가 떴다. state 로 두면 붙은 다음 렌더에 확정적으로 뜬다.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
   const { ref: sizeRef, width, height } = useElementSize();
-  const mergedRef = useMergedRef(rootElement, sizeRef);
+  const mergedRef = useMergedRef(setRootEl, sizeRef);
   const { pageSlug } = useParams();
   const [openTreeNodes, setOpenTreeNodes] = useAtom<OpenMap>(
     openSharedTreeNodesAtom,
@@ -46,10 +49,12 @@ export default function SharedTree({ sharedPageTree }: SharedTree) {
 
   const currentNodeId = extractPageSlugId(pageSlug);
 
+  // 옵셔널 체이닝을 deps 에 두지 않고 지역 상수로 올린다 — 값·빈도 동일.
+  const sharedTree = sharedPageTree?.pageTree;
   const treeData: SharedPageTreeNode[] = useMemo(() => {
-    if (!sharedPageTree?.pageTree) return;
-    return buildSharedPageTree(sharedPageTree.pageTree);
-  }, [sharedPageTree?.pageTree]);
+    if (!sharedTree) return;
+    return buildSharedPageTree(sharedTree);
+  }, [sharedTree]);
 
   useEffect(() => {
     const parentNodeId = treeData?.[0]?.slugId;
@@ -87,14 +92,14 @@ export default function SharedTree({ sharedPageTree }: SharedTree) {
 
   return (
     <div ref={mergedRef} className={classes.treeContainer}>
-      {rootElement.current && (
+      {rootEl && (
         <Tree
           data={treeData}
           disableDrag={true}
           disableDrop={true}
           disableEdit={true}
           width={width}
-          height={rootElement.current.clientHeight}
+          height={rootEl.clientHeight}
           ref={(t) => setTree(t)}
           openByDefault={false}
           disableMultiSelection={true}
@@ -102,7 +107,7 @@ export default function SharedTree({ sharedPageTree }: SharedTree) {
           rowClassName={classes.row}
           rowHeight={30}
           overscanCount={10}
-          dndRootElement={rootElement.current}
+          dndRootElement={rootEl}
           onToggle={() => {
             setOpenTreeNodes(tree?.openState);
           }}

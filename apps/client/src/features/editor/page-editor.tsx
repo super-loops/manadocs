@@ -213,9 +213,21 @@ export default function PageEditor({
   }, [isIdle, documentState, providersReady, resetIdle]);
 
   // Attach here, to make sure the connection gets properly established
+  //
+  // 이 호출의 «렌더마다 실행된다»가 곧 동작이다 — 탭 전환·재연결 뒤에도 매번
+  // 다시 붙여 연결을 되살린다. effect 로 옮기면 실행 시점과 횟수가 둘 다 바뀌고,
+  // 그러면 ydoc 동기화 시점이 흔들린다. 이 파일의 동기화 시점은
+  // pageEditorContentReadyAtom 을 통해 「유령 「수정중」」과 제목 Enter 가드(H4)를
+  // 좌우하므로(54aade6), 룰 하나 때문에 되돌릴 자리가 아니다.
+  // eslint-disable-next-line react-hooks/refs
   providersRef.current?.remote.attach();
 
+  // providers 는 ref 로 들고 있어야 한다 — 방(pageId·workingDocId)이 살아 있는
+  // 동안 **같은 인스턴스**를 유지해야 하고, 정리에서 즉시 null 이 되어야 한다.
+  // state 로 옮기면 정리 뒤에도 파괴된 provider 가 한 렌더 남아 collabExtensions
+  // 에 실릴 수 있다. 여기 ref 읽기는 그 «지금 살아 있는 provider» 판정이다.
   const extensions = useMemo(() => {
+    // eslint-disable-next-line react-hooks/refs
     if (!providersReady || !providersRef.current || !currentUser?.user) {
       return mainExtensions;
     }
@@ -224,6 +236,7 @@ export default function PageEditor({
 
     return [
       ...mainExtensions,
+      // eslint-disable-next-line react-hooks/refs
       ...collabExtensions(remoteProvider, currentUser?.user),
     ];
   }, [providersReady, currentUser?.user]);

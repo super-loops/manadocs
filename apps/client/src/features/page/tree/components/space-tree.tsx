@@ -107,25 +107,35 @@ export default function SpaceTree({ spaceId, readOnly }: SpaceTreeProps) {
   const [, setTreeApi] = useAtom<TreeApi<SpaceTreeNode>>(treeApiAtom);
   const treeApiRef = useRef<TreeApi<SpaceTreeNode>>();
   const [openTreeNodes, setOpenTreeNodes] = useAtom<OpenMap>(openTreeNodesAtom);
-  const rootElement = useRef<HTMLDivElement>();
-  const [isRootReady, setIsRootReady] = useState(false);
+  // 컨테이너 엘리먼트는 state 로 들고 있는다. 예전엔 ref 에 담아 두고 렌더에서
+  // `rootElement.current` 를 읽어 Tree 의 height·dndRootElement 를 만들었는데,
+  // 그러면 렌더 결과가 ref 에 의존해 React 가 언제 다시 그려야 할지 모른다
+  // (react-hooks/refs). 이미 콜백 ref 로 isRootReady 를 켜서 리렌더를 유발하고
+  // 있었으므로 Tree 가 뜨는 시점은 그대로다 — 엘리먼트가 붙은 다음 렌더.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
   const { ref: sizeRef, width, height } = useElementSize();
-  const mergedRef = useMergedRef((element) => {
-    rootElement.current = element;
-    if (element && !isRootReady) {
-      setIsRootReady(true);
-    }
-  }, sizeRef);
+  const mergedRef = useMergedRef(setRootEl, sizeRef);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const spaceIdRef = useRef(spaceId);
-  spaceIdRef.current = spaceId;
+  // 갱신은 커밋 뒤에(react-hooks/refs). 이 ref 는 async effect 안에서 «그 사이
+  // Space 가 바뀌었나»를 판정하는 데만 쓰이는데, 커밋된 값과 맞추는 편이 오히려
+  // 정확하다 — 버려진 렌더의 spaceId 로 판정하지 않게 된다.
+  useEffect(() => {
+    spaceIdRef.current = spaceId;
+  });
   const { data: currentPage } = usePageQuery({
     pageId: extractPageSlugId(pageSlug),
   });
 
-  useEffect(() => {
+  // Space 가 바뀌면 «데이터 불러옴» 표시를 내린다. effect 로 미루면 커밋 뒤에야
+  // 내려가서, 그 한 프레임 동안 앞 Space 의 판정으로 「No pages yet」이 번쩍일 수
+  // 있다. 렌더 중 조정(React 가 문서화한 «prop 변화에 state 맞추기» 패턴)이면
+  // 그 프레임 자체가 생기지 않는다.
+  const [prevSpaceId, setPrevSpaceId] = useState(spaceId);
+  if (spaceId !== prevSpaceId) {
+    setPrevSpaceId(spaceId);
     setIsDataLoaded(false);
-  }, [spaceId]);
+  }
 
   useEffect(() => {
     if (hasNextPage && !isFetching) {
@@ -251,7 +261,7 @@ export default function SpaceTree({ spaceId, readOnly }: SpaceTreeProps) {
           {t("No pages yet")}
         </Text>
       )}
-      {isRootReady && rootElement.current && (
+      {rootEl && (
         <Tree
           data={filteredData}
           disableDrag={
@@ -269,7 +279,7 @@ export default function SpaceTree({ spaceId, readOnly }: SpaceTreeProps) {
           disableEdit={readOnly ? true : (data) => data.canEdit === false}
           {...controllers}
           width={width}
-          height={rootElement.current.clientHeight}
+          height={rootEl.clientHeight}
           ref={(ref) => {
             treeApiRef.current = ref;
             if (ref) {
@@ -283,7 +293,7 @@ export default function SpaceTree({ spaceId, readOnly }: SpaceTreeProps) {
           rowClassName={classes.row}
           rowHeight={30}
           overscanCount={10}
-          dndRootElement={rootElement.current}
+          dndRootElement={rootEl}
           onToggle={() => {
             setOpenTreeNodes(treeApiRef.current?.openState);
           }}

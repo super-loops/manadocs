@@ -29,12 +29,18 @@ export default function ReviewAnchorDropZone() {
   // mutation 객체는 매 렌더 새로 만들어지므로 useEffect 의존성에서 제외하고
   // ref로 최신 핸들만 들고 가서 안에서 호출한다.
   const createAnchorRef = useRef(createAnchor);
-  createAnchorRef.current = createAnchor;
   const pageIdRef = useRef(page?.id);
-  pageIdRef.current = page?.id;
   // effect 는 editor 에만 의존하므로 t 도 ref 로 최신값만 들고 간다
   const tRef = useRef(t);
-  tRef.current = t;
+
+  // 갱신은 렌더가 아니라 커밋 뒤에 한다(react-hooks/refs). 렌더 중에 쓰면
+  // 커밋되지 않고 버려진 렌더의 값이 ref 에 남을 수 있다. 이 ref 들을 읽는 곳은
+  // 전부 drop 핸들러·async 후속이라 커밋 뒤에 실행되므로 시점 차이는 없다.
+  useEffect(() => {
+    createAnchorRef.current = createAnchor;
+    pageIdRef.current = page?.id;
+    tRef.current = t;
+  });
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;

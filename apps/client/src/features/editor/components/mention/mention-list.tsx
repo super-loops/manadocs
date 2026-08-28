@@ -117,10 +117,70 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
 
       setRenderItems(items);
       // update editor storage
+      //
+      // 이건 컴포넌트 밖으로 내보내는 발행 채널이다 — mention-suggestion.ts 가
+      // `props.editor.storage.mentionItems.length` 를 읽어 제안 팝업을 닫을지
+      // 정한다. 지역 변수로는 대체할 수 없다(읽는 쪽이 다른 모듈이다).
       //@ts-ignore
+      // eslint-disable-next-line react-hooks/immutability
       props.editor.storage.mentionItems = items;
     }
   }, [suggestion, isLoading]);
+
+  // selectItem 이 이 함수를 부르므로 **위**에 둔다(react-hooks/immutability 의
+  // «선언 전 접근»). 위치만 옮긴 것이고 쓰는 값은 전부 컴포넌트 상단 훅이라
+  // 동작은 그대로다 — selectItem 은 useCallback([renderItems]) 이라 여전히
+  // 메모될 때의 createPage 를 붙들고 있다(기존 그대로, 이 이동으로 달라지지 않음).
+  const createPage = async (title: string) => {
+    const payload: { spaceId: string; parentPageId?: string; title: string } = {
+      spaceId: space.id,
+      parentPageId: page.id || null,
+      title: title,
+    };
+
+    let createdPage: IPage;
+    try {
+      createdPage = await createPageMutation.mutateAsync(payload);
+      const parentId = page.id || null;
+      const data = {
+        id: createdPage.id,
+        slugId: createdPage.slugId,
+        name: createdPage.title,
+        position: createdPage.position,
+        spaceId: createdPage.spaceId,
+        parentPageId: createdPage.parentPageId,
+        children: [],
+      } as any;
+
+      const lastIndex = tree.data.length;
+
+      tree.create({ parentId, index: lastIndex, data });
+      setData(tree.data);
+
+      props.command({
+        id: uuid7(),
+        label: createdPage.title || "",
+        entityType: "page",
+        entityId: createdPage.id,
+        slugId: createdPage.slugId,
+        creatorId: currentUser?.user.id,
+      });
+
+      setTimeout(() => {
+        emit({
+          operation: "addTreeNode",
+          spaceId: space.id,
+          payload: {
+            parentId,
+            index: lastIndex,
+            data,
+          },
+        });
+      }, 50);
+    } catch (err) {
+      throw new Error("Failed to create page");
+    }
+  };
 
   const selectItem = useCallback(
     (index: number) => {
@@ -208,57 +268,6 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
       return false;
     },
   }));
-
-  const createPage = async (title: string) => {
-    const payload: { spaceId: string; parentPageId?: string; title: string } = {
-      spaceId: space.id,
-      parentPageId: page.id || null,
-      title: title,
-    };
-
-    let createdPage: IPage;
-    try {
-      createdPage = await createPageMutation.mutateAsync(payload);
-      const parentId = page.id || null;
-      const data = {
-        id: createdPage.id,
-        slugId: createdPage.slugId,
-        name: createdPage.title,
-        position: createdPage.position,
-        spaceId: createdPage.spaceId,
-        parentPageId: createdPage.parentPageId,
-        children: [],
-      } as any;
-
-      const lastIndex = tree.data.length;
-
-      tree.create({ parentId, index: lastIndex, data });
-      setData(tree.data);
-
-      props.command({
-        id: uuid7(),
-        label: createdPage.title || "",
-        entityType: "page",
-        entityId: createdPage.id,
-        slugId: createdPage.slugId,
-        creatorId: currentUser?.user.id,
-      });
-
-      setTimeout(() => {
-        emit({
-          operation: "addTreeNode",
-          spaceId: space.id,
-          payload: {
-            parentId,
-            index: lastIndex,
-            data,
-          },
-        });
-      }, 50);
-    } catch (err) {
-      throw new Error("Failed to create page");
-    }
-  };
 
   useEffect(() => {
     viewportRef.current

@@ -41,6 +41,11 @@ export default function StatusView(props: NodeViewProps) {
   useEffect(() => {
     const storage = editor.storage?.status;
     if (storage?.autoOpen) {
+      // 확장이 setStatus 커맨드에서 켜 두는 «한 번만 소비하는» 플래그다
+      // (packages/editor-ext/src/lib/status.ts). 여기서 끄지 않으면 이후 모든
+      // StatusView 가 마운트될 때마다 드롭다운이 저절로 열린다. 끄는 것이 곧
+      // 동작이라 지역 변수로 대체되지 않는다.
+      // eslint-disable-next-line react-hooks/immutability
       storage.autoOpen = false;
       setOpened(true);
     }

@@ -70,7 +70,12 @@ export default function LinkView(props: MarkViewProps) {
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const lastOpenState = useRef<"preview" | "edit">("preview");
+  // 닫히는 동안 마지막으로 열려 있던 화면을 유지하기 위한 값. 렌더가 이 값을
+  // 읽어 출력(폭·패딩·본문)을 만들므로 ref 가 아니라 state 여야 한다
+  // (react-hooks/refs) — ref 면 값이 바뀌어도 React 가 다시 그릴 줄 모른다.
+  const [lastOpenState, setLastOpenState] = useState<"preview" | "edit">(
+    "preview",
+  );
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isEditable = editor.isEditable;
@@ -81,7 +86,7 @@ export default function LinkView(props: MarkViewProps) {
   } = parseInternalLink(href, mark.attrs.internal);
 
   const isPopoverVisible = popoverState !== "closed";
-  const activeView = isPopoverVisible ? popoverState : lastOpenState.current;
+  const activeView = isPopoverVisible ? popoverState : lastOpenState;
 
   const { data: linkedPage } = usePageQuery({
     pageId: isPopoverVisible && slugId && !isShareRoute ? slugId : null,
@@ -175,26 +180,33 @@ export default function LinkView(props: MarkViewProps) {
 
   useEffect(() => {
     if (popoverState === "edit") {
-      const text = wrapperRef.current?.querySelector("a")?.textContent || "";
-      setLinkTitle(text);
-      setLinkUrl(href);
-      pendingTitleRef.current = null;
+      // 값 심기는 «편집 열기» 핸들러로 옮겼다(set-state-in-effect). 여기 남은
+      // 포커스는 편집 UI 가 커밋된 뒤라야 대상이 존재하므로 effect 에 있어야 한다.
       requestAnimationFrame(() => titleInputRef.current?.focus());
     }
     if (popoverState === "closed") {
+      // 문서를 실제로 고치는 부분이라 effect 에 남는다(순수하지 않다).
       if (pendingTitleRef.current !== null) {
         handleUpdateLinkTitle(pendingTitleRef.current);
         pendingTitleRef.current = null;
       }
-      setShowSearch(false);
     }
   }, [popoverState, href, isInternal, handleUpdateLinkTitle]);
 
-  useEffect(() => {
-    if (popoverState !== "closed") {
-      lastOpenState.current = popoverState;
+  // 팝오버 상태가 «바뀌는 순간»에 딸린 state 를 맞춘다 — React 가 문서화한
+  // 렌더 중 조정 패턴. effect 로 미루면 set-state-in-effect 가 되고 한 프레임
+  // 늦게 반영된다(닫히는 중에 검색 화면이 한 프레임 남는 식).
+  //  - 열려 있는 동안 activeView 는 popoverState 를 그대로 쓰므로 화면 결과는 같다.
+  //  - 닫히면 검색 모드를 내려, 다음에 열 때 검색 화면으로 시작하지 않게 한다.
+  const [prevPopoverState, setPrevPopoverState] = useState(popoverState);
+  if (popoverState !== prevPopoverState) {
+    setPrevPopoverState(popoverState);
+    if (popoverState === "closed") {
+      setShowSearch(false);
+    } else if (popoverState !== lastOpenState) {
+      setLastOpenState(popoverState);
     }
-  }, [popoverState]);
+  }
 
   useEffect(() => {
     if (!isPopoverVisible) return;
@@ -536,6 +548,14 @@ export default function LinkView(props: MarkViewProps) {
                   e.preventDefault();
                   e.stopPropagation();
                   setShowSearch(false);
+                  // 편집 화면에 넣을 초기값을 여기서 심는다. 이 시점엔 미리보기
+                  // 상태라 앵커가 이미 DOM 에 있고, href 는 편집 중 바뀌지 않는다
+                  // (제목 수정·링크 해제 둘 다 마지막에 팝오버를 닫는다).
+                  const text =
+                    wrapperRef.current?.querySelector("a")?.textContent || "";
+                  setLinkTitle(text);
+                  setLinkUrl(href);
+                  pendingTitleRef.current = null;
                   setPopoverState("edit");
                 }}
               >

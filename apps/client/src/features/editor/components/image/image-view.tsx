@@ -16,15 +16,14 @@ export default function ImageView(props: NodeViewProps) {
     if (align === "center") return "alignCenter";
     return "alignCenter";
   }, [align]);
+  // 이 맵을 만들고 채우는 쪽은 업로드 확장(image-upload.ts)이다. 여기는 읽기만
+  // 하면 되므로 «없으면 만들어 두기»를 하지 않는다 — useMemo 안에서 prop 을
+  // 수정하게 되고(react-hooks/immutability), 만들어 봐야 바로 undefined 를
+  // 읽을 뿐이다. 맵이 없을 때 결과가 undefined → null 로 바뀌지만 둘 다 falsy 라
+  // 아래 `previewSrc &&` 렌더 분기는 그대로다.
   const previewSrc = useMemo(() => {
-    editor.storage.shared.imagePreviews =
-      editor.storage.shared.imagePreviews || {};
-
-    if (placeholder?.id) {
-      return editor.storage.shared.imagePreviews[placeholder.id];
-    }
-
-    return null;
+    if (!placeholder?.id) return null;
+    return editor.storage.shared?.imagePreviews?.[placeholder.id] ?? null;
   }, [placeholder, editor]);
 
   return (

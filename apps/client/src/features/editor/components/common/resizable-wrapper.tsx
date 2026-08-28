@@ -70,9 +70,14 @@ export const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
   const widthRef = useRef(initialWidth);
   const heightRef = useRef(initialHeight);
   const onResizeRef = useRef(onResize);
-  onResizeRef.current = onResize;
   const constraintsRef = useRef({ minWidth, maxWidth, minHeight, maxHeight });
-  constraintsRef.current = { minWidth, maxWidth, minHeight, maxHeight };
+
+  // 갱신은 커밋 뒤에(react-hooks/refs). 읽는 쪽은 mousemove·mouseup 핸들러라
+  // 전부 커밋 이후라서 값이 늦게 보이는 일이 없다.
+  useEffect(() => {
+    onResizeRef.current = onResize;
+    constraintsRef.current = { minWidth, maxWidth, minHeight, maxHeight };
+  });
 
   useEffect(() => {
     if (!dragRef.current && wrapperRef.current) {
@@ -83,6 +88,11 @@ export const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
     }
   }, [initialWidth, initialHeight]);
 
+  // 이 핸들러는 document 에 addEventListener/removeEventListener 로 짝지어
+  // 붙였다 뗀다. useRef(fn).current 는 identity 가 영원히 고정돼 그 짝이 항상
+  // 맞는데, useCallback 으로 바꾸면 deps 가 바뀔 때 identity 가 달라져 드래그
+  // 중 붙인 리스너를 못 뗀다.
+  // eslint-disable-next-line react-hooks/refs
   const handleMouseMove = useRef((e: MouseEvent) => {
     const drag = dragRef.current;
     if (!drag || !wrapperRef.current) return;
@@ -103,6 +113,9 @@ export const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
     }
   }).current;
 
+  // handleMouseMove 와 같은 이유 — 리스너 add/remove 짝을 맞추려면 identity 가
+  // 고정이어야 한다.
+  // eslint-disable-next-line react-hooks/refs
   const handleMouseUp = useRef(() => {
     dragRef.current = null;
     setIsResizing(false);
@@ -135,6 +148,9 @@ export const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
+    // 위 두 핸들러는 고정 identity 라 이 deps 는 실제로 변하지 않는다.
+    // 언마운트 때 떼는 대상이 붙였던 그 함수임을 보장하는 자리다.
+    // eslint-disable-next-line react-hooks/refs
   }, [handleMouseMove, handleMouseUp]);
 
   const shouldShowHandles = isEditable && (isHovered || isResizing || selected);
@@ -145,6 +161,10 @@ export const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
       className={clsx(classes.wrapper, className, {
         [classes.resizing]: isResizing,
       })}
+      // 초기 크기만 여기서 준다. 드래그 중에는 일부러 리렌더 없이
+      // wrapperRef.current.style 을 직접 써서 mousemove 마다 React 를 돌리지
+      // 않는다. state 로 바꾸면 그 설계가 무너진다.
+      // eslint-disable-next-line react-hooks/refs
       style={{ width: widthRef.current, height: heightRef.current }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
