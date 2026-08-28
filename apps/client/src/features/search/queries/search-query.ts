@@ -28,7 +28,10 @@ export function useSearchSuggestionsQuery(
 ): UseQueryResult<ISuggestionResult, Error> {
   const { preload, ...queryParams } = params;
   return useQuery({
-    queryKey: ["search-suggestion", params.query],
+    // query 만 키에 넣으면 includeUsers/includePages/spaceId 가 달라도 같은 칸을
+    // 쓴다 — 멤버 선택(사용자·그룹)과 링크 패널(페이지)이 같은 글자에서 서로의
+    // 결과를 받는다. preload 는 queryParams 에 없으므로 캐시가 갈리지 않는다.
+    queryKey: ["search-suggestion", queryParams],
     staleTime: 60 * 1000, // 1min
     queryFn: () => searchSuggestions(queryParams),
     enabled: preload || !!params.query,

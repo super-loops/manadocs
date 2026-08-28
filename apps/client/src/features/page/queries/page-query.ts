@@ -47,7 +47,12 @@ export function usePageQuery(
 ): UseQueryResult<IPage, Error> {
   const query = useQuery({
     queryKey: ["pages", pageInput.pageId],
-    queryFn: () => getPageById(pageInput),
+    // 키가 queryFn 입력을 «완전히» 결정하게 좁힌다. 반대로 키를 pageInput 으로
+    // 넓히면 두 번째 자리가 문자열(slugId|uuid)에서 객체로 바뀌는데, 이 키 모양에
+    // setQueryData/getQueryData 12곳이 의존한다(아래 58·60행, updatePageData,
+    // page-editor, space-tree, use-tree-socket). 그러면 살아있는 쿼리 엔트리와
+    // 갱신 대상 엔트리가 갈라져 화면이 옛 데이터로 굳는다 — 경고도 에러도 없이.
+    queryFn: () => getPageById({ pageId: pageInput.pageId }),
     enabled: !!pageInput.pageId,
     staleTime: 5 * 60 * 1000,
   });

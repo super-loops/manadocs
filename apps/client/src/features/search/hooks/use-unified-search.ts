@@ -1,8 +1,5 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
-import {
-  searchPage,
-  searchAttachments,
-} from "@/features/search/services/search-service";
+import { searchPage } from "@/features/search/services/search-service";
 import {
   IAttachmentSearch,
   IPageSearch,
@@ -19,7 +16,6 @@ export function useUnifiedSearch(
   params: UseUnifiedSearchParams,
   enabled: boolean = true,
 ): UseQueryResult<UnifiedSearchResult[], Error> {
-  const isAttachmentSearch = false; // Attachment indexing not available
   const searchType = "page";
 
   return useQuery({
@@ -28,11 +24,7 @@ export function useUnifiedSearch(
       // Remove contentType from backend params since it's only used for frontend routing
       const { contentType, ...backendParams } = params;
 
-      if (isAttachmentSearch) {
-        return await searchAttachments(backendParams);
-      } else {
-        return await searchPage(backendParams);
-      }
+      return await searchPage(backendParams);
     },
     enabled: !!params.query && enabled,
   });
