@@ -27,7 +27,7 @@ import {
   IconTag,
   IconAnchor,
 } from "@tabler/icons-react";
-import { openReviewSelectPopup } from "@/features/editor/components/review/review-select-popup";
+import { openReviewSelectPopup } from "@/features/editor/components/review/review-select-popup-mount";
 import {
   CommandProps,
   SlashMenuGroupedItemsType,

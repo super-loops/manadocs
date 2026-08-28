@@ -1,6 +1,4 @@
 import { useMemo, useRef, useState } from "react";
-import { createRoot, Root } from "react-dom/client";
-import { QueryClientProvider } from "@tanstack/react-query";
 import {
   Modal,
   TextInput,
@@ -12,13 +10,11 @@ import {
   ScrollArea,
   Loader,
   Alert,
-  MantineProvider,
 } from "@mantine/core";
 import { IconPlus, IconAnchor, IconAlertTriangle } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useAtomValue } from "jotai";
 import type { Editor, Range } from "@tiptap/core";
-import { queryClient } from "@/main";
 import {
   REVIEW_ANCHOR_TARGET_HINT,
   resolveBlockAtPos,
@@ -484,39 +480,6 @@ function ReviewSelectPopupInner({ editor, range, pageId, onClose }: Props) {
       )}
     </Modal>
   );
-}
-
-let mountEl: HTMLDivElement | null = null;
-let mountRoot: Root | null = null;
-
-export function openReviewSelectPopup(
-  editor: Editor,
-  range: Range,
-  pageId: string,
-) {
-  if (mountRoot) closeReviewSelectPopup();
-  mountEl = document.createElement("div");
-  document.body.appendChild(mountEl);
-  mountRoot = createRoot(mountEl);
-  mountRoot.render(
-    <MantineProvider>
-      <QueryClientProvider client={queryClient}>
-        <ReviewSelectPopupInner
-          editor={editor}
-          range={range}
-          pageId={pageId}
-          onClose={closeReviewSelectPopup}
-        />
-      </QueryClientProvider>
-    </MantineProvider>,
-  );
-}
-
-export function closeReviewSelectPopup() {
-  mountRoot?.unmount();
-  mountRoot = null;
-  if (mountEl?.parentNode) mountEl.parentNode.removeChild(mountEl);
-  mountEl = null;
 }
 
 export default ReviewSelectPopupInner;
