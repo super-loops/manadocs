@@ -1,0 +1,112 @@
+.minimap {
+  position: relative;
+  width: rem(24px);
+  min-height: rem(140px);
+  flex-shrink: 0;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: rem(4px);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.mark {
+  position: absolute;
+  left: rem(3px);
+  right: rem(3px);
+  height: rem(10px);
+  border-radius: rem(2px);
+  background: var(--mantine-color-violet-6);
+
+  &[data-stale] {
+    background: var(--mantine-color-orange-6);
+  }
+
+  &[data-empty] {
+    background: transparent;
+    border: 1.5px dashed var(--mantine-color-orange-6);
+  }
+}
+
+.instance {
+  display: block;
+  width: 100%;
+  padding: rem(6px) rem(8px);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+
+  &[data-attention] {
+    border-color: var(--mantine-color-orange-3);
+    background: light-dark(var(--mantine-color-orange-0), rgba(255, 146, 43, 0.08));
+  }
+
+  &:hover {
+    border-color: var(--mantine-color-violet-4);
+  }
+}
+
+.inlineAction {
+  cursor: pointer;
+  margin-top: rem(2px);
+}
+
+.divider {
+  height: 1px;
+  background: var(--mantine-color-default-border);
+}
+
+.card {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  background: transparent;
+  min-width: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--mantine-color-violet-4);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+}
+
+.thumb {
+  height: rem(56px);
+  border-radius: rem(4px);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.thumbEmpty {
+  height: rem(56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--mantine-color-orange-4);
+  border-radius: rem(4px);
+  color: light-dark(var(--mantine-color-orange-9), var(--mantine-color-orange-3));
+}
+
+.thumbFile {
+  height: rem(56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: rem(4px);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: rem(6px);
+  width: 100%;
+  padding: rem(4px) rem(6px);
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover:not(:disabled) {
+    background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  }
+}

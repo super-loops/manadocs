@@ -10,6 +10,9 @@ import {
   readOnlyEditorAtom,
 } from "@/features/editor/atoms/editor-atoms.ts";
 import VersionPanel from "@/features/page-version/components/version-panel.tsx";
+import ComponentPanel from "@/features/component/components/component-panel.tsx";
+import { useParams } from "react-router-dom";
+import { useGetSpaceBySlugQuery } from "@/features/space/queries/space-query.ts";
 
 export default function Aside() {
   const [{ tab }] = useAtom(asideStateAtom);
@@ -19,6 +22,8 @@ export default function Aside() {
   const pageEditor = useAtomValue(pageEditorAtom);
   const readOnlyEditor = useAtomValue(readOnlyEditorAtom);
   const editor = pageEditor ?? readOnlyEditor;
+  const { spaceSlug } = useParams();
+  const { data: space } = useGetSpaceBySlugQuery(spaceSlug);
 
   let title: string;
   let component: ReactNode;
@@ -32,6 +37,10 @@ export default function Aside() {
       // 결합 패널 — 확정 버전 + 그 아래 작업문서(분기)를 한 화면에서 본다
       component = <VersionPanel />;
       title = "버전";
+      break;
+    case "components":
+      component = space ? <ComponentPanel spaceId={space.id} /> : null;
+      title = "Components";
       break;
     default:
       component = null;

@@ -23,7 +23,11 @@ import {
 } from "@tabler/icons-react";
 import classes from "./space-sidebar.module.css";
 import React from "react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
+import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom.ts";
+import CollapsibleSectionHeader from "@/components/ui/collapsible-section-header.tsx";
+import { useSectionCollapsed } from "@/components/ui/use-section-collapsed.ts";
+import ComponentsSection from "@/features/component/components/components-section.tsx";
 import { treeApiAtom } from "@/features/page/tree/atoms/tree-api-atom.ts";
 import { Link, useLocation, useParams } from "react-router-dom";
 import clsx from "clsx";
@@ -143,6 +147,13 @@ export function SpaceSidebar() {
 
   const spaceRules = space?.membership?.permissions;
   const spaceAbility = useSpaceAbility(spaceRules);
+  const treeData = useAtomValue(treeDataAtom);
+  const [pagesCollapsed] = useSectionCollapsed("pages");
+  // 트리가 아직 이 스페이스를 싣지 않았으면 개수를 보이지 않는다
+  const rootPageCount =
+    treeData.length > 0 && treeData[0]?.spaceId === space?.id
+      ? treeData.length
+      : null;
 
   if (!space) {
     return <></>;
@@ -275,13 +286,19 @@ export function SpaceSidebar() {
 
         <WorkingChangesSection spaceId={space.id} spaceSlug={space.slug} />
 
-        <div className={clsx(classes.section, classes.sectionPages)}>
-          <Group className={classes.pagesHeader} justify="space-between">
-            <Text size="xs" fw={500} c="dimmed">
-              {t("Pages")}
-            </Text>
+        <ComponentsSection
+          spaceId={space.id}
+          spaceSlug={space.slug}
+          canManage={canManagePages}
+        />
 
-            {canManagePages && (
+        <div className={clsx(classes.section, classes.sectionPages)}>
+          <CollapsibleSectionHeader
+            sectionKey="pages"
+            label={t("Pages")}
+            count={rootPageCount}
+            actions={
+            canManagePages && (
               <Group gap="xs">
                 <SpaceMenu spaceId={space.id} />
 
@@ -296,10 +313,11 @@ export function SpaceSidebar() {
                   </ActionIcon>
                 </Tooltip>
               </Group>
-            )}
-          </Group>
+            )
+            }
+          />
 
-          <div className={classes.pages}>
+          <div className={classes.pages} hidden={pagesCollapsed}>
             <SpaceTree
               spaceId={space.id}
               readOnly={spaceAbility.cannot(

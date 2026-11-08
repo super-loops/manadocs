@@ -7,6 +7,8 @@ import { useLiveWorkingChange } from "@/features/working-changes/hooks/use-live-
 import { IWorkingChange } from "@/features/working-changes/types/working-changes.types";
 import { buildPageUrl } from "@/features/page/page.utils";
 import classes from "./working-changes-section.module.css";
+import CollapsibleSectionHeader from "@/components/ui/collapsible-section-header.tsx";
+import { useSectionCollapsed } from "@/components/ui/use-section-collapsed.ts";
 
 interface WorkingChangesSectionProps {
   spaceId: string;
@@ -25,6 +27,7 @@ export default function WorkingChangesSection({
   const { t } = useTranslation();
   const { data } = useWorkingChangesQuery(spaceId);
   const live = useLiveWorkingChange();
+  const [collapsed] = useSectionCollapsed("pending-commit");
 
   // 열려 있는 페이지는 라이브 통계로 덮는다 — 서버 목록은 협업 저장 디바운스만큼
   // 뒤처지고, footer pill 과 숫자가 어긋나 보이면 안 된다.
@@ -64,16 +67,13 @@ export default function WorkingChangesSection({
 
   return (
     <div className={classes.section}>
-      <Group className={classes.header} justify="space-between">
-        <Text size="xs" fw={500} c="dimmed">
-          {t("수정중")}
-        </Text>
-        <Text size="xs" c="dimmed">
-          {items.length}
-        </Text>
-      </Group>
+      <CollapsibleSectionHeader
+        sectionKey="pending-commit"
+        label={t("수정중")}
+        count={items.length}
+      />
 
-      <div className={classes.list}>
+      <div className={classes.list} hidden={collapsed}>
         {items.map((item) => (
           <WorkingChangeRow
             key={item.pageId}

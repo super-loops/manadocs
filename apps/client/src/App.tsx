@@ -31,6 +31,8 @@ import ShareRedirect from "@/pages/share/share-redirect.tsx";
 import SpacesPage from "@/pages/spaces/spaces.tsx";
 import SpaceTrash from "@/pages/space/space-trash.tsx";
 import SpaceAssets from "@/pages/space/space-assets.tsx";
+import SpaceComponentCollection from "@/pages/space/space-component-collection.tsx";
+import SpaceComponentDetail from "@/pages/space/space-component-detail.tsx";
 import SpaceSettings from "@/pages/space/space-settings.tsx";
 
 export default function App() {
@@ -87,6 +89,14 @@ export default function App() {
           <Route path={"/s/:spaceSlug"} element={<SpaceHome />} />
           <Route path={"/s/:spaceSlug/trash"} element={<SpaceTrash />} />
           <Route path={"/s/:spaceSlug/assets"} element={<SpaceAssets />} />
+          <Route
+            path={"/s/:spaceSlug/components/c/:componentId"}
+            element={<SpaceComponentDetail />}
+          />
+          <Route
+            path={"/s/:spaceSlug/components/:collectionId"}
+            element={<SpaceComponentCollection />}
+          />
           <Route
             path={"/s/:spaceSlug/settings"}
             element={<SpaceSettings tab="general" />}

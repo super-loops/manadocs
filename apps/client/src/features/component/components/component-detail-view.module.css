@@ -1,0 +1,59 @@
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xl);
+}
+
+.left {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.right {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.preview {
+  overflow: hidden;
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+}
+
+.empty {
+  border: 2px dashed var(--mantine-color-orange-4);
+  border-radius: var(--mantine-radius-md);
+  color: light-dark(var(--mantine-color-orange-9), var(--mantine-color-orange-3));
+}
+
+.revRow {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.stale {
+  border-color: var(--mantine-color-orange-3);
+}
+
+.bar {
+  position: relative;
+  height: rem(12px);
+  border-radius: rem(3px);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+}
+
+.marker {
+  position: absolute;
+  top: rem(-2px);
+  width: rem(8px);
+  height: rem(16px);
+  border-radius: rem(2px);
+  background: var(--mantine-color-violet-6);
+
+  &[data-stale] {
+    background: var(--mantine-color-orange-6);
+  }
+
+  &[data-empty] {
+    background: transparent;
+    border: 1.5px dashed var(--mantine-color-orange-6);
+  }
+}
