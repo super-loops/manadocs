@@ -26,6 +26,7 @@ export function htmlToMarkdown(html: string): string {
     mathBlock,
     iframeEmbed,
     video,
+    componentInstance,
   ]);
   return turndownService.turndown(html).replaceAll('<br>', ' ');
 }
@@ -190,6 +191,37 @@ function video(turndownService: _TurndownService) {
       const src = node.getAttribute('src') || '';
       const name = getBasename(src) || src;
       return '[' + name + '](' + src + ')';
+    },
+  });
+}
+
+/**
+ * 컴포넌트 인스턴스 — 일반 이미지로 풀리면 에이전트가 고쳐 쓸 때 연결이 끊긴다.
+ * 제목(title)에 «◇ slug · rN» 을 남겨 인스턴스임을 드러낸다.
+ */
+function componentInstance(turndownService: _TurndownService) {
+  turndownService.addRule('componentInstance', {
+    filter: function (node: HTMLInputElement) {
+      return (
+        node.nodeName === 'DIV' &&
+        node.getAttribute('data-type') === 'componentInstance'
+      );
+    },
+    replacement: function (_content: string, node: HTMLInputElement) {
+      const slug = node.getAttribute('data-slug') || 'component';
+      const rev = node.getAttribute('data-revision') || '0';
+      const desc = node.getAttribute('data-description') || '';
+      const src = node.getAttribute('data-src') || '';
+      const kind = node.getAttribute('data-kind') || 'image';
+      const fileName = node.getAttribute('data-file-name') || slug;
+      const tag = `◇ ${slug} · r${rev}`;
+      if (!src) {
+        return `\n\n> ${tag} — empty component: ${desc || 'no asset yet'}\n\n`;
+      }
+      if (kind === 'image') {
+        return `\n\n![${desc.replace(/[\[\]]/g, '')}](${src} "${tag}")\n\n`;
+      }
+      return `\n\n[${fileName}](${src} "${tag}")\n\n`;
     },
   });
 }

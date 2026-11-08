@@ -44,6 +44,7 @@ import {
   Heading,
   Highlight,
   UniqueID,
+  ComponentInstance,
   SharedStorage,
   Columns,
   Column,
@@ -67,6 +68,7 @@ import {
 import MathInlineView from "@/features/editor/components/math/math-inline.tsx";
 import MathBlockView from "@/features/editor/components/math/math-block.tsx";
 import ImageView from "@/features/editor/components/image/image-view.tsx";
+import ComponentInstanceView from "@/features/component/components/component-instance-view.tsx";
 import CalloutView from "@/features/editor/components/callout/callout-view.tsx";
 import StatusView from "@/features/editor/components/status/status-view.tsx";
 import ReviewAnchorView from "@/features/editor/components/review/review-anchor-view.tsx";
@@ -146,7 +148,7 @@ export const mainExtensions = [
   SharedStorage,
   Heading,
   UniqueID.configure({
-    types: ["heading", "paragraph"],
+    types: ["heading", "paragraph", "componentInstance"],
     filterTransaction: (transaction) => !isChangeOrigin(transaction),
   }),
   Placeholder.configure({
@@ -255,6 +257,9 @@ export const mainExtensions = [
       createCustomHandle: createImageHandle,
       className: imageResizeClasses,
     },
+  }),
+  ComponentInstance.configure({
+    view: ComponentInstanceView,
   }),
   TiptapVideo.configure({
     view: VideoView,
