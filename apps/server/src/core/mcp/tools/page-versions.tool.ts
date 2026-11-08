@@ -139,7 +139,7 @@ export class CommitPageVersionTool {
     return {
       name: 'commit_page_version',
       description:
-        'Commit (문서확정) the current working doc of a page as a new version. The new version automatically becomes primary — readers and latest-following public links see it immediately. Fails when there are no changes against the current primary version. Provide a concise commit message describing what changed.',
+        'Commit (문서확정) the current working doc of a page. Commit once the requested writing is complete — not after every patch. By default (squash: "auto") a follow-up commit folds into YOUR previous commit of this page when it is still a draft: same author, same working doc, within 24h of that commit, and nothing derived from it (no other branch, review or pinned share). Otherwise a new version is created. The result becomes primary immediately. Fails when there are no changes against the current primary version. Message: what changed, concisely.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -147,6 +147,12 @@ export class CommitPageVersionTool {
           message: {
             type: 'string',
             description: 'Commit message describing the change',
+          },
+          squash: {
+            type: 'string',
+            enum: ['auto', 'never'],
+            description:
+              'auto (default): fold into your previous commit when eligible. never: always create a new version (e.g. a finished milestone the user should see separately).',
           },
         },
         required: ['pageId', 'message'],
@@ -170,7 +176,10 @@ export class CommitPageVersionTool {
     // 노출하지 않는다 — 에이전트가 사정을 모르고 남의 분기를 날리면 안 된다.
     const version = await this.pageVersionService.commit(
       page,
-      { message: String(args.message) },
+      {
+        message: String(args.message),
+        squash: args.squash === 'never' ? 'never' : 'auto',
+      },
       user,
     );
 
@@ -178,6 +187,14 @@ export class CommitPageVersionTool {
       committed: true,
       ...serializeVersion(version),
       primary: true,
+      squashed: !!version.squashed,
+      ...(version.squashed
+        ? {
+            note: `Folded into your previous commit (version ${version.version}) — no new version was created.`,
+          }
+        : version.squashSkipped
+          ? { squashSkipped: version.squashSkipped }
+          : {}),
     };
   }
 }
