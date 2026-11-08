@@ -22,6 +22,7 @@ import {
   resetWorkingDoc,
   setPrimaryVersion,
   setPrimaryWorkingDoc,
+  squashCheck,
   undiscardVersion,
 } from "@/features/page-version/services/page-version-service";
 import {
@@ -151,12 +152,27 @@ export function useCommitVersionMutation(pageId: string) {
     mutationFn: (data: ICommitVersionInput) => commitVersion(data),
     onSuccess: (version) => {
       notifications.show({
-        message: t("문서버전 {{n}} 확정됨", { n: version.version }),
+        message: (version as any).squashed
+          ? t("문서버전 {{n}}에 합쳤습니다", { n: version.version })
+          : t("문서버전 {{n}} 확정됨", { n: version.version }),
       });
       invalidateVersionQueries(pageId);
     },
     // 실패 표시는 commit-dialog 가 맡는다 — 모달 안에 이유를 띄우고
     // 모달을 열어둔 채로 다시 시도하게 한다(토스트와 이중 보고하지 않는다).
+  });
+}
+
+export function useSquashCheckQuery(
+  pageId: string,
+  workingDocId: string | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["squash-check", pageId, workingDocId ?? null],
+    queryFn: () => squashCheck(pageId, workingDocId),
+    enabled: enabled && !!pageId,
+    staleTime: 0,
   });
 }
 

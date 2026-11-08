@@ -62,6 +62,19 @@ export interface ICommitVersionInput {
   message?: string;
   /** 채택되지 않은 나머지 분기 삭제 여부 (생략 = 유지) */
   deleteOtherWorkingDocs?: boolean;
+  /** 직전 확정에 합치기 — 서버가 조건을 다시 보고, 안 맞으면 새 버전 */
+  squash?: boolean;
+}
+
+export interface ISquashCheck {
+  eligible: boolean;
+  reason: string | null;
+  target: null | {
+    id: string;
+    version: number;
+    message: string | null;
+    createdAt: string;
+  };
 }
 
 export interface ICreateWorkingDocInput {

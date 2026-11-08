@@ -1178,5 +1178,9 @@
   "파일을 올리지 못했습니다": "Could not upload the file",
   "확인할 인스턴스가 있습니다": "Some instances need attention",
   "확정본 v{{v}}: {{revs}}": "Committed v{{v}}: {{revs}}",
-  "확정본에만": "Committed only"
+  "확정본에만": "Committed only",
+  "문서버전 {{n}}에 합쳤습니다": "Folded into version {{n}}",
+  "새 버전을 만들지 않고 문서버전 {{n}}을 지금 내용으로 고칩니다. 내가 24시간 안에 확정했고 그 버전에서 갈라진 것이 없을 때만 됩니다.": "Updates version {{n}} with the current content instead of creating a new version. Only possible when you committed it within the last 24 hours and nothing branched from it.",
+  "직전 확정(문서버전 {{n}})에 합치기": "Fold into the previous commit (version {{n}})",
+  "합치기": "Fold in"
 }

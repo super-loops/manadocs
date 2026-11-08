@@ -2,6 +2,7 @@ import api from "@/lib/api-client";
 import { IPagination } from "@/lib/types.ts";
 import {
   ICommitVersionInput,
+  ISquashCheck,
   ICreateWorkingDocInput,
   IDuplicatedPage,
   IPageVersion,
@@ -33,6 +34,17 @@ export async function getPageVersionByNumber(
   const req = await api.post<IPageVersion>("/pages/versions/by-number", {
     pageId,
     version,
+  });
+  return req.data;
+}
+
+export async function squashCheck(
+  pageId: string,
+  workingDocId?: string,
+): Promise<ISquashCheck> {
+  const req = await api.post<ISquashCheck>("/pages/versions/squash-check", {
+    pageId,
+    workingDocId,
   });
   return req.data;
 }

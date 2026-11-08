@@ -23,6 +23,7 @@ import {
 } from "@/features/page-version/atoms/page-version-atoms";
 import {
   useCommitVersionMutation,
+  useSquashCheckQuery,
   useWorkingDocsQuery,
 } from "@/features/page-version/queries/page-version-query";
 import { usePageQuery } from "@/features/page/queries/page-query";
@@ -67,6 +68,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
   const activeWorkingDoc = useAtomValue(activeWorkingDocAtom);
   const [message, setMessage] = useState("");
   const [keepOthers, setKeepOthers] = useState(false);
+  const [squash, setSquash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const commitMutation = useCommitVersionMutation(pageId);
 
@@ -81,6 +83,10 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
   const doomedDocs = (workingDocs ?? []).filter(
     (doc) => doc.id !== adoptedWorkingDocId,
   );
+  // 직전 확정이 아직 «작성 중» 인가 — 내가 같은 작업문서로 24시간 안에 확정했고
+  // 파생(분기·리뷰·고정 공유)이 없을 때만 합치기를 보여준다
+  const { data: squashInfo } = useSquashCheckQuery(pageId, workingDocId, opened);
+  const canSquash = !!squashInfo?.eligible && !!squashInfo.target;
 
   // 다시 열 때 지난 실패·선택이 남아 있지 않게 — effect 로 미루면 열린 첫
   // 프레임에 지난 오류가 그대로 비친다.
@@ -90,6 +96,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
     if (opened) {
       setError(null);
       setKeepOthers(false);
+      setSquash(false);
     }
   }
 
@@ -105,6 +112,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
         workingDocId,
         message: message.trim() || undefined,
         deleteOtherWorkingDocs: doomedDocs.length > 0 && !keepOthers,
+        squash: canSquash && squash,
       });
       setMessage("");
       setOpened(false);
@@ -190,6 +198,22 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
         </Alert>
       )}
 
+      {canSquash && (
+        <Checkbox
+          mt="sm"
+          size="xs"
+          checked={squash}
+          onChange={(e) => setSquash(e.currentTarget.checked)}
+          label={t("직전 확정(문서버전 {{n}})에 합치기", {
+            n: squashInfo!.target!.version,
+          })}
+          description={t(
+            "새 버전을 만들지 않고 문서버전 {{n}}을 지금 내용으로 고칩니다. 내가 24시간 안에 확정했고 그 버전에서 갈라진 것이 없을 때만 됩니다.",
+            { n: squashInfo!.target!.version },
+          )}
+        />
+      )}
+
       {error && (
         <Alert
           icon={<IconAlertCircle size={16} />}
@@ -215,7 +239,7 @@ export default function CommitDialog({ pageId }: CommitDialogProps) {
           {t("취소")}
         </Button>
         <Button loading={commitMutation.isPending} onClick={handleCommit}>
-          {t("문서확정")}
+          {canSquash && squash ? t("합치기") : t("문서확정")}
         </Button>
       </Group>
     </Modal>
