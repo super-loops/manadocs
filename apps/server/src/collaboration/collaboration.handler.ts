@@ -114,6 +114,54 @@ export class CollaborationHandler {
           },
         );
       },
+      /**
+       * 컴포넌트 인스턴스의 사본 속성을 갈아 끼운다. onlyRevision 이 주어지면 그
+       * 리비전의 인스턴스만(빈 자리 r0 자동 채움). 바꾼 개수를 돌려준다.
+       */
+      updateComponentInstances: async (
+        documentName: string,
+        payload: {
+          componentId: string;
+          attrs: Record<string, any>;
+          onlyRevision?: number | null;
+          user: User;
+        },
+      ): Promise<number> => {
+        const { componentId, attrs, onlyRevision, user } = payload;
+        let changed = 0;
+        await this.withYdocConnection(
+          hocuspocus,
+          documentName,
+          { user },
+          (doc) => {
+            const fragment = doc.getXmlFragment('default');
+            const walk = (parent: Y.XmlFragment | Y.XmlElement) => {
+              for (const child of parent.toArray()) {
+                if (!(child instanceof Y.XmlElement)) continue;
+                if (
+                  child.nodeName === 'componentInstance' &&
+                  child.getAttribute('componentId') === componentId
+                ) {
+                  const rev = Number(child.getAttribute('revision') ?? 0);
+                  if (
+                    onlyRevision === undefined ||
+                    onlyRevision === null ||
+                    rev === onlyRevision
+                  ) {
+                    for (const [key, value] of Object.entries(attrs)) {
+                      child.setAttribute(key, value as any);
+                    }
+                    changed++;
+                  }
+                }
+                walk(child);
+              }
+            };
+            walk(fragment);
+          },
+        );
+        return changed;
+      },
       updatePageContent: async (
         documentName: string,
         payload: {

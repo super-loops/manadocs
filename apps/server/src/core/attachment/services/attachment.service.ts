@@ -248,6 +248,48 @@ export class AttachmentService {
     }
   }
 
+  /**
+   * 컴포넌트 리비전 파일 — 페이지에 속하지 않는다(page_id NULL, type 'component').
+   * 서빙 권한은 스페이스 열람으로 판정한다(attachment.controller getFile).
+   */
+  async uploadComponentFile(opts: {
+    filePromise: Promise<MultipartFile>;
+    spaceId: string;
+    userId: string;
+    workspaceId: string;
+    maxFileSize?: number;
+  }): Promise<Attachment> {
+    const { filePromise, spaceId, userId, workspaceId } = opts;
+    const preparedFile: PreparedFile = await prepareFile(filePromise, {
+      skipBuffer: true,
+    });
+    const attachmentId = uuid7();
+    const filePath = `${getAttachmentFolderPath(AttachmentType.File, workspaceId)}/${attachmentId}/${preparedFile.fileName}`;
+
+    const { stream, getBytesRead } = createByteCountingStream(
+      preparedFile.multiPartFile.file,
+    );
+    await this.uploadToDrive(filePath, stream);
+    preparedFile.fileSize = getBytesRead();
+
+    if ((preparedFile.multiPartFile.file as any)?.truncated) {
+      await this.storageService.delete(filePath).catch(() => undefined);
+      const err: any = new BadRequestException('File too large');
+      err.statusCode = 413;
+      throw err;
+    }
+
+    return this.saveAttachment({
+      attachmentId,
+      preparedFile,
+      filePath,
+      type: AttachmentType.Component,
+      userId,
+      spaceId,
+      workspaceId,
+    });
+  }
+
   async saveAttachment(opts: {
     attachmentId?: string;
     preparedFile: PreparedFile;

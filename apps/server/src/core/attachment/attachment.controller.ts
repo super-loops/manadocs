@@ -188,18 +188,25 @@ export class AttachmentController {
     if (
       !attachment ||
       attachment.workspaceId !== workspace.id ||
-      !attachment.pageId ||
       !attachment.spaceId
     ) {
       throw new NotFoundException();
     }
 
-    const page = await this.pageRepo.findById(attachment.pageId);
-    if (!page) {
-      throw new NotFoundException();
+    if (attachment.type === AttachmentType.Component) {
+      // 컴포넌트 리비전 파일은 페이지에 속하지 않는다 — 스페이스 열람 권한으로 판정
+      if (attachment.deletedAt) throw new NotFoundException();
+      await this.resolveSpaceForRead(attachment.spaceId, user, workspace);
+    } else {
+      if (!attachment.pageId) {
+        throw new NotFoundException();
+      }
+      const page = await this.pageRepo.findById(attachment.pageId);
+      if (!page) {
+        throw new NotFoundException();
+      }
+      await this.pageAccessService.validateCanView(page, user);
     }
-
-    await this.pageAccessService.validateCanView(page, user);
 
     try {
       return await this.sendFileResponse(req, res, attachment, 'private');
@@ -242,8 +249,24 @@ export class AttachmentController {
     if (
       !attachment ||
       attachment.workspaceId !== workspace.id ||
+      !attachment.spaceId
+    ) {
+      throw new NotFoundException('File not found');
+    }
+
+    if (attachment.type === AttachmentType.Component) {
+      // 공유 페이지에 놓인 인스턴스의 파일 — 토큰은 그 페이지 본문에 있는
+      // 첨부에만 서명되므로, 같은 스페이스의 페이지에 서명된 것이면 통과
+      const sharedPage = await this.pageRepo.findById(jwtPayload.pageId);
+      if (
+        attachment.deletedAt ||
+        !sharedPage ||
+        sharedPage.spaceId !== attachment.spaceId
+      ) {
+        throw new NotFoundException('File not found');
+      }
+    } else if (
       !attachment.pageId ||
-      !attachment.spaceId ||
       jwtPayload.pageId !== attachment.pageId
     ) {
       throw new NotFoundException('File not found');

@@ -3,6 +3,7 @@ export enum AttachmentType {
   WorkspaceIcon = 'workspace-icon',
   SpaceIcon = 'space-icon',
   File = 'file',
+  Component = 'component',
 }
 
 export const validImageExtensions = ['.jpg', '.png', '.jpeg'];

@@ -33,6 +33,10 @@ import {
   ReviewAnchors,
   ReviewAssignees,
   Sequences,
+  ComponentCollections,
+  Components,
+  ComponentRevisions,
+  ComponentUploadTickets,
 } from './db';
 import { PageEmbeddings } from '@manadocs/db/types/embeddings.types';
 
@@ -206,3 +210,17 @@ export type InsertableReviewAssignee = Insertable<ReviewAssignees>;
 
 // Sequence
 export type Sequence = Selectable<Sequences>;
+
+// Components
+export type ComponentCollection = Selectable<ComponentCollections>;
+export type InsertableComponentCollection = Insertable<ComponentCollections>;
+export type UpdatableComponentCollection = Updateable<
+  Omit<ComponentCollections, 'id'>
+>;
+export type Component = Selectable<Components>;
+export type InsertableComponent = Insertable<Components>;
+export type UpdatableComponent = Updateable<Omit<Components, 'id'>>;
+export type ComponentRevision = Selectable<ComponentRevisions>;
+export type InsertableComponentRevision = Insertable<ComponentRevisions>;
+export type ComponentUploadTicket = Selectable<ComponentUploadTickets>;
+export type InsertableComponentUploadTicket = Insertable<ComponentUploadTickets>;

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AttachmentService } from './services/attachment.service';
 import { AttachmentController } from './attachment.controller';
 import { StorageModule } from '../../integrations/storage/storage.module';
@@ -8,8 +8,15 @@ import { AttachmentProcessor } from './processors/attachment.processor';
 import { TokenModule } from '../auth/token.module';
 
 @Module({
-  imports: [StorageModule, UserModule, WorkspaceModule, TokenModule],
+  // WorkspaceModule → McpModule → ComponentModule → AttachmentModule 순환 — 지연 참조
+  imports: [
+    StorageModule,
+    UserModule,
+    forwardRef(() => WorkspaceModule),
+    TokenModule,
+  ],
   controllers: [AttachmentController],
   providers: [AttachmentService, AttachmentProcessor],
+  exports: [AttachmentService],
 })
 export class AttachmentModule {}

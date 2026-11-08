@@ -554,7 +554,62 @@ export interface Sequences {
   currentValue: Generated<Int8>;
 }
 
+export interface ComponentCollections {
+  createdAt: Generated<Timestamp>;
+  creatorId: string | null;
+  deletedAt: Timestamp | null;
+  description: string | null;
+  id: Generated<string>;
+  name: string;
+  position: Generated<number>;
+  spaceId: string;
+  updatedAt: Generated<Timestamp>;
+  workspaceId: string;
+}
+
+export interface Components {
+  collectionId: string;
+  createdAt: Generated<Timestamp>;
+  creatorId: string | null;
+  currentRevision: Generated<number>;
+  deletedAt: Timestamp | null;
+  description: string | null;
+  id: Generated<string>;
+  kind: Generated<string>;
+  slug: string;
+  spaceId: string;
+  updatedAt: Generated<Timestamp>;
+  workspaceId: string;
+}
+
+export interface ComponentRevisions {
+  attachmentId: string | null;
+  componentId: string;
+  createdAt: Generated<Timestamp>;
+  creatorId: string | null;
+  fileName: string;
+  fileSize: Int8 | null;
+  id: Generated<string>;
+  message: string | null;
+  mimeType: string | null;
+  revision: number;
+}
+
+export interface ComponentUploadTickets {
+  apiTokenId: string;
+  componentId: string;
+  consumedAt: Timestamp | null;
+  createdAt: Generated<Timestamp>;
+  expiresAt: Timestamp;
+  id: Generated<string>;
+  message: string | null;
+  token: string;
+  userId: string;
+  workspaceId: string;
+}
+
 export interface DB {
+
   apiKeys: ApiKeys;
   apiTokens: ApiTokens;
   apiTokenSpaces: ApiTokenSpaces;
@@ -589,4 +644,8 @@ export interface DB {
   reviewAnchors: ReviewAnchors;
   reviewAssignees: ReviewAssignees;
   sequences: Sequences;
+  componentCollections: ComponentCollections;
+  components: Components;
+  componentRevisions: ComponentRevisions;
+  componentUploadTickets: ComponentUploadTickets;
 }

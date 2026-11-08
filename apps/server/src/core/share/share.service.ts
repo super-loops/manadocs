@@ -477,6 +477,18 @@ export class ShareService {
   async updatePublicAttachments(page: Page): Promise<any> {
     const prosemirrorJson = getProsemirrorContent(page.content);
     const attachmentIds = getAttachmentIds(prosemirrorJson);
+    // 컴포넌트 인스턴스는 일반 첨부 노드가 아니라 getAttachmentIds 가 세지 않는다 —
+    // 공유 화면에서 보이려면 같은 방식으로 서명해야 한다
+    jsonToNode(prosemirrorJson)?.descendants((node: Node) => {
+      const id = node.attrs?.attachmentId;
+      if (
+        node.type.name === 'componentInstance' &&
+        id &&
+        !attachmentIds.includes(id)
+      ) {
+        attachmentIds.push(id);
+      }
+    });
     const attachmentMap = new Map<string, string>();
 
     await Promise.all(
@@ -493,7 +505,11 @@ export class ShareService {
     const doc = jsonToNode(prosemirrorJson);
 
     doc?.descendants((node: Node) => {
-      if (!isAttachmentNode(node.type.name)) return;
+      if (
+        !isAttachmentNode(node.type.name) &&
+        node.type.name !== 'componentInstance'
+      )
+        return;
 
       const attachmentId = node.attrs.attachmentId;
       const token = attachmentMap.get(attachmentId);

@@ -20,6 +20,7 @@ import { MigrationService } from '@manadocs/db/services/migration.service';
 import { UserTokenRepo } from './repos/user-token/user-token.repo';
 import { UserSessionRepo } from '@manadocs/db/repos/session/user-session.repo';
 import { BacklinkRepo } from '@manadocs/db/repos/backlink/backlink.repo';
+import { ComponentRepo } from '@manadocs/db/repos/component/component.repo';
 import { ShareRepo } from '@manadocs/db/repos/share/share.repo';
 import { NotificationRepo } from '@manadocs/db/repos/notification/notification.repo';
 import { WatcherRepo } from '@manadocs/db/repos/watcher/watcher.repo';
@@ -86,6 +87,7 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     UserTokenRepo,
     UserSessionRepo,
     BacklinkRepo,
+    ComponentRepo,
     ShareRepo,
     NotificationRepo,
     WatcherRepo,
@@ -112,6 +114,7 @@ import { SequenceRepo } from './repos/review/sequence.repo';
     UserTokenRepo,
     UserSessionRepo,
     BacklinkRepo,
+    ComponentRepo,
     ShareRepo,
     NotificationRepo,
     WatcherRepo,
