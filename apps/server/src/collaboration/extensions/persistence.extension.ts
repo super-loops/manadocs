@@ -153,7 +153,11 @@ export class PersistenceExtension implements Extension {
         try {
           const existingContributors = workingDoc.contributorIds || [];
           contributorIds = Array.from(
-            new Set([...existingContributors, ...editingUserIds, context.user.id]),
+            new Set(
+              [...existingContributors, ...editingUserIds, context?.user?.id].filter(
+                Boolean,
+              ),
+            ),
           );
         } catch (err) {
           //this.logger.debug('Contributors error:' + err?.['message']);
@@ -187,7 +191,9 @@ export class PersistenceExtension implements Extension {
               content: tiptapJson,
               textContent: textContent,
               ydoc: ydocState,
-              lastUpdatedById: context.user.id,
+              // 사용자 없는 직접 연결(서버 내부)도 저장은 되어야 한다 — 여기서
+              // 터지면 트랜잭션째 롤백돼 작업문서·미러가 조용히 옛 내용으로 남는다
+              ...(context?.user?.id ? { lastUpdatedById: context.user.id } : {}),
               contributorIds: pageContributorIds,
             },
             pageId,

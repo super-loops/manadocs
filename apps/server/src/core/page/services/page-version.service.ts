@@ -8,6 +8,10 @@ import { InjectKysely } from 'nestjs-kysely';
 import { TiptapTransformer } from '@hocuspocus/transformer';
 import { isDeepStrictEqual } from 'node:util';
 import { KyselyDB } from '@manadocs/db/types/kysely.types';
+import { WsService } from '../../../ws/ws.service';
+
+/** 직전 확정에 합칠 수 있는 시간 — 처음 확정한 시각부터 */
+export const SQUASH_WINDOW_MS = 24 * 60 * 60 * 1000;
 import { executeTx } from '@manadocs/db/utils';
 import { PageRepo } from '@manadocs/db/repos/page/page.repo';
 import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
@@ -42,7 +46,34 @@ export class PageVersionService {
     private readonly collaborationGateway: CollaborationGateway,
     private readonly pageService: PageService,
     @InjectKysely() private readonly db: KyselyDB,
+    private readonly wsService: WsService,
   ) {}
+
+  /**
+   * 확정·폐기·Primary 변경을 열린 화면에 알린다 — 사이드바 «수정중», 버전 패널,
+   * 페이지 정보(primaryVersionId)가 다른 사람·에이전트의 확정에도 곧바로 맞춰지게.
+   * 클라이언트는 받은 키로 쿼리를 무효화만 한다(내용은 싣지 않는다).
+   */
+  private async notifyVersionChangeById(pageId: string) {
+    const page = await this.pageRepo.findById(pageId).catch(() => null);
+    if (page) this.notifyVersionChange(page);
+  }
+
+  private notifyVersionChange(page: { id: string; slugId?: string; spaceId: string }) {
+    const base = { operation: 'invalidate', spaceId: page.spaceId, pageId: page.id };
+    const keys: Array<{ entity: string[]; id?: string }> = [
+      { entity: ['working-changes', page.spaceId] },
+      { entity: ['page-versions'], id: page.id },
+      { entity: ['working-docs'], id: page.id },
+      { entity: ['pages'], id: page.id },
+      ...(page.slugId ? [{ entity: ['pages'], id: page.slugId }] : []),
+    ];
+    for (const key of keys) {
+      this.wsService
+        .emitTreeEvent(page.spaceId, { ...base, ...key })
+        .catch(() => undefined);
+    }
+  }
 
   /**
    * 형상관리 스캐폴드 보증 — 구 코드 경로(복제·과거 데이터)로 스캐폴드 없이
@@ -90,9 +121,14 @@ export class PageVersionService {
       workingDocId?: string;
       message?: string;
       deleteOtherWorkingDocs?: boolean;
+      /**
+       * 직전 확정에 합치기(스쿼시). 'auto' — 조건이 맞으면 합치고 아니면 새 버전,
+       * 'never' — 항상 새 버전(기본). 조건은 squashEligibility 참고.
+       */
+      squash?: 'auto' | 'never';
     },
     user: User,
-  ): Promise<PageVersion> {
+  ): Promise<PageVersion & { squashed?: boolean; squashSkipped?: string | null }> {
     const primaryWorkingDocId = await this.ensureScaffold(page);
     const workingDocId = dto.workingDocId ?? primaryWorkingDocId;
 
@@ -104,7 +140,11 @@ export class PageVersionService {
     }
 
     // 라이브 협업 문서 상태를 직접 읽어 확정 시점 내용 보장
-    const contentJson = await this.snapshotWorkingDoc(page.id, workingDocId);
+    const contentJson = await this.snapshotWorkingDoc(
+      page.id,
+      workingDocId,
+      user,
+    );
     const content = contentJson ?? workingDoc.content ?? EMPTY_DOC;
 
     let textContent: string | null = null;
@@ -114,7 +154,8 @@ export class PageVersionService {
       this.logger.warn('jsonToText failed on commit: ' + err?.['message']);
     }
 
-    let version: PageVersion;
+    let version: PageVersion & { squashed?: boolean };
+    let squashSkipped: string | null = null;
 
     await executeTx(this.db, async (trx) => {
       const lockedPage = await this.pageRepo.findById(page.id, {
@@ -139,6 +180,53 @@ export class PageVersionService {
             'No changes to commit against the primary version',
           );
         }
+      }
+
+      // 스쿼시 — 같은 사람이 같은 작업문서로 막 확정한 버전에 이어 쓴다
+      if (dto.squash === 'auto') {
+        const check = await this.squashEligibility(
+          lockedPage,
+          workingDocId,
+          user,
+          trx,
+        );
+        if (check.target) {
+          const contributorIds = Array.from(
+            new Set([
+              ...((check.target.contributorIds as string[]) ?? []),
+              ...((workingDoc.contributorIds as string[]) ?? []),
+            ]),
+          );
+          await this.pageVersionRepo.updateVersion(
+            {
+              content,
+              title: lockedPage.title,
+              icon: lockedPage.icon,
+              coverPhoto: lockedPage.coverPhoto,
+              message: dto.message ?? check.target.message ?? null,
+              contributorIds,
+              updatedAt: new Date(),
+            } as any,
+            check.target.id,
+            trx,
+          );
+          await this.pageRepo.updatePage(
+            { committedTextContent: textContent },
+            page.id,
+            trx,
+          );
+          await this.pageWorkingDocRepo.updateWorkingDoc(
+            { contributorIds: [] },
+            workingDocId,
+            trx,
+          );
+          version = {
+            ...(await this.pageVersionRepo.findById(check.target.id, { trx })),
+            squashed: true,
+          } as any;
+          return;
+        }
+        squashSkipped = check.reason;
       }
 
       const nextVersion =
@@ -207,7 +295,75 @@ export class PageVersionService {
       await this.pageWorkingDocRepo.deleteWorkingDocs(doomedIds, trx);
     });
 
-    return version;
+    this.notifyVersionChange(page);
+    return version.squashed ? version : { ...version, squashSkipped };
+  }
+
+  /**
+   * 직전 확정에 합칠 수 있나. 합칠 대상은 «지금 Primary 이자 가장 최근 버전» 하나뿐이고,
+   * 그 버전이 아직 «작성 중» 으로 볼 수 있을 때만 — 누가 그 시점을 붙잡고 있으면
+   * 바꿀 수 없다:
+   *  - 같은 사람이, 같은 작업문서로 확정했다
+   *  - 처음 확정한 지 24시간이 지나지 않았다(합쳐도 이 시각은 그대로라 끝없이 늘지 않는다)
+   *  - 파생이 없다 — 그 버전을 기준으로 한 다른 작업문서(분기), 그 버전에 묶인
+   *    리뷰·리뷰 앵커, 그 버전에 고정된 공유 링크
+   * 반환: target 이 있으면 합칠 수 있다. 없으면 reason 코드.
+   */
+  async squashEligibility(
+    page: Page,
+    workingDocId: string,
+    user: User,
+    trx?: any,
+  ): Promise<{ target?: PageVersion; reason?: string }> {
+    const db = trx ?? this.db;
+    if (!page.primaryVersionId) return { reason: 'NO_PRIMARY' };
+    const target = await this.pageVersionRepo.findById(page.primaryVersionId, {
+      includeContent: true,
+      trx,
+    });
+    if (!target || target.discardedAt) return { reason: 'NO_PRIMARY' };
+    if (target.version < 1) return { reason: 'NO_PRIMARY' };
+
+    const maxVersion = await this.pageVersionRepo.maxVersion(page.id, trx);
+    // max() 는 드라이버에 따라 문자열로 온다 — 숫자로 맞춰 비교
+    if (Number(maxVersion) !== Number(target.version)) {
+      return { reason: 'NOT_LATEST' };
+    }
+    if (target.creatorId !== user.id) return { reason: 'OTHER_AUTHOR' };
+    if (target.workingDocId !== workingDocId) return { reason: 'OTHER_BRANCH' };
+    const ageMs = Date.now() - new Date(target.createdAt).getTime();
+    if (ageMs > SQUASH_WINDOW_MS) return { reason: 'TOO_OLD' };
+
+    const branch = await db
+      .selectFrom('pageWorkingDocs')
+      .select('id')
+      .where('baseVersionId', '=', target.id)
+      .where('id', '!=', workingDocId)
+      .executeTakeFirst();
+    if (branch) return { reason: 'HAS_BRANCHES' };
+
+    const review = await db
+      .selectFrom('reviews')
+      .select('id')
+      .where('versionId', '=', target.id)
+      .executeTakeFirst();
+    if (review) return { reason: 'HAS_REVIEWS' };
+
+    const anchor = await db
+      .selectFrom('reviewAnchors')
+      .select('id')
+      .where('versionId', '=', target.id)
+      .executeTakeFirst();
+    if (anchor) return { reason: 'HAS_REVIEWS' };
+
+    const share = await db
+      .selectFrom('shares')
+      .select('id')
+      .where('fixedVersionId', '=', target.id)
+      .executeTakeFirst();
+    if (share) return { reason: 'HAS_FIXED_SHARE' };
+
+    return { target };
   }
 
   /**
@@ -244,6 +400,7 @@ export class PageVersionService {
     const liveContent = await this.snapshotWorkingDoc(
       sourcePage.id,
       sourceWorkingDocId,
+      user,
     );
     const workingContent =
       liveContent ?? sourceWorkingDoc?.content ?? versionContent;
@@ -408,6 +565,8 @@ export class PageVersionService {
         );
       }
     });
+
+    await this.notifyVersionChangeById(version.pageId);
   }
 
   async undiscard(version: PageVersion): Promise<void> {
@@ -443,6 +602,8 @@ export class PageVersionService {
         );
       }
     });
+
+    await this.notifyVersionChangeById(version.pageId);
   }
 
   /** 버전 ⋯ 메뉴 "Primary 로 변경" */
@@ -465,6 +626,8 @@ export class PageVersionService {
       },
       version.pageId,
     );
+
+    await this.notifyVersionChangeById(version.pageId);
   }
 
   // ── 작업문서 ─────────────────────────────────────────────────────
@@ -617,16 +780,23 @@ export class PageVersionService {
 
   // ── 내부 ────────────────────────────────────────────────────────
 
+  /**
+   * 라이브 협업 문서를 읽는다. 직접 연결은 transact 뒤 저장 훅을 부르므로,
+   * 사용자 컨텍스트를 함께 넘겨야 그 저장이 성공해 작업문서·pages 미러가
+   * 지금 내용으로 맞춰진다. 예전엔 {} 를 넘겨 저장 훅이 context.user.id 에서
+   * 터지고 롤백됐다 — 확정 직후 미러가 옛 내용이라 «수정중» 목록에 남았다.
+   */
   private async snapshotWorkingDoc(
     pageId: string,
     workingDocId: string,
+    user?: User,
   ): Promise<any | null> {
     const documentName = pageDocumentName(pageId, workingDocId);
     let json: any = null;
     try {
       const connection = await this.collaborationGateway.openDirectConnection(
         documentName,
-        {},
+        user ? { user } : {},
       );
       try {
         await connection.transact((doc) => {

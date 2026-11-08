@@ -56,6 +56,21 @@ export class CommitVersionDto {
   @IsOptional()
   @IsBoolean()
   deleteOtherWorkingDocs?: boolean;
+
+  /** 직전 확정에 합치기 — 조건이 맞을 때만 합치고 아니면 새 버전 */
+  @IsOptional()
+  @IsBoolean()
+  squash?: boolean;
+}
+
+export class SquashCheckDto {
+  @IsString()
+  @IsNotEmpty()
+  pageId: string;
+
+  @IsOptional()
+  @IsUUID()
+  workingDocId?: string;
 }
 
 export class WorkingDocsDto {

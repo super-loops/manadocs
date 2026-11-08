@@ -221,6 +221,8 @@ export class WsService {
         return data.payload?.node?.id ?? null;
       case 'updateOne':
         return data.id ?? null;
+      case 'invalidate':
+        return data.pageId ?? null;
       default:
         return null;
     }

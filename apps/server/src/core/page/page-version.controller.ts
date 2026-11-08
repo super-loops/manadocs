@@ -20,6 +20,7 @@ import { PageVersionRepo } from '@manadocs/db/repos/page/page-version.repo';
 import { PageWorkingDocRepo } from '@manadocs/db/repos/page/page-working-doc.repo';
 import {
   CommitVersionDto,
+  SquashCheckDto,
   CreateWorkingDocDto,
   PageVersionsDto,
   VersionByNumberDto,
@@ -109,9 +110,37 @@ export class PageVersionController {
         workingDocId: dto.workingDocId,
         message: dto.message,
         deleteOtherWorkingDocs: dto.deleteOtherWorkingDocs,
+        squash: dto.squash ? 'auto' : 'never',
       },
       user,
     );
+  }
+
+  /** 확정 다이얼로그가 «직전 확정에 합치기» 를 보여줄지 */
+  @HttpCode(HttpStatus.OK)
+  @Post('versions/squash-check')
+  async squashCheck(@Body() dto: SquashCheckDto, @AuthUser() user: User) {
+    const page = await this.getPageOrThrow(dto.pageId);
+    await this.pageAccessService.validateCanEdit(page, user);
+    const workingDocId =
+      dto.workingDocId ?? (await this.pageVersionService.ensureScaffold(page));
+    const check = await this.pageVersionService.squashEligibility(
+      page,
+      workingDocId,
+      user,
+    );
+    return {
+      eligible: !!check.target,
+      reason: check.reason ?? null,
+      target: check.target
+        ? {
+            id: check.target.id,
+            version: check.target.version,
+            message: check.target.message,
+            createdAt: check.target.createdAt,
+          }
+        : null,
+    };
   }
 
   @HttpCode(HttpStatus.OK)
