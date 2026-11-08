@@ -102,7 +102,25 @@ export class McpService {
     if (!tool) {
       throw new HttpException(`Unknown tool: ${name}`, 404);
     }
-    const result = await tool.handler(args, ctx);
+    let result: unknown;
+    try {
+      result = await tool.handler(args, ctx);
+    } catch (err) {
+      // 도구 실행 오류는 MCP 규약대로 isError 결과로 돌려준다 — 에이전트가 code·hint
+      // 같은 상세를 읽고 다음 행동을 고를 수 있어야 한다(JSON-RPC 오류는 message 뿐)
+      if (err instanceof HttpException) {
+        const body = err.getResponse();
+        const payload =
+          typeof body === 'object' && body !== null
+            ? { status: err.getStatus(), ...(body as Record<string, any>) }
+            : { status: err.getStatus(), message: String(body) };
+        return {
+          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
+          isError: true,
+        };
+      }
+      throw err;
+    }
     return {
       content: [
         {

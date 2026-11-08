@@ -34,6 +34,7 @@ export class McpTokenGuard implements CanActivate {
 
     request.mcp = {
       userId: validation.userId,
+      apiTokenId: (validation.apiToken as any).id,
       workspaceId: validation.workspaceId,
       spaceScope: validation.spaceScope,
       allowedSpaceIds: validation.allowedSpaceIds,

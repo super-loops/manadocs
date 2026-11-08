@@ -2,6 +2,8 @@ import { ApiTokenSpaceScope } from '../api-token/dto/create-api-token.dto';
 
 export interface McpCallContext {
   userId: string;
+  /** 이 호출을 인증한 API 토큰 — 업로드 티켓을 이 토큰에 묶는다 */
+  apiTokenId?: string;
   workspaceId: string;
   spaceScope: ApiTokenSpaceScope;
   allowedSpaceIds: string[];

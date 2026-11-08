@@ -42,6 +42,14 @@ export class McpPromptService {
       '- Inspect structure: `get_page_tree` (metadata only, no content)',
       '- `blockId` exists only on heading/paragraph blocks. Reference other blocks (list, table, ...) by `blockIndex`.',
       '- Spaces may have `authoringRules` (returned by `list_spaces` and `get_page_tree`). Follow them when writing content in that space. Set `includeSpaceDetail: false` on subsequent calls to save tokens.',
+      '',
+      '## Images and files (space components)',
+      'You cannot attach files through page content. Images and files live as **components** in the space (organized in collections) and appear in pages as `componentInstance` nodes.',
+      '1. Find or create the component: `list_components` (search by slug/description) → reuse it, or `create_component` (collection + slug + description). A taken slug returns `SLUG_TAKEN` with the existing component — reuse it if it is the same asset.',
+      '2. Place it: insert `{"type":"componentInstance","attrs":{"component":"<slug>"}}` with `patch_page_blocks` (format `json`). The server fills the rest; the response lists the instances.',
+      '3. Upload: `upload_ticket` → run the returned `curl` once (multipart POST, no token needed — the ticket is single-use and valid 10 minutes). Empty instances fill automatically.',
+      '- If you cannot produce the file, stop after step 2 and write in `description` exactly what should go there — a person can drop the file onto that placeholder.',
+      '- Never paste image bytes or data: URLs into content; they are not rendered.',
     ];
 
     if (instructions) {

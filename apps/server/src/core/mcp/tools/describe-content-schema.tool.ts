@@ -275,9 +275,22 @@ const NODE_DOCS: Record<string, NodeDoc> = {
     children: 'block nodes',
     example: { type: 'column', content: [{ type: 'paragraph' }] },
   },
+  componentInstance: {
+    category: 'block',
+    summary:
+      'An image or file from the space component library. Insert by slug — the server resolves the revision and file. Create the component first (create_component), upload via upload_ticket. Empty components render as a labelled "asset missing" placeholder a person can fill.',
+    attrs: {
+      component: 'component slug (or id) — the only attr you write',
+    },
+    example: {
+      type: 'componentInstance',
+      attrs: { component: 'login-dashboard' },
+    },
+  },
   image: {
     category: 'block',
-    summary: 'Embedded image. Usually uploaded via UI; reference existing src.',
+    summary:
+      'Embedded image that already exists (reference its src). To add a NEW image, use a componentInstance instead — agents cannot upload page attachments.',
     attrs: {
       src: 'url',
       alt: 'string',

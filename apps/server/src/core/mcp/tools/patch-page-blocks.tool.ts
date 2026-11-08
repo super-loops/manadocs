@@ -19,6 +19,15 @@ import {
   expandAutoNodes,
 } from '../utils/expand-auto-nodes';
 import { normalizePageId } from '../utils/identifiers';
+import {
+  ComponentError,
+  ComponentService,
+} from '../../component/component.service';
+import {
+  ComponentInstanceAttrs,
+  containsInstanceNodes,
+  resolveInstanceNodes,
+} from '../../component/component-instance.util';
 
 type PatchOp = {
   op:
@@ -41,13 +50,14 @@ export class PatchPageBlocksTool {
     private readonly pageVersionRepo: PageVersionRepo,
     private readonly userRepo: UserRepo,
     private readonly collaborationGateway: CollaborationGateway,
+    private readonly componentService: ComponentService,
   ) {}
 
   asTool(): McpTool {
     return {
       name: 'patch_page_blocks',
       description:
-        'Apply block-level edits to a page. Targeted ops (replace, insertAfter, insertBefore, delete) require blockId (from search_in_page, preferred) or blockIndex. Untargeted ops (appendToEnd, prependToStart) add content at the page boundary and do not need a target. content accepts markdown, html, or json (with auto/autoInline nodes). All ops are applied in order within one Yjs transaction.',
+        'Apply block-level edits to a page. Targeted ops (replace, insertAfter, insertBefore, delete) require blockId (from search_in_page, preferred) or blockIndex. Untargeted ops (appendToEnd, prependToStart) add content at the page boundary and do not need a target. content accepts markdown, html, or json (with auto/autoInline nodes, and componentInstance nodes for images/files: {\"type\":\"componentInstance\",\"attrs\":{\"component\":\"<slug>\"}}). All ops are applied in order within one Yjs transaction.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -121,6 +131,7 @@ export class PatchPageBlocksTool {
       throw new BadRequestException('operations is required');
     }
 
+    const instances: ComponentInstanceAttrs[] = [];
     const resolved: Array<{
       op: PatchOp['op'];
       blockId?: string | null;
@@ -154,6 +165,8 @@ export class PatchPageBlocksTool {
       const nodes = await this.parseNodes(
         op.content,
         op.format ?? 'markdown',
+        page.spaceId,
+        instances,
       );
       if (nodes.length === 0) {
         throw new BadRequestException('content produced no blocks');
@@ -174,12 +187,23 @@ export class PatchPageBlocksTool {
       pageId: page.id,
       slugId: page.slugId,
       applied: resolved.length,
+      ...(instances.length > 0
+        ? {
+            instances: instances.map((i) => ({
+              component: i.slug,
+              revision: i.revision,
+              empty: i.revision === 0,
+            })),
+          }
+        : {}),
     };
   }
 
   private async parseNodes(
     content: any,
     format: 'markdown' | 'html' | 'json',
+    spaceId: string,
+    instances: ComponentInstanceAttrs[],
   ): Promise<any[]> {
     let doc: any;
     switch (format) {
@@ -210,6 +234,18 @@ export class PatchPageBlocksTool {
 
     if (docContainsAutoNodes(doc)) {
       doc = await expandAutoNodes(doc);
+    }
+
+    if (containsInstanceNodes(doc)) {
+      try {
+        const out = await resolveInstanceNodes(doc, (ref) =>
+          this.componentService.findByRef(spaceId, ref),
+        );
+        doc = out.content;
+        instances.push(...out.instances);
+      } catch (err: any) {
+        throw new ComponentError(err.code ?? 'COMPONENT_ERROR', err.message, {}, 400);
+      }
     }
 
     return Array.isArray(doc?.content) ? doc.content : [];

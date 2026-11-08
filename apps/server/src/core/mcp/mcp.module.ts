@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ApiTokenModule } from '../api-token/api-token.module';
 import { PageModule } from '../page/page.module';
 import { SearchModule } from '../search/search.module';
@@ -34,6 +34,14 @@ import {
   GetPageVersionTool,
   ListPageVersionsTool,
 } from './tools/page-versions.tool';
+import {
+  ComponentToolContext,
+  CreateComponentTool,
+  GetComponentTool,
+  ListComponentsTool,
+  UploadTicketTool,
+} from './tools/components.tool';
+import { ComponentModule } from '../component/component.module';
 
 @Module({
   imports: [
@@ -42,6 +50,7 @@ import {
     SearchModule,
     CollaborationModule,
     ReviewModule,
+    forwardRef(() => ComponentModule),
   ],
   controllers: [McpController],
   providers: [
@@ -72,6 +81,11 @@ import {
     ListPageVersionsTool,
     GetPageVersionTool,
     CommitPageVersionTool,
+    ComponentToolContext,
+    ListComponentsTool,
+    GetComponentTool,
+    CreateComponentTool,
+    UploadTicketTool,
   ],
   exports: [McpPromptService, McpToolRegistry],
 })

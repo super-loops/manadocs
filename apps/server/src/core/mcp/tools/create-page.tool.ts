@@ -7,12 +7,21 @@ import {
   docContainsAutoNodes,
   expandAutoNodes,
 } from '../utils/expand-auto-nodes';
+import {
+  ComponentError,
+  ComponentService,
+} from '../../component/component.service';
+import {
+  containsInstanceNodes,
+  resolveInstanceNodes,
+} from '../../component/component-instance.util';
 
 @Injectable()
 export class CreatePageTool {
   constructor(
     private readonly pageService: PageService,
     private readonly spaceRepo: SpaceRepo,
+    private readonly componentService: ComponentService,
   ) {}
 
   asTool(): McpTool {
@@ -66,6 +75,17 @@ export class CreatePageTool {
     let content = args.content;
     if (format === 'json' && content && docContainsAutoNodes(content)) {
       content = await expandAutoNodes(content);
+    }
+    if (format === 'json' && content && containsInstanceNodes(content)) {
+      try {
+        content = (
+          await resolveInstanceNodes(content, (ref) =>
+            this.componentService.findByRef(spaceId, ref),
+          )
+        ).content;
+      } catch (err: any) {
+        throw new ComponentError(err.code ?? 'COMPONENT_ERROR', err.message, {}, 400);
+      }
     }
 
     const page = await this.pageService.create(ctx.userId, ctx.workspaceId, {

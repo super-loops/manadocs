@@ -24,6 +24,12 @@ import {
   GetPageVersionTool,
   ListPageVersionsTool,
 } from './tools/page-versions.tool';
+import {
+  CreateComponentTool,
+  GetComponentTool,
+  ListComponentsTool,
+  UploadTicketTool,
+} from './tools/components.tool';
 
 @Injectable()
 export class McpToolRegistry {
@@ -52,6 +58,10 @@ export class McpToolRegistry {
     listPageVersions: ListPageVersionsTool,
     getPageVersion: GetPageVersionTool,
     commitPageVersion: CommitPageVersionTool,
+    listComponents: ListComponentsTool,
+    getComponent: GetComponentTool,
+    createComponent: CreateComponentTool,
+    uploadTicket: UploadTicketTool,
   ) {
     const tools: McpTool[] = [
       workspaceInfo.asTool(),
@@ -76,6 +86,10 @@ export class McpToolRegistry {
       listPageVersions.asTool(),
       getPageVersion.asTool(),
       commitPageVersion.asTool(),
+      listComponents.asTool(),
+      getComponent.asTool(),
+      createComponent.asTool(),
+      uploadTicket.asTool(),
     ];
     this.toolsByName = new Map(tools.map((t) => [t.name, t]));
   }
