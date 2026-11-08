@@ -1,6 +1,6 @@
 ---
 title: 스페이스 컴포넌트 — 묶음·리비전·인스턴스와 에이전트 업로드 티켓
-status: in-progress
+status: done
 current_phase: 6
 last_updated: 2026-11-09
 designs:
@@ -51,7 +51,7 @@ designs:
 ### Phase 6 — 실측 검증과 릴리스
 - [x] 로컬 기동 → MCP 토큰으로 에이전트 흐름 실측(만들기→넣기→티켓→curl→채워짐) + 헤드리스 브라우저로 사람 흐름 확인
 - [x] 타입·린트·i18n, 과제 단위 커밋
-- [ ] 푸시·minor bump (유저 확인 대기)
+- [x] 푸시·minor bump — v0.20.0
 
 ## Deviations
 
